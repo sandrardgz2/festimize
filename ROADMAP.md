@@ -8,6 +8,15 @@ Ideas raised while building, parked on purpose so the current scope stays delive
   than only the artists already in the database. The checkbox list is a stand-in: it works,
   but it limits taste to artists someone else chose to load.
 
+## Recommender
+- **Split taste breaks the single profile.** The profile is the average of every saved
+  artist, so someone who loves both metal and electronic music gets a profile sitting
+  between the two, matching neither well. The artists that should score highest score
+  middling instead. Known fixes, in order of effort: score against the *best matching*
+  saved artist rather than the average; or cluster the saved artists into two or three
+  profiles and take the strongest match across them. This matters for real users, not
+  just in theory — it is the normal case for anyone with range.
+
 ## Scheduling
 - **A discovery dial.** The scheduler reserves one set in three for artists the user did not
   name. That ratio is a configuration value today; exposing it as a slider ("how adventurous")
