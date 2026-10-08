@@ -29,6 +29,14 @@
         </p>
     </section>
 
+    <p class="muted" th:if="${analyticsUp != null and !analyticsUp}">
+        Match percentages are unavailable — the analytics service is not running.
+        Start it with: <code>cd analytics &amp;&amp; .venv/bin/python -m uvicorn app.main:app --port 8000</code>
+    </p>
+    <p class="muted" th:if="${analyticsUp != null and analyticsUp and !scored}">
+        No match percentages yet — pick some artists on the <a th:href="@{/setup}">setup page</a> first.
+    </p>
+
     <p class="muted" th:if="${#lists.isEmpty(rows)}">
         No performances found for this festival edition.
     </p>
@@ -40,6 +48,9 @@
                 <span class="badge badge-rising" th:if="${row.headliner}">Headliner</span>
             </div>
             <div class="tags" th:text="${row.tags}">tags</div>
+            <p th:if="${row.matchPercent != null}">
+                <span class="badge badge-match" th:text="${row.matchPercent} + '% match'">0% match</span>
+            </p>
             <div class="tags">
                 <span th:text="${row.day}">Sat</span> ·
                 <span th:text="${row.time}">16:30</span> ·

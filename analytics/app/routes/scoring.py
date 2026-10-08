@@ -1,24 +1,25 @@
 """
 Scoring and momentum endpoints.
 
-PLACEHOLDER ROUTES ONLY. The request/response shapes below are final (they
-mirror artist_score and artist_momentum in db/schema.sql), but the actual
-recommender (taste matching against artist_tag) and the momentum measure
-are the developer's own data-science deliverable for this capstone and are
-deliberately NOT implemented here. Do not add TF-IDF, cosine similarity, or
-any momentum calculation to this file — wire it up in the real
-implementation, not in the scaffold.
+/score/{user_id} is implemented: it builds a taste profile from the artists a
+user saved, scores every artist against it (see app/recommender.py), and
+caches the result in artist_score so page loads are a read.
+
+/artists/{artist_id}/momentum is still a placeholder: the rising-artist
+measure needs the historical lineup data, which arrives in the next phase.
 
 Targets Python 3.9 syntax.
 """
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.db import get_db
+from app.recommender import build_matrix, score_against_profile
 
 router = APIRouter(tags=["scoring"])
 
@@ -48,19 +49,49 @@ def score_user(
     db: Session = Depends(get_db),
 ) -> ScoreResponse:
     """
-    Recompute taste-match scores for a user across candidate artists and
-    upsert them into artist_score.
+    Score every artist for one user and cache the result.
 
-    Not implemented: this is the recommender the developer is building as
-    her data-science deliverable (taste matching over artist_tag).
+    Returns an empty list when the user has saved no artists: there is no
+    profile to match against, and a made-up number would be worse than none.
     """
-    raise HTTPException(
-        status_code=501,
-        detail=(
-            "Scoring is not implemented yet. This endpoint is a placeholder "
-            "for the taste-match recommender, to be built against "
-            "dim_artist / artist_tag / artist_score."
-        ),
+    tag_rows = db.execute(
+        text("select artist_id, tag, weight from artist_tag")
+    ).fetchall()
+    if not tag_rows:
+        raise HTTPException(status_code=409, detail="No artist tags loaded; seed the database first.")
+
+    saved = [
+        r[0] for r in db.execute(
+            text("select artist_id from user_artist where user_id = :uid"),
+            {"uid": user_id},
+        ).fetchall()
+    ]
+
+    tfidf, artist_ids = build_matrix([(r[0], r[1], float(r[2])) for r in tag_rows])
+    scores = score_against_profile(tfidf, artist_ids, saved)
+
+    if scores:
+        db.execute(
+            text(
+                """
+                insert into artist_score (user_id, artist_id, match_score, computed_at)
+                values (:uid, :aid, :score, now())
+                on conflict (user_id, artist_id)
+                do update set match_score = excluded.match_score,
+                              computed_at = excluded.computed_at
+                """
+            ),
+            [{"uid": user_id, "aid": aid, "score": round(s, 4)} for aid, s in scores.items()],
+        )
+        db.commit()
+
+    now = datetime.now(timezone.utc)
+    return ScoreResponse(
+        user_id=user_id,
+        scores=[
+            ArtistScore(user_id=user_id, artist_id=aid, match_score=s, computed_at=now)
+            for aid, s in sorted(scores.items(), key=lambda kv: kv[1], reverse=True)
+        ],
     )
 
 
