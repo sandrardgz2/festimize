@@ -9,6 +9,7 @@ import com.festimize.domain.Performance;
 import com.festimize.repo.AppUserRepository;
 import com.festimize.repo.ArtistScoreRepository;
 import com.festimize.repo.ArtistTagRepository;
+import com.festimize.repo.UserArtistRepository;
 import com.festimize.repo.FestivalEditionRepository;
 import com.festimize.repo.PerformanceRepository;
 import java.security.Principal;
@@ -37,24 +38,27 @@ public class LineupController {
     private final AppUserRepository users;
     private final ArtistScoreRepository scores;
     private final ScoringClient scoring;
+    private final UserArtistRepository saved;
 
     public LineupController(FestivalEditionRepository editions,
                             PerformanceRepository performances,
                             ArtistTagRepository tags,
                             AppUserRepository users,
                             ArtistScoreRepository scores,
-                            ScoringClient scoring) {
+                            ScoringClient scoring,
+                            UserArtistRepository saved) {
         this.editions = editions;
         this.performances = performances;
         this.tags = tags;
         this.users = users;
         this.scores = scores;
         this.scoring = scoring;
+        this.saved = saved;
     }
 
     /** One row on the page: who is playing, when, where, and what they sound like. */
     public record LineupRow(String artist, String tags, String day, String time, String stage,
-                            boolean headliner, Integer matchPercent) {}
+                            boolean headliner, Integer matchPercent, boolean myPick) {}
 
     @GetMapping("/lineup")
     public String lineup(@RequestParam(required = false) Long editionId, Principal principal, Model model) {
@@ -76,6 +80,8 @@ public class LineupController {
         // Ask the analytics service to refresh this user's scores, then read the cache.
         AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
         boolean analyticsUp = scoring.rescore(me.getUserId());
+        java.util.Set<Long> myPicks = new java.util.HashSet<>();
+        saved.findSavedArtists(me.getUserId()).forEach(a -> myPicks.add(a.getArtistId()));
         Map<Long, Integer> matchByArtist = new LinkedHashMap<>();
         for (ArtistScore s : scores.findByUser_UserIdOrderByMatchScoreDesc(me.getUserId())) {
             matchByArtist.put(s.getArtist().getArtistId(),
@@ -101,7 +107,9 @@ public class LineupController {
                     start == null ? "—" : start.format(TIME),
                     p.getStage() == null ? "—" : p.getStage().getName(),
                     p.isHeadliner(),
-                    matchByArtist.get(p.getArtist().getArtistId())));
+                    myPicks.contains(p.getArtist().getArtistId())
+                            ? null : matchByArtist.get(p.getArtist().getArtistId()),
+                    myPicks.contains(p.getArtist().getArtistId())));
         }
 
         model.addAttribute("activeNav", "lineup");
@@ -111,9 +119,12 @@ public class LineupController {
         model.addAttribute("location", chosen.getFestival().getCity());
         // Best match first when we have scores; otherwise keep the running order.
         if (!matchByArtist.isEmpty()) {
+            // Your own picks first, then the best discoveries.
             rows = rows.stream()
-                    .sorted(java.util.Comparator.comparing(
-                            (LineupRow r) -> r.matchPercent() == null ? -1 : r.matchPercent()).reversed())
+                    .sorted(java.util.Comparator
+                            .comparing((LineupRow r) -> r.myPick() ? 1 : 0).reversed()
+                            .thenComparing(java.util.Comparator.comparing(
+                                    (LineupRow r) -> r.matchPercent() == null ? -1 : r.matchPercent()).reversed()))
                     .collect(Collectors.toList());
         }
         model.addAttribute("analyticsUp", analyticsUp);

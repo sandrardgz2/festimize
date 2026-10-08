@@ -321,3 +321,11 @@ footer.site {
     line-height: 1.5;
 }
 .demo-note strong { color: #FF9F45; }
+
+/* An artist the user chose themselves — no match percentage, because the
+   profile is an average and a saved artist never scores 100 against it. */
+.badge-pick {
+    border: 1px solid #FF9F45;
+    color: #14161A;
+    background: #FF9F45;
+}

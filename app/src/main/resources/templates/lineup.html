@@ -48,8 +48,10 @@
                 <span class="badge badge-rising" th:if="${row.headliner}">Headliner</span>
             </div>
             <div class="tags" th:text="${row.tags}">tags</div>
-            <p th:if="${row.matchPercent != null}">
-                <span class="badge badge-match" th:text="${row.matchPercent} + '% match'">0% match</span>
+            <p>
+                <span class="badge badge-pick" th:if="${row.myPick}">Your pick</span>
+                <span class="badge badge-match" th:if="${row.matchPercent != null}"
+                      th:text="${row.matchPercent} + '% match'">0% match</span>
             </p>
             <div class="tags">
                 <span th:text="${row.day}">Sat</span> ·
