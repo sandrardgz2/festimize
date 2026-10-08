@@ -1,0 +1,323 @@
+/* Festimize — colours taken from diagrams/Festimize - Wireframes.drawio */
+
+:root {
+    --bg:        #14161A;
+    --surface:   #1F2429;
+    --card:      #252B31;
+    --border:    #3A424C;
+    --text:      #E8EBEF;
+    --muted:     #94A0AC;
+    --green:     #35D07F;
+    --orange:    #FF9F45;
+
+    --radius: 8px;
+    --gap: 16px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+a {
+    color: var(--green);
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* ------------------------------------------------------------------ chrome */
+.topbar {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 0 24px;
+    height: 56px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
+
+.brand {
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--green);
+}
+
+.topbar nav {
+    display: flex;
+    gap: 20px;
+    flex: 1;
+}
+
+.topbar nav a {
+    color: var(--muted);
+    padding: 4px 0;
+    border-bottom: 2px solid transparent;
+}
+
+.topbar nav a:hover {
+    color: var(--text);
+    text-decoration: none;
+}
+
+.topbar nav a.active {
+    color: var(--text);
+    border-bottom-color: var(--orange);
+}
+
+.topbar .session {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.wrap {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: 28px 24px 64px;
+}
+
+/* ------------------------------------------------------------------ pieces */
+.page-title {
+    margin: 0 0 4px;
+    font-size: 22px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.page-sub {
+    margin: 0 0 24px;
+    color: var(--muted);
+}
+
+.skeleton-note {
+    margin: 0 0 24px;
+    padding: 12px 16px;
+    background: rgba(255, 159, 69, 0.08);
+    border: 1px solid var(--orange);
+    border-left-width: 4px;
+    border-radius: var(--radius);
+    color: var(--orange);
+    font-size: 14px;
+}
+
+.panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: var(--gap);
+}
+
+.panel h2 {
+    margin: 0 0 12px;
+    font-size: 13px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.grid {
+    display: grid;
+    gap: var(--gap);
+}
+
+.grid-2 {
+    grid-template-columns: 1fr 1fr;
+}
+
+.grid-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 720px) {
+    .grid-2,
+    .grid-4 {
+        grid-template-columns: 1fr;
+    }
+}
+
+.card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+}
+
+.card .name {
+    font-weight: 600;
+}
+
+.card .tags,
+.muted {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.stat .value {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--green);
+}
+
+.stat .label {
+    color: var(--muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.chip {
+    display: inline-block;
+    padding: 4px 10px;
+    margin: 0 6px 6px 0;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    font-size: 13px;
+}
+
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-match {
+    color: var(--green);
+    border: 1px solid var(--green);
+}
+
+.badge-rising {
+    color: var(--orange);
+    border: 1px solid var(--orange);
+}
+
+/* ------------------------------------------------------------------ timeline */
+.timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.timeline li {
+    display: flex;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.timeline li:last-child {
+    border-bottom: none;
+}
+
+.timeline .time {
+    width: 60px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.timeline .break {
+    color: var(--orange);
+}
+
+/* ------------------------------------------------------------------ forms */
+.form-narrow {
+    max-width: 380px;
+}
+
+label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: var(--muted);
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+select {
+    width: 100%;
+    padding: 9px 12px;
+    margin-bottom: 14px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-size: 15px;
+}
+
+input:focus,
+select:focus {
+    outline: none;
+    border-color: var(--green);
+}
+
+button,
+.button {
+    display: inline-block;
+    padding: 9px 20px;
+    background: var(--green);
+    color: #12241A;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+button:hover,
+.button:hover {
+    filter: brightness(1.08);
+    text-decoration: none;
+}
+
+.button-quiet {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+}
+
+.error {
+    color: var(--orange);
+    font-size: 13px;
+    margin: -8px 0 12px;
+}
+
+.notice {
+    color: var(--green);
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+footer.site {
+    padding: 20px 24px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 12px;
+    text-align: center;
+}
+
+/* Demonstration data notice: the seeded 2027 lineups are illustrative, not real announcements. */
+.demo-note {
+    border: 1px solid #FF9F45;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    margin: 1rem 0 1.5rem;
+    color: #FFD8AE;
+    background: rgba(255, 159, 69, 0.08);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+.demo-note strong { color: #FF9F45; }

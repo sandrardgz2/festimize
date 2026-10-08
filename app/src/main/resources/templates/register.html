@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head('Create account')}"></head>
+<body>
+<header class="topbar"><span class="brand">festimize</span></header>
+
+<main class="wrap">
+    <h1 class="page-title">Create account</h1>
+
+    <div class="panel form-narrow">
+        <form th:action="@{/register}" th:object="${form}" method="post">
+            <label for="email">Email</label>
+            <input id="email" type="email" th:field="*{email}" autocomplete="email" required autofocus>
+            <p class="error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
+
+            <label for="displayName">Display name (optional)</label>
+            <input id="displayName" type="text" th:field="*{displayName}" autocomplete="nickname">
+            <p class="error" th:if="${#fields.hasErrors('displayName')}" th:errors="*{displayName}"></p>
+
+            <label for="password">Password</label>
+            <input id="password" type="password" th:field="*{password}" autocomplete="new-password" required>
+            <p class="error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></p>
+
+            <button type="submit">Create account</button>
+        </form>
+        <p class="muted" style="margin-top:14px">
+            Already registered? <a th:href="@{/login}">Sign in</a>.
+        </p>
+    </div>
+</main>
+
+<footer th:replace="~{layout :: footer}"></footer>
+</body>
+</html>

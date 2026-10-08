@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head('Lineup')}"></head>
+<body>
+<header th:replace="~{layout :: topbar}"></header>
+
+<main class="wrap">
+    <h1 class="page-title" th:text="${festivalName} ?: 'Lineup'">Lineup</h1>
+    <p class="page-sub">
+        <span th:text="${location}">Catton Park</span> ·
+        <span th:text="${artistCount}">0</span> artists
+    </p>
+
+    <p class="demo-note">
+        <strong>Demonstration data.</strong> These artists are real, but the 2027 lineup and set times are
+        illustrative and were entered by hand — they are not the festival's announced lineup. Historical
+        lineup data arrives in the next phase.
+    </p>
+
+    <section class="panel" th:if="${#lists.size(editions) > 1}">
+        <h2>Festival</h2>
+        <p class="muted">Your artists stay on your account — switching only rebuilds the lineup.</p>
+        <p>
+            <a th:each="e : ${editions}"
+               th:href="@{/lineup(editionId=${e.editionId})}"
+               th:text="${e.festival.name} + ' ' + ${e.year}"
+               th:classappend="${chosen != null and e.editionId == chosen.editionId} ? 'badge badge-match' : 'badge'"
+               class="badge">Festival</a>
+        </p>
+    </section>
+
+    <p class="muted" th:if="${#lists.isEmpty(rows)}">
+        No performances found for this festival edition.
+    </p>
+
+    <div class="grid grid-2">
+        <article class="card" th:each="row : ${rows}">
+            <div class="name">
+                <span th:text="${row.artist}">Artist</span>
+                <span class="badge badge-rising" th:if="${row.headliner}">Headliner</span>
+            </div>
+            <div class="tags" th:text="${row.tags}">tags</div>
+            <div class="tags">
+                <span th:text="${row.day}">Sat</span> ·
+                <span th:text="${row.time}">16:30</span> ·
+                <span th:text="${row.stage}">Stage</span>
+            </div>
+        </article>
+    </div>
+</main>
+</body>
+</html>

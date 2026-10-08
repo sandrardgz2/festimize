@@ -1,0 +1,22 @@
+# build output
+target/
+build/
+*.class
+# python
+__pycache__/
+.venv/
+venv/
+*.pyc
+# env & secrets
+.env
+*.local
+# os / editor
+.DS_Store
+.idea/
+*.iml
+# office lock files
+~$*
+
+# local run config / secrets
+app/src/main/resources/application-local.yml
+analytics/.env

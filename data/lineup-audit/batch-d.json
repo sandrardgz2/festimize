@@ -1,0 +1,54 @@
+[
+  {
+    "festival": "Riot Fest",
+    "wikipedia_url": "https://en.wikipedia.org/wiki/Riot_Fest",
+    "shape": "in_article_tables",
+    "per_year_articles": null,
+    "list_article_url": null,
+    "years_with_lineups": "History section covers 2012-2026, no festival in 2020 (COVID). Most years (2012-2015, 2019, 2023) have no artist names at all, only prose mentioning a reunion or headliner drop-out. Only 2021, 2022, 2025, and 2026 have anything close to a fuller list of names.",
+    "artists_per_year_estimate": "Highly inconsistent: 0 named artists in many years, ~10-15 named in 2021, and 15-20+ named in 2025/2026 prose paragraphs. Estimated by reading the History subsection for each year and counting artist names mentioned in running text (no list/table exists to count from).",
+    "has_stages": false,
+    "has_set_times": false,
+    "verdict": "exclude",
+    "notes": "Lineups are almost entirely narrative prose (e.g. 'the lineup included Green Day, Blink-182, Weezer...') embedded in History paragraphs, not lists or tables, and most years have zero named artists at all -- only a mentioned reunion or a headliner controversy. No stage or set-time data anywhere, and no separate 'List of Riot Fest lineups' or per-year articles exist. Very poor structured-extraction target."
+  },
+  {
+    "festival": "Louder Than Life",
+    "wikipedia_url": "https://en.wikipedia.org/wiki/Louder_Than_Life",
+    "shape": "in_article_tables",
+    "per_year_articles": null,
+    "list_article_url": null,
+    "years_with_lineups": "2014-2026 continuously, except 2018 (cancelled: rain/weather) and 2020 (cancelled: COVID-19). 2024's second day was cancelled mid-festival due to Hurricane Helene but the year itself has a lineup.",
+    "artists_per_year_estimate": "Roughly 95-100 artist names for 2024, organized as bulleted lists under each of the 4 festival days (Thursday-Sunday); earlier years (2014-2017) are smaller, about 17-18 acts per day. Estimated by having WebFetch read and count the 2024 day-by-day bullet lists directly from the article.",
+    "has_stages": false,
+    "has_set_times": false,
+    "verdict": "include",
+    "notes": "Real per-year bulleted lineup lists (by day) live directly in the main article, with artist names as wikilinks -- no separate list article or per-year articles needed. No stage assignments or set times are given anywhere, only day groupings. 2018 and 2020 are true gaps (cancelled, no lineup existed). Watch for the 2024 mid-festival cancellation note, which could confuse an agent expecting a clean 4-day lineup."
+  },
+  {
+    "festival": "Aftershock Festival",
+    "wikipedia_url": "https://en.wikipedia.org/wiki/Aftershock_Festival",
+    "shape": "in_article_tables",
+    "per_year_articles": null,
+    "list_article_url": null,
+    "years_with_lineups": "2012-2026 continuously except 2020 (skipped/postponed due to COVID-19, resumed 2021).",
+    "artists_per_year_estimate": "2012 was a single, unstaged, smaller lineup; by 2024-2026 lineups run 115-140+ bands across 4-5 stages per festival day roster. Estimated from the article's per-year sections plus corroborating trade-press coverage (Loudwire, CapRadio) found via search, since exact counts for older years were less explicit in the article prose.",
+    "has_stages": true,
+    "has_set_times": "partial",
+    "verdict": "include",
+    "notes": "Lineups and stage names are given directly in the main article year sections (e.g. 'Monster Energy Main Stage,' 'Coors Light Stage'; a 5th stage added in 2024; the Jack Daniel's stage renamed to Aftershock stage in 2025), but no article text was found for actual set times -- one citation footnote references a 'Daily Set Times Revealed' news post, but no times appear in the Wikipedia text itself, so has_set_times is marked partial/unconfirmed rather than true. 2012 predates the multi-stage format, so stage data before 2013 will be sparse."
+  },
+  {
+    "festival": "Welcome to Rockville",
+    "wikipedia_url": "https://en.wikipedia.org/wiki/Welcome_to_Rockville",
+    "shape": "in_article_tables",
+    "per_year_articles": null,
+    "list_article_url": null,
+    "years_with_lineups": "2011-2026 continuously except 2020 (cancelled, COVID-19, returned 2021). 2022 had a partial in-festival disruption (severe weather cancelled some Friday/Saturday acts) but is not a full-year gap.",
+    "artists_per_year_estimate": "Roughly 75-100+ artists per recent year (e.g. ~85 for 2025), listed as bulleted lists by day and grouped under named stages. Estimated by having WebFetch read and count the 2024/2025 day-by-day, stage-grouped bullet lists directly from the article.",
+    "has_stages": true,
+    "has_set_times": false,
+    "verdict": "include",
+    "notes": "The festival changed both city and venue: Metropolitan Park, Jacksonville, FL (2011-2019) then Daytona International Speedway, Daytona Beach, FL (2021-present) -- an extraction agent must not merge these as one location. Stage names also changed over time (Main/Budweiser/Jagermeister Stage in early years vs. Space Zebra/Octane/Rockvillian/Vortex/Apex/Inferno/Garage in recent years), so stage-name normalization will be needed across years. No set times found in the article."
+  }
+]

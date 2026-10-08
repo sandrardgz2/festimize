@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head('Sign in')}"></head>
+<body>
+<header class="topbar"><span class="brand">festimize</span></header>
+
+<main class="wrap">
+    <h1 class="page-title">Sign in</h1>
+
+    <div class="panel form-narrow">
+        <p class="notice" th:if="${param.registered}">Account created — sign in below.</p>
+        <p class="notice" th:if="${param.loggedOut}">Signed out.</p>
+        <p class="error" th:if="${param.error}">Wrong email or password.</p>
+
+        <form th:action="@{/login}" method="post">
+            <label for="username">Email</label>
+            <input id="username" name="username" type="email" autocomplete="username" required autofocus>
+
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" required>
+
+            <button type="submit">Sign in</button>
+        </form>
+        <p class="muted" style="margin-top:14px">
+            No account? <a th:href="@{/register}">Create one</a>.
+        </p>
+    </div>
+</main>
+
+<footer th:replace="~{layout :: footer}"></footer>
+</body>
+</html>

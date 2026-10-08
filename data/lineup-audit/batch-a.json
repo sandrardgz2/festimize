@@ -1,0 +1,104 @@
+[
+  {
+    "wikipedia_url": "https://en.wikipedia.org/wiki/Bloodstock_Open_Air",
+    "shape": "in_article_tables",
+    "per_year_articles": {
+      "exists": false,
+      "years": [],
+      "example_url": null,
+      "note": "No separate 'Bloodstock Open Air 20XX' articles found; a WebSearch for 'List of Bloodstock Open Air lineups' returned no such Wikipedia article, only the main page."
+    },
+    "list_article_url": null,
+    "years_with_lineups": {
+      "span": "2001-2027 (2027 shown as an announced/forthcoming lineup)",
+      "gaps": [
+        "2020 (cancelled due to COVID-19, explicitly stated in-article)"
+      ]
+    },
+    "artists_per_year_estimate": {
+      "value": "~45-50 artists for 2019",
+      "method": "Counted distinct band names listed under the 2019 year heading across its four stages (Ronnie James Dio Stage, Sophie Lancaster Stage, New Blood Stage, Jagermeister Stage) via WebFetch of the live article."
+    },
+    "has_stages": true,
+    "has_set_times": false,
+    "verdict": "include",
+    "notes": "Lineups are text lists (not real HTML tables) grouped by stage under year headings in a single article, so extraction is straightforward but requires parsing prose/list structure, not a table. No set times anywhere. 2020 is explicitly cancelled. No poster images used for lineups (only unrelated performance photos), so no OCR needed."
+  },
+  {
+    "wikipedia_url": "https://en.wikipedia.org/wiki/Download_Festival",
+    "shape": "mixed",
+    "per_year_articles": {
+      "exists": false,
+      "years": [],
+      "example_url": null,
+      "note": "WebSearch for 'Download Festival 2019' site:en.wikipedia.org found no dedicated per-year article; only the main Download Festival article and unrelated pages returned."
+    },
+    "list_article_url": null,
+    "years_with_lineups": {
+      "span": "2003-2026",
+      "gaps": [
+        "2020 (cancelled, COVID-19)",
+        "2021 ('Download Pilot' - a smaller UK-only test event, not a full lineup)"
+      ]
+    },
+    "artists_per_year_estimate": {
+      "value": "2003-2009: roughly 50-80 artists per year across multiple stages (Main Stage, Second Stage, Tuborg/Gibson Stage etc.); 2010-2026: often only 3 headliners named per year",
+      "method": "WebFetch of the live article's 2019 section, which lists only 'Def Leppard, Slipknot and Tool' as headliners with no full-stage breakdown, contrasted against earlier years (2003-2009) that were confirmed to have detailed multi-stage tables."
+    },
+    "has_stages": "partial",
+    "has_set_times": false,
+    "verdict": "maybe",
+    "notes": "Data quality drops off a cliff after ~2009: early years have full multi-stage lineups, later years (including 2019) reduce to 3 headliner names in the main article, so most modern years cannot be fully extracted from Wikipedia alone. Also complicated by satellite editions (Download Madrid, Download Melbourne/Sydney) mentioned inline that could be mistaken for the UK lineup. 2020 cancelled; 2021 'Pilot' event is a different, smaller thing that should not be treated as a normal year."
+  },
+  {
+    "wikipedia_url": "https://en.wikipedia.org/wiki/Reading_and_Leeds_Festivals",
+    "shape": "mixed",
+    "per_year_articles": {
+      "exists": false,
+      "years": [],
+      "example_url": null,
+      "note": "No separate 'Reading Festival 20XX' / 'Leeds Festival 20XX' per-year articles were found or linked; the main article explicitly defers detail to a single dedicated list article instead."
+    },
+    "list_article_url": "https://en.wikipedia.org/wiki/Reading_and_Leeds_Festivals_line-ups",
+    "years_with_lineups": {
+      "span": "1961-2026 (on the line-ups article); main article separately gives only headliners 1961-2026",
+      "gaps": [
+        "1985 (heading present but no content)",
+        "2021 (heading present but no subsections listed, likely COVID-related disruption)"
+      ]
+    },
+    "artists_per_year_estimate": {
+      "value": "~35-40 artists for 2019, across roughly six stages",
+      "method": "WebFetch of the 'Reading and Leeds Festivals line-ups' article's 2019 section (stage list: Main Stage, Radio 1 Stage, BBC Radio 1 Dance Stage, The Pit/The Lock Up, Festival Republic Stage, BBC Radio 1Xtra Stage); a follow-up fetch could not fully re-confirm the exact count due to content truncation, so this figure should be treated as approximate."
+    },
+    "has_stages": true,
+    "has_set_times": "partial",
+    "verdict": "include",
+    "notes": "Use the 'line-ups' article, not the main festival article, which only lists 3-6 headliners per year. The line-ups article's formatting is inconsistent across eras: 1961-1966 alphabetical/single stage, 1967-1979 organized by day (Friday/Saturday/Sunday), 1980s-1990s by sponsor-named stage, 2022+ uses 'Main Stage East/West' naming reflecting a venue/stage restructuring. Day-by-day grouping exists for some eras but explicit clock set times generally do not appear. Gaps at 1985 and 2021 will trip up an agent expecting continuous coverage. No poster images encountered; all lineups are text-based."
+  },
+  {
+    "wikipedia_url": "https://en.wikipedia.org/wiki/Wacken_Open_Air",
+    "shape": "in_article_tables",
+    "per_year_articles": {
+      "exists": false,
+      "years": [],
+      "example_url": null,
+      "note": "WebSearch turned up 'Live at Wacken Open Air 2006' and 'Live at Wacken Open Air 2007' - these are live ALBUM articles (by specific bands), not per-year lineup articles, and would be a trap for an extraction agent matching on 'Wacken Open Air 20XX' titles."
+    },
+    "list_article_url": null,
+    "years_with_lineups": {
+      "span": "1990-2026",
+      "gaps": [
+        "2020 and 2021 (cancelled due to COVID-19)"
+      ]
+    },
+    "artists_per_year_estimate": {
+      "value": "Only ~4-6 named headliners per year despite a 'number of bands' column (e.g. 200 bands cited for 2019); the full roster of bands is not enumerated anywhere in the article",
+      "method": "WebFetch of the single 'Overview by year' table, e.g. the 2019 row lists '200 bands' as a count plus named headliners Sabaton, Demons & Wizards, Slayer, Powerwolf, Parkway Drive, but no further band names."
+    },
+    "has_stages": false,
+    "has_set_times": false,
+    "verdict": "exclude",
+    "notes": "The 'Overview by year' table is a summary table (bands count, headliners, attendance, ticket price, sell-out speed) rather than a full lineup listing - it names only a handful of headliners per year, not the full announced roster, and has no stage or set-time data at all. Do not confuse the 'Live at Wacken Open Air 20XX' live-album articles with lineup sources. Full lineups would need to come from an external source (e.g. the festival's own site or setlist.fm), not this Wikipedia article."
+  }
+]

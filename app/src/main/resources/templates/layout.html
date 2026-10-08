@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<!--
+  Shared layout fragments. Pages pull these in with th:replace.
+  This file is never rendered on its own.
+-->
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:fragment="head(title)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="'Festimize — ' + ${title}">Festimize</title>
+    <link rel="stylesheet" th:href="@{/css/festimize.css}">
+</head>
+<body>
+
+<header class="topbar" th:fragment="topbar">
+    <span class="brand">festimize</span>
+    <nav>
+        <a th:href="@{/setup}" th:classappend="${activeNav == 'setup'} ? 'active'">Setup</a>
+        <a th:href="@{/lineup}" th:classappend="${activeNav == 'lineup'} ? 'active'">Lineup</a>
+        <a th:href="@{/schedule}" th:classappend="${activeNav == 'schedule'} ? 'active'">Schedule</a>
+    </nav>
+    <span class="session" sec:authorize="isAuthenticated()">
+        <span sec:authentication="name">someone@example.com</span>
+        &nbsp;·&nbsp;
+        <form th:action="@{/logout}" method="post" style="display:inline">
+            <button type="submit" class="button-quiet" style="padding:4px 12px;font-size:13px">Sign out</button>
+        </form>
+    </span>
+</header>
+
+<footer class="site" th:fragment="footer">
+    Festimize — IST 440W capstone. Skeleton build: no scoring, ranking or scheduling is implemented.
+</footer>
+
+</body>
+</html>

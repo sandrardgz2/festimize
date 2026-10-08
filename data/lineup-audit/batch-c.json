@@ -1,0 +1,54 @@
+[
+  {
+    "festival": "Brutal Assault",
+    "wikipedia_url": "https://en.wikipedia.org/wiki/Brutal_Assault",
+    "shape": "in_article_tables",
+    "per_year_articles": null,
+    "list_article_url": null,
+    "years_with_lineups": "Article covers festival history 1996–2024, but only two years have an actual lineup section with band tables: 2014 and 2024. All other years (1997–2013, 2015–2023) have no lineup data in the English article, only a prose history mentioning attendance growth and occasional headliner names.",
+    "artists_per_year_estimate": "~50–70 for the two populated years (2014, 2024), estimated from the size of the Double Main Stage / secondary stage tables spread across 4 festival days; not independently counted band-by-band. No basis to estimate other years since no data exists for them.",
+    "has_stages": true,
+    "has_set_times": false,
+    "verdict": "maybe",
+    "notes": "The English article's lineup coverage is extremely sparse (2 of 29 years). A much richer German Wikipedia subpage, https://de.wikipedia.org/wiki/Brutal_Assault/Line-ups, has chronological lineups from 1996 through 2026/2027 with 40-100+ bands per year (German 'Bands (Auswahl)' = 'bands, selection') — an extraction agent limited to English Wikipedia would badly undercount this festival's history and should be flagged to check the German page instead/also. No cancelled years noted for Brutal Assault. Tables use bold for headliners; day-of-week columns (Wed–Sat) rather than dates."
+  },
+  {
+    "festival": "Resurrection Fest",
+    "wikipedia_url": "https://en.wikipedia.org/wiki/Resurrection_Fest",
+    "shape": "in_article_tables",
+    "per_year_articles": null,
+    "list_article_url": null,
+    "years_with_lineups": "2006–2022, with gaps: no lineup section for 2014, 2017, or 2018, and 2020 is a COVID-cancellation gap (not present as a section). 2021 is present but explicitly labeled a 'Limited Edition' (reduced event). Founded 2006; most recent year covered in the article is 2022, even though the festival has continued through at least 2026 per external sources — the article is stale for recent editions.",
+    "artists_per_year_estimate": "Varies a lot by year, counted directly from bullet lists: 2006 ~7 bands, 2009 ~29, 2013 ~80+, 2016 ~89, 2022 ~98. Roughly 80-100 for a typical recent (pre-2023) year in the article; early years much smaller.",
+    "has_stages": "partial",
+    "has_set_times": false,
+    "verdict": "include",
+    "notes": "Stage names (Monster Energy Main Stage, Ritual Stage, Chaos Stage, Desert Stage) only appear from 2019 onward; earlier years are flat band lists with no stage attribution. Format is inconsistent across years — some organized by day, some as one flat bullet list. No separate 'List of Resurrection Fest lineups' article exists; everything is in the main article. Article does not cover 2023–2026 editions at all despite those years having occurred/being announced (per WebSearch), so it is out of date relative to the real festival history — an extraction agent needs an additional source for 2023+."
+  },
+  {
+    "festival": "Summer Breeze Open Air",
+    "wikipedia_url": "https://en.wikipedia.org/wiki/Summer_Breeze_Open_Air",
+    "shape": "in_article_tables",
+    "per_year_articles": null,
+    "list_article_url": null,
+    "years_with_lineups": "Founded 1997; 'Lineup history' section runs 2004–2021 (subsections 1.1–1.17). Actual band data exists for 2004–2019. 2020–2021 is a single combined subsection stating the festival 'did not take place ... cancelled due to the COVID-19 pandemic' (confirmed cancellation, no lineup). Article does not appear to cover 2022 onward.",
+    "artists_per_year_estimate": "Not independently counted; estimated at roughly 60-100 per year for the bullet-list years (2009-2019) based on typical multi-day, multi-stage German metal festival lineups of this scale (festival draws ~40,000 attendees). 2004-2006 tables (Main Stage/Pain Stage) and 2007-2008 (prose, comma/dash-separated names) look smaller, plausibly 30-50.",
+    "has_stages": "partial",
+    "has_set_times": false,
+    "verdict": "include",
+    "notes": "Format is inconsistent across years: 2004-2006 use tables split by 'Main Stage' and 'Pain Stage'; 2007-2008 are prose paragraphs (dash- or comma-separated band names, easy to mis-parse); 2009-2019 revert to plain bullet lists with no stage breakdown. 2020-2021 must be handled as an explicit COVID cancellation, not a missing-data gap. Article seems to stop at 2021, so 2022-2026 editions (which have occurred) are missing and would need another source."
+  },
+  {
+    "festival": "Tuska Open Air Metal Festival",
+    "wikipedia_url": "https://en.wikipedia.org/wiki/Tuska_Open_Air_Metal_Festival",
+    "shape": "in_article_tables",
+    "per_year_articles": null,
+    "list_article_url": null,
+    "years_with_lineups": "Essentially complete: a year section for every year 1998–2026, plus a 2027 section with preliminarily-announced artists (future/incomplete lineup, not a completed festival — today is 2026-09-30). 2020 and 2021 are explicitly marked cancelled ('cancelled on 23 April due to the Coronavirus epidemic' / 'cancelled on 16 April due to the Coronavirus situation'), with no lineup, only previously-announced bands mentioned in prose.",
+    "artists_per_year_estimate": "~60 artist names for 2023, counted directly from the bullet list across the three festival days; other years follow a similar bullet format so likely in the same 40-70 range, with early years (1998-2000) smaller given the festival's modest early attendance (5,000+ in 2000).",
+    "has_stages": "partial",
+    "has_set_times": false,
+    "verdict": "include",
+    "notes": "This is the most complete of the four English articles: near-continuous year-by-year coverage with headliners in bold. However, stage names (e.g. Karhu Main Stage, Radio City Stage, Nordic Energy Stage, KVLT Stage) are only mentioned for the 2026 edition and not attributed per-artist in most years, so per-stage extraction is not reliable. The 2027 section is forward-looking/incomplete and should probably be excluded or flagged separately by an extraction agent since it is not a finished lineup. COVID years (2020, 2021) must be coded as cancellations, not missing data."
+  }
+]

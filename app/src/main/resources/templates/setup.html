@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head('Setup')}"></head>
+<body>
+<header th:replace="~{layout :: topbar}"></header>
+
+<main class="wrap">
+    <h1 class="page-title">Pick the artists you love</h1>
+    <p class="page-sub">
+        Ten is enough to start — add as many as you like. This list lives on your account, so it works
+        for every festival, not just this one.
+    </p>
+
+    <form method="post" th:action="@{/setup}">
+        <p>
+            <button type="submit" class="btn">Save my artists</button>
+            <span class="muted">Currently saved: <span th:text="${chosenCount}">0</span></span>
+        </p>
+
+        <div class="grid grid-2">
+            <label class="card" th:each="c : ${choices}">
+                <div class="name">
+                    <input type="checkbox" name="artistIds" th:value="${c.artistId}" th:checked="${c.chosen}"/>
+                    <span th:text="${c.name}">Artist</span>
+                </div>
+                <div class="tags" th:text="${c.tags}">tags</div>
+            </label>
+        </div>
+
+        <p><button type="submit" class="btn">Save my artists</button></p>
+    </form>
+</main>
+</body>
+</html>

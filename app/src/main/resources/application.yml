@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: festimize
+
+  datasource:
+    # Override with environment variables; the defaults point at a local Postgres.
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/festimize}
+    username: ${DB_USER:festimize}
+    password: ${DB_PASSWORD:festimize}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    # db/schema.sql owns the schema. Hibernate only checks that the mapping
+    # still matches it — it must never create, alter or drop anything.
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+  thymeleaf:
+    cache: false
+
+  devtools:
+    restart:
+      enabled: true
+
+server:
+  port: ${PORT:8080}
+
+logging:
+  level:
+    com.festimize: DEBUG

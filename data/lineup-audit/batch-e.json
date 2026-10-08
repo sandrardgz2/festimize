@@ -1,0 +1,54 @@
+[
+  {
+    "festival": "Sonic Temple Art & Music Festival",
+    "wikipedia_url": "https://en.wikipedia.org/wiki/Sonic_Temple_(festival)",
+    "shape": "in_article_tables",
+    "per_year_articles": null,
+    "list_article_url": null,
+    "years_with_lineups": "2019, 2023, 2024, 2025, 2026 (announced). Gap: not held 2020-2022 (COVID-19). No separate list article; all lineup detail lives in per-year subsections of the single main article.",
+    "artists_per_year_estimate": "~80-100+ per year. Estimated by having WebFetch enumerate the band listings under each day/stage heading in the 2024 section (4 days x 4 stages: Temple, Cathedral, Citadel, Sanctuary).",
+    "has_stages": true,
+    "has_set_times": false,
+    "verdict": "include",
+    "notes": "Article title differs from the common festival name ('Sonic Temple (festival)' vs 'Sonic Temple Art & Music Festival'); a fetch to the longer name string redirects/resolves fine but an extraction agent hardcoding that exact title could fail if redirect handling is off. Lineups are bulleted band lists grouped by day+stage, not HTML tables, so 'table' assumptions may break. Inline annotations for cancellations/no-shows/illness are mixed into band lists and could be mis-parsed as performers. No lineup data exists for 2020-2022 (skipped, not blank)."
+  },
+  {
+    "festival": "Psycho Las Vegas",
+    "wikipedia_url": null,
+    "shape": "none",
+    "per_year_articles": null,
+    "list_article_url": null,
+    "years_with_lineups": "None on Wikipedia. Festival has run periodically since ~2016 (Las Vegas) per third-party sources, but no lineup data is verifiable on Wikipedia.",
+    "artists_per_year_estimate": "Cannot estimate from Wikipedia; no article exists to sample.",
+    "has_stages": false,
+    "has_set_times": false,
+    "verdict": "exclude",
+    "notes": "Direct WebFetch to https://en.wikipedia.org/wiki/Psycho_Las_Vegas returned HTTP 404. A WebSearch for 'Psycho Las Vegas wikipedia' and a site:en.wikipedia.org search both failed to surface any matching article (results returned unrelated pages like 'Psycho Synner' and 'Psycho City'). Do not invent a URL or substitute a fan/aggregator site (e.g. riffipedia, Viberate, Jambase) as if it were Wikipedia -- none of those are Wikipedia. Lineup data for this festival, if needed, must come from a non-Wikipedia source."
+  },
+  {
+    "festival": "Maryland Deathfest",
+    "wikipedia_url": "https://en.wikipedia.org/wiki/Maryland_Deathfest",
+    "shape": "in_article_tables",
+    "per_year_articles": null,
+    "list_article_url": null,
+    "years_with_lineups": "Detailed per-year lineup sections exist only for 2003-2016 (confirmed via full table-of-contents: sections run 2003, 2004, ... 2016, then jump to 'See also'). The infobox says the festival ran '2003-2019; 2022; 2024-present,' but 2017, 2018, 2019, 2022, 2024, 2025, 2026 have NO dedicated lineup sections or tables in the article body -- a real and significant gap between infobox claims and actual extractable content.",
+    "artists_per_year_estimate": "~60-65 bands for 2016 (counted by having WebFetch tally band names across all venues/days for that year: Rams Head Live, Edison Lot, Baltimore Soundstage). Earlier years (2003-2007) are smaller (roughly 20-40 bands, single or two-day, single stage); mid/late run (2009-2016) larger with Main Room Stage + Outside Stage(s) splits.",
+    "has_stages": true,
+    "has_set_times": false,
+    "verdict": "maybe",
+    "notes": "Lineups are confirmed as per-year sections inside the single main article (as asked) -- but only through 2016; nothing after that despite the festival continuing. An extraction agent scraping this page would silently miss 8+ years of real festival editions unless it checks the infobox run-years against which year headings actually exist. Format shifts across years: single list (2003-2008) vs Main Room/Outside Stage split (2009+) vs added venues (Baltimore Soundstage, Rams Head Live) in later years -- inconsistent structure to parse. No clock/set-time data anywhere."
+  },
+  {
+    "festival": "Vans Warped Tour",
+    "wikipedia_url": "https://en.wikipedia.org/wiki/Vans_Warped_Tour",
+    "shape": "matrix_list_article",
+    "per_year_articles": null,
+    "list_article_url": "https://en.wikipedia.org/wiki/List_of_Warped_Tour_lineups_by_year",
+    "years_with_lineups": "Matrix table spans 1995-2019 plus the 2025 revival and announced 2026 dates (gap: no tour/data 2020-2024). The main Vans_Warped_Tour article itself has narrative (non-comprehensive) per-year subsections for 1996, 1997, 1999, 2009, 2012-2019, 2025, 2026, but explicitly defers full rosters to the list article ('Main article: List of Warped Tour lineups by year').",
+    "artists_per_year_estimate": "The full matrix has an estimated 800-1,200+ band rows in total across all 1995-2026 columns (rough scale from alphabetical density observed via WebFetch, not an exact Wikipedia-stated count). Per-year counts are not directly given -- one would have to count checkmarks in a given year's column -- but historically each Warped Tour year featured roughly 40-100+ bands rotating across different city dates, so no single 'lineup' of that size existed at any one show.",
+    "has_stages": false,
+    "has_set_times": false,
+    "verdict": "maybe",
+    "notes": "CONFIRMED per user's brief: this is a matrix (bands as rows, years 1995-2026 as columns, checkmarks for participation), not a per-event lineup list. Critical caveat: Warped Tour was a touring festival with a different lineup per city/date each year, so the matrix tells you which bands played THAT YEAR somewhere on tour, not who played a given stage/city/date -- there is no stage or set-time data at all, and no way to reconstruct a single day's actual lineup from this table alone. An extraction agent treating a year-column as 'the lineup for that year's festival' would be misrepresenting a touring, multi-city, rotating cast as a single fixed-lineup event."
+  }
+]

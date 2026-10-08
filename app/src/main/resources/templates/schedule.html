@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head('Schedule')}"></head>
+<body>
+<header th:replace="~{layout :: topbar}"></header>
+
+<main class="wrap">
+    <h1 class="page-title">Your schedule</h1>
+    <p class="page-sub">Bloodstock Open Air 2027 · Saturday (placeholder)</p>
+
+    <p class="demo-note">
+        <strong>Demonstration data.</strong> These artists are real, but the 2027 lineup and set times are
+        illustrative and were entered by hand — they are not the festival's announced lineup. Historical
+        lineup data arrives in the next phase.
+    </p>
+
+
+    <p class="skeleton-note">
+        This page is a skeleton. The plan below is a fixed example — no plan is read from the
+        database and the scheduler does not exist yet.
+    </p>
+
+    <div class="grid grid-4">
+        <div class="card stat"><div class="value">14</div><div class="label">sets</div></div>
+        <div class="card stat"><div class="value">19h</div><div class="label">active</div></div>
+        <div class="card stat"><div class="value">6</div><div class="label">new artists</div></div>
+        <div class="card stat"><div class="value">8/10</div><div class="label">sustainability</div></div>
+    </div>
+
+    <section class="panel" style="margin-top:16px">
+        <h2>Saturday</h2>
+        <ul class="timeline">
+            <li><span class="time">13:00</span><span>Pupil Slicer</span></li>
+            <li><span class="time">14:10</span><span>Conjurer</span></li>
+            <li><span class="time">15:20</span><span class="break">rest — 40 min</span></li>
+            <li><span class="time">16:30</span><span>Green Lung</span></li>
+            <li><span class="time">20:00</span><span>Gojira</span></li>
+        </ul>
+    </section>
+</main>
+
+<footer th:replace="~{layout :: footer}"></footer>
+</body>
+</html>

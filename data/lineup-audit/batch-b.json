@@ -1,0 +1,50 @@
+[
+  {
+    "wikipedia_url": "https://en.wikipedia.org/wiki/Hellfest",
+    "shape": "in_article_tables",
+    "per_year_articles": "None found. Searched for \"Hellfest 2022\" and \"List of Hellfest lineups\" on Wikipedia; no per-year or list article exists. All content lives in the single main article.",
+    "list_article_url": null,
+    "years_with_lineups": "Festival dates back to 2006 (per article); named-band mentions in prose exist for scattered years (2004, 2005 pre-history, 2017, 2022) but there is no systematic year-by-year lineup listing. 2020 and 2021 cancelled (COVID-19), resumed 2022.",
+    "artists_per_year_estimate": "Not really estimable from the English article. It gives only a handful of headliner names per year in prose (e.g., 3-6 names) plus one aggregate figure (\"2022 featured 350 bands\") with no roster. Full band lists are not present.",
+    "has_stages": false,
+    "has_set_times": false,
+    "verdict": "exclude",
+    "notes": "The English Wikipedia article has no structured lineup table at all — just prose mentions of a few headliners per edition and one aggregate band-count figure. This is the weakest of the four festivals for extraction. The French Wikipedia article (fr.wikipedia.org/wiki/Hellfest) is very likely far richer (Hellfest is a French festival) and should be checked separately if French-language extraction is in scope; do not assume the English page reflects available data."
+  },
+  {
+    "wikipedia_url": "https://en.wikipedia.org/wiki/Graspop_Metal_Meeting",
+    "shape": "in_article_tables",
+    "per_year_articles": "None found. Searched \"List of Graspop Metal Meeting lineups\" on Wikipedia; no per-year or list article exists. Lineups are embedded as subsections within the single main article.",
+    "list_article_url": null,
+    "years_with_lineups": "1996 through the most recent edition (2026 mentioned in current article state). Gap: 2020 and 2021 cancelled/skipped due to COVID-19 (article jumps from the 2020 cancellation note to 2022).",
+    "artists_per_year_estimate": "Not independently verified per-year by fetching two individual year sections, but per the initial fetch each year's subsection lists artists hierarchically by stage (Main Stage, Marquee I, Marquee II, Metal Dome) across 3 days, which for a festival of this size typically implies 40-60+ named acts; this is an estimate from page structure, not a manual count.",
+    "has_stages": true,
+    "has_set_times": "partial",
+    "verdict": "include",
+    "notes": "Best-structured of the four: lineups are broken out by year, then by stage, then by day within the same article (no separate list article needed). Day-of-week/date groupings exist but exact set times (clock times) were not confirmed — only day-level running order. Verify formatting consistency across years by fetching at least 2-3 individual year subsections directly, since older years (pre-2010) may be less structured than recent ones."
+  },
+  {
+    "wikipedia_url": "https://en.wikipedia.org/wiki/Rock_am_Ring_and_Rock_im_Park",
+    "shape": "in_article_tables",
+    "per_year_articles": "None exist. Rock_am_Ring and Rock_im_Park are both redirects to the single combined article Rock_am_Ring_and_Rock_im_Park (verified by fetching both URLs and the canonical one). Searched \"List of Rock am Ring lineups\" / \"List of Rock im Park\"; no such article found.",
+    "list_article_url": null,
+    "years_with_lineups": "1985-1988, 1991-2019, 2022-present per the infobox, all within one \"Past dates and headliners\" table. 2020 cancelled (COVID-19); 2021 listed but with sparse/no attendance data. 1989-1990 show dashes (festival not held).",
+    "artists_per_year_estimate": "Small — typically only a handful of headliners are named per year in the main table (e.g., 2-5 bold headliner names plus a short list of \"additional confirmed acts\"). One exception: prose for 2008 states \"91 acts were officially confirmed,\" but the full roster of those 91 is not listed on the page.",
+    "has_stages": "partial",
+    "has_set_times": false,
+    "verdict": "maybe",
+    "notes": "Two festivals (Rock am Ring in Nürburgring and Rock im Park in Nuremberg) are covered by ONE combined article and share one lineup table, which could confuse an extraction agent expecting two separate datasets — headliners are often identical for both since acts play both events on different days. Only one stage name (\"Center Stage\") appears, and only for isolated years (2011) as a sub-table; most years have no stage breakdown. No set times/running order anywhere. Per-year artist counts are shallow (headliners only) — full lineups are not on Wikipedia, so this source under-represents actual festival size."
+  },
+  {
+    "wikipedia_url": "https://en.wikipedia.org/wiki/Copenhell",
+    "shape": "in_article_tables",
+    "per_year_articles": "None found. Searched \"List of Copenhell lineups\"; no per-year or list article exists. All lineups are bullet-point subsections within the single main article.",
+    "list_article_url": null,
+    "years_with_lineups": "2010 through 2026, one subsection per year (e.g., \"Copenhell 2010\", \"Copenhell 2011\"). 2020 cancelled (COVID-19); 2021 postponed (COVID-19) — both are gaps in actual lineup content even if the years are mentioned.",
+    "artists_per_year_estimate": "Not fetched year-by-year to count precisely; based on the initial page structure, each year's section is a bullet list of artist names (not a table), with headliners sometimes bolded (e.g., Copenhell 2023 bolds Guns N' Roses, Def Leppard, Gojira among the list). Likely low-to-moderate count (rough guess 10-30 names) since only notable acts tend to get listed in prose/bullet form rather than a full poster-style roster — this is an estimate, not a verified count.",
+    "has_stages": "partial",
+    "has_set_times": false,
+    "verdict": "maybe",
+    "notes": "Format is bullet lists per year rather than tables, which is less regular for automated extraction than a table structure. Stage info is essentially absent except one incidental mention (Copenhell 2012 \"warmup day on Thursday\"). No set times anywhere. Should verify by fetching 2-3 individual year subsections directly to confirm bullet-list consistency and check whether bolding reliably marks headliners across all years or only some."
+  }
+]
