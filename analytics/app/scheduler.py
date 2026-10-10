@@ -14,12 +14,12 @@ Three things shape the result beyond raw taste score:
     weekend of only those thirty and never hears anyone new — which is the
     whole point of the product. One set in three is reserved for artists the
     user did not name.
-  * Rest. A long unbroken run on your feet is what ruins the last day of a
-    festival, so the scheduler inserts a break once you pass the limit — and
-    it will drop a set to make room. On a packed day every gap is fifteen
-    minutes, so a break that only fits into existing gaps never happens,
-    which makes the whole pacing idea decorative. Resting has to cost
-    something or it is not a constraint.
+  * Rest, in realistic amounts. People come for a full day of music, so the
+    day is filled first and breaks are then carved out of it: one 45-minute
+    meal break and at most two 30-minute breathers, each placed where it costs
+    the least. Earlier versions dropped weak matches and then labelled the
+    resulting holes "rest", which produced three-set days with two-hour gaps —
+    an empty schedule wearing a flattering name.
 
 Targets Python 3.9 syntax.
 """
@@ -57,36 +57,29 @@ def _overlaps(a_start, a_end, b_start, b_end) -> bool:
 
 def build_day(candidates: Sequence[Candidate],
               discovery_quota: float = 1 / 3,
-              max_run_minutes: int = 210,
-              rest_minutes: int = 40,
-              changeover_minutes: int = 10,
-              min_score_ratio: float = 0.25,
-              min_score_floor: float = 0.02) -> List[Slot]:
+              meal_minutes: int = 45,
+              breather_minutes: int = 30,
+              max_breathers: int = 2,
+              max_run_minutes: int = 150,
+              changeover_minutes: int = 10) -> List[Slot]:
     """
-    Choose sets for one day and slot rest around them.
+    Fill a day with music, then carve breaks out of it.
 
     discovery_quota is the share of chosen sets that must be artists the user
-    did not name. max_run_minutes is how long they can be on their feet before
-    a break is forced in — three and a half hours of standing, which is long
-    enough to matter and short enough to be realistic.
+    did not name. max_run_minutes is how long someone stays on their feet
+    before a breather is worth taking — two and a half hours of standing.
 
-    Weak recommendations are dropped, but the bar is relative: a quarter of the
-    best score on the day, never below the floor. An absolute threshold does
-    not survive contact with real data — when the strongest match on a lineup
-    is 16%, a fixed 5% bar is meaningless, and on a lineup full of 80% matches
-    it is far too generous.
+    Breaks are taken from existing gaps wherever possible. Where no gap is long
+    enough, the weakest set in the window is given up, because a break that
+    only happens when it is free is not a constraint. The user's own picks, the
+    strongest match of the day and the final set are never given up.
     """
     if not candidates:
         return []
-    best_score = max((c.score for c in candidates if not c.is_pick), default=0.0)
-    bar = max(min_score_floor, best_score * min_score_ratio)
-    candidates = [c for c in candidates if c.is_pick or c.score >= bar]
-    if not candidates:
-        return []
 
-    # Your own picks first, then best match. Ties break earlier-first so the
-    # day fills from the front rather than leaving awkward gaps.
+    # Pick order: your own artists first, then best match, earliest as a tiebreak.
     ranked = sorted(candidates, key=lambda c: (not c.is_pick, -c.score, c.starts_at))
+    best_score = max((c.score for c in candidates if not c.is_pick), default=0.0)
 
     chosen: List[Candidate] = []
     for cand in ranked:
@@ -96,68 +89,107 @@ def build_day(candidates: Sequence[Candidate],
             continue
         chosen.append(cand)
 
-    # Enforce the discovery quota: if too few of the chosen sets are new
-    # artists, swap the weakest picks out for the best discoveries that fit.
+    # Discovery quota: swap the weakest picks out for the best new artists.
     def discoveries(sets): return sum(1 for c in sets if not c.is_pick)
 
     needed = int(len(chosen) * discovery_quota)
     if discoveries(chosen) < needed:
-        pool = [c for c in ranked if c not in chosen and not c.is_pick]
-        for new in pool:
+        for new in [c for c in ranked if c not in chosen and not c.is_pick]:
             if discoveries(chosen) >= needed:
                 break
-            # Drop the lowest-value pick this discovery would collide with.
             clashing = [c for c in chosen
                         if _overlaps(new.starts_at, new.ends_at,
                                      c.starts_at - timedelta(minutes=changeover_minutes),
                                      c.ends_at + timedelta(minutes=changeover_minutes))]
-            if len(clashing) == 1 and clashing[0].is_pick and clashing[0].score <= new.score + 0.15:
-                chosen.remove(clashing[0])
+            if not clashing:
                 chosen.append(new)
-            elif not clashing:
+            elif len(clashing) == 1 and clashing[0].is_pick and clashing[0].score <= new.score + 0.15:
+                chosen.remove(clashing[0])
                 chosen.append(new)
 
     chosen.sort(key=lambda c: c.starts_at)
+    if not chosen:
+        return []
 
-    # Walk the day, forcing a break once the run gets too long. If no gap is
-    # long enough, the next set is given up for the break: the weakest match
-    # loses, and a pick is only sacrificed when there is nothing else to drop.
-    slots: List[Slot] = []
-    run_start: Optional[datetime] = None
-    hours = timedelta(minutes=max_run_minutes)
-    rest = timedelta(minutes=rest_minutes)
+    protected = {id(c) for c in chosen if c.is_pick or c.score >= 0.95 * best_score}
+    protected.add(id(chosen[-1]))           # never trade the last set of the day for a break
 
-    queue = list(chosen)
-    while queue:
-        cand = queue.pop(0)
-        if run_start is None:
-            run_start = cand.starts_at
-        elif slots and (cand.starts_at - slots[-1].ends_at) >= rest:
-            # A long gap between sets is already a break. Show it as one: the
-            # point of the schedule is to tell someone when they are off their
-            # feet, and free time counts.
-            slots.append(Slot("REST", slots[-1].ends_at, cand.starts_at,
-                              reason="break in the lineup"))
-            run_start = cand.starts_at
-        elif (cand.ends_at - run_start) > hours:
-            gap_start = slots[-1].ends_at
-            if (cand.starts_at - gap_start) >= rest:
-                slots.append(Slot("REST", gap_start, gap_start + rest,
-                                  reason="%d hours on your feet" % (max_run_minutes // 60)))
-                run_start = cand.starts_at
-            elif cand.is_pick or cand.score >= 0.8 * best_score or not queue:
-                # Never give up a set they asked for, the strongest match of the
-                # day, or the last set of the day, just to rest. The break waits.
-                pass
-            else:
-                # Sacrifice this set so the break can happen: the weakest thing
-                # standing between them and a sit down.
-                slots.append(Slot("REST", gap_start, max(gap_start + rest, cand.ends_at),
-                                  reason="%d hours on your feet — %s dropped to rest"
-                                         % (max_run_minutes // 60, cand.artist)))
-                run_start = None
+    def _carve(sets: List[Candidate], after: datetime, minutes: int, label: str):
+        """
+        Place one break of `minutes` as soon as possible after `after`.
+
+        Prefers an existing gap. Failing that, drops the weakest unprotected set
+        and rests instead. Returns (slot, dropped_candidate) or (None, None).
+        """
+        need = timedelta(minutes=minutes)
+        for i in range(len(sets) - 1):
+            if sets[i].ends_at < after:
                 continue
-        slots.append(Slot("SET", cand.starts_at, cand.ends_at, cand.performance_id, cand.artist,
-                          cand.stage,
-                          "your pick" if cand.is_pick else "%d%% match" % round(cand.score * 100)))
+            gap = sets[i + 1].starts_at - sets[i].ends_at
+            if gap >= need:
+                return Slot("REST", sets[i].ends_at, sets[i].ends_at + need, reason=label), None
+        droppable = [c for c in sets
+                     if c.starts_at >= after and id(c) not in protected
+                     and (c.ends_at - c.starts_at) >= need - timedelta(minutes=15)]
+        if droppable:
+            victim = min(droppable, key=lambda c: c.score)
+            return (Slot("REST", victim.starts_at, victim.starts_at + need,
+                         reason="%s — %s skipped" % (label, victim.artist)), victim)
+        return None, None
+
+    rests: List[Slot] = []
+    day_start = chosen[0].starts_at
+
+    # One meal break, in the second half of the day where meals actually happen.
+    midpoint = day_start + (chosen[-1].ends_at - day_start) / 2
+    meal, dropped = _carve(chosen, midpoint, meal_minutes, "meal break")
+    if meal:
+        rests.append(meal)
+        if dropped:
+            chosen.remove(dropped)
+
+    # Breathers once standing time runs long, up to the cap.
+    for _ in range(max_breathers):
+        run_start = day_start
+        trigger = None
+        for i, c in enumerate(chosen):
+            resting = [r for r in rests if r.starts_at >= run_start and r.ends_at <= c.starts_at]
+            gap_before = (c.starts_at - chosen[i - 1].ends_at) if i else timedelta(0)
+            if resting or gap_before >= timedelta(minutes=breather_minutes):
+                run_start = c.starts_at
+                continue
+            if (c.ends_at - run_start) > timedelta(minutes=max_run_minutes):
+                trigger = c.starts_at
+                break
+        if trigger is None:
+            break
+        breather, dropped = _carve(chosen, trigger - timedelta(minutes=90), breather_minutes, "breather")
+        if not breather:
+            break
+        rests.append(breather)
+        if dropped:
+            chosen.remove(dropped)
+
+    def describe(c: Candidate) -> str:
+        if c.is_pick:
+            return "your pick"
+        pct = round(c.score * 100)
+        # Below 5% there is no meaningful tag overlap. Saying "2% match" implies a
+        # precision the number does not have; it is filling the slot, and should say so.
+        return "%d%% match" % pct if pct >= 5 else "no close match — fills the slot"
+
+    slots = [Slot("SET", c.starts_at, c.ends_at, c.performance_id, c.artist, c.stage, describe(c))
+             for c in chosen] + rests
+
+    # Show the real gaps, but only ones worth sitting down for. Marking every
+    # fifteen-minute changeover as a break turns the page into a list of waiting.
+    # Anything longer than an hour and a half is a hole in the lineup, not a break.
+    chosen_sorted = sorted(chosen, key=lambda c: c.starts_at)
+    for earlier, later in zip(chosen_sorted, chosen_sorted[1:]):
+        gap = later.starts_at - earlier.ends_at
+        if timedelta(minutes=45) <= gap <= timedelta(minutes=90):
+            if not any(_overlaps(r.starts_at, r.ends_at, earlier.ends_at, later.starts_at) for r in rests):
+                slots.append(Slot("REST", earlier.ends_at, later.starts_at, reason="break between sets"))
+
+    slots.sort(key=lambda s: s.starts_at)
     return slots

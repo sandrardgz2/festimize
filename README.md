@@ -34,12 +34,17 @@ To stop: `docker compose down`. To wipe the database too: `docker compose down -
 
 ### What gets created
 
-The database loads itself on first start from `db/`: the schema, two demonstration festival
-editions with set times, and 101 real artists with tags verified against MusicBrainz.
+The database loads itself on first start from `db/`: the schema, three demonstration festival
+editions with set times, and 139 real artists with tags verified against MusicBrainz.
+
+The three editions are deliberately different in character — a classic British metal bill, a
+small fictional one, and a nu-metal and alternative-metal bill — so the recommender can be
+seen working, and failing, against different tastes.
 
 **The 2027 lineups are fabricated.** The artists are real and their tags come from MusicBrainz,
-but the festival lineups and set times were written by hand for demonstration. No festival has
-published a 2027 lineup, and set times are not machine-readable anywhere — see
+but the festival lineups and set times were written by hand for demonstration. Bloodstock Open
+Air and Sick New World are real festivals; these are not their announced lineups, and no
+festival has published a 2027 bill. Set times are not machine-readable anywhere — see
 `data/lineup-audit/summary.md`, which surveys twenty festivals and what their data actually
 looks like.
 
@@ -71,7 +76,9 @@ averaged profile misrepresents anyone whose taste spans styles. Measured in
 
 **Scheduling** (`analytics/app/scheduler.py`): greedy selection of non-overlapping sets, where
 your own picks outrank any recommendation, one set in three is reserved for artists you did not
-name, and a break is forced once you have been on your feet three and a half hours. Greedy
+name, and the day is filled with music before breaks are carved out of it: one 45-minute meal
+break and up to two 30-minute breathers, taken from existing gaps where possible and from the
+weakest set in the window where not. Greedy
 rather than optimal on purpose: when someone asks why an artist was left out, the answer is
 always "something better overlapped it" or "a rule blocked it".
 
