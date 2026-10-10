@@ -60,14 +60,15 @@ def build_day(candidates: Sequence[Candidate],
               meal_minutes: int = 45,
               breather_minutes: int = 30,
               max_breathers: int = 2,
-              max_run_minutes: int = 150,
+              max_run_minutes: int = 180,
               changeover_minutes: int = 10) -> List[Slot]:
     """
     Fill a day with music, then carve breaks out of it.
 
     discovery_quota is the share of chosen sets that must be artists the user
-    did not name. max_run_minutes is how long someone stays on their feet
-    before a breather is worth taking — two and a half hours of standing.
+    did not name. max_run_minutes is how long someone goes without a break
+    before one is worth taking — three hours on site, which on an eleven-hour
+    day means a meal break and two or three breathers.
 
     Breaks are taken from existing gaps wherever possible. Where no gap is long
     enough, the weakest set in the window is given up, because a break that
@@ -114,7 +115,8 @@ def build_day(candidates: Sequence[Candidate],
     protected = {id(c) for c in chosen if c.is_pick or c.score >= 0.95 * best_score}
     protected.add(id(chosen[-1]))           # never trade the last set of the day for a break
 
-    def _carve(sets: List[Candidate], after: datetime, minutes: int, label: str):
+    def _carve(sets: List[Candidate], after: datetime, minutes: int, label: str,
+               taken: Optional[List[Slot]] = None):
         """
         Place one break of `minutes` as soon as possible after `after`.
 
@@ -122,15 +124,21 @@ def build_day(candidates: Sequence[Candidate],
         and rests instead. Returns (slot, dropped_candidate) or (None, None).
         """
         need = timedelta(minutes=minutes)
+        taken = taken or []
+
+        def free(start, end):
+            return not any(_overlaps(start, end, r.starts_at, r.ends_at) for r in taken)
+
         for i in range(len(sets) - 1):
             if sets[i].ends_at < after:
                 continue
             gap = sets[i + 1].starts_at - sets[i].ends_at
-            if gap >= need:
+            if gap >= need and free(sets[i].ends_at, sets[i].ends_at + need):
                 return Slot("REST", sets[i].ends_at, sets[i].ends_at + need, reason=label), None
         droppable = [c for c in sets
                      if c.starts_at >= after and id(c) not in protected
-                     and (c.ends_at - c.starts_at) >= need - timedelta(minutes=15)]
+                     and (c.ends_at - c.starts_at) >= need - timedelta(minutes=15)
+                     and free(c.starts_at, c.starts_at + need)]
         if droppable:
             victim = min(droppable, key=lambda c: c.score)
             return (Slot("REST", victim.starts_at, victim.starts_at + need,
@@ -139,36 +147,35 @@ def build_day(candidates: Sequence[Candidate],
 
     rests: List[Slot] = []
     day_start = chosen[0].starts_at
+    day_end = chosen[-1].ends_at
 
-    # One meal break, in the second half of the day where meals actually happen.
-    midpoint = day_start + (chosen[-1].ends_at - day_start) / 2
-    meal, dropped = _carve(chosen, midpoint, meal_minutes, "meal break")
+    # One meal break in the second half of the day, where meals happen. This is
+    # the only break allowed to cost a set: everyone has to eat, and on a packed
+    # bill there is no free 45 minutes to eat in.
+    midpoint = day_start + (day_end - day_start) / 2
+    meal, dropped = _carve(chosen, midpoint, meal_minutes, "meal break", rests)
     if meal:
         rests.append(meal)
         if dropped:
             chosen.remove(dropped)
 
-    # Breathers once standing time runs long, up to the cap.
-    for _ in range(max_breathers):
-        run_start = day_start
-        trigger = None
-        for i, c in enumerate(chosen):
-            resting = [r for r in rests if r.starts_at >= run_start and r.ends_at <= c.starts_at]
-            gap_before = (c.starts_at - chosen[i - 1].ends_at) if i else timedelta(0)
-            if resting or gap_before >= timedelta(minutes=breather_minutes):
-                run_start = c.starts_at
-                continue
-            if (c.ends_at - run_start) > timedelta(minutes=max_run_minutes):
-                trigger = c.starts_at
-                break
-        if trigger is None:
+    # Breathers come out of gaps that already exist. Giving up a set you would
+    # have enjoyed, to stand somewhere else doing nothing, is not pacing.
+    def gaps(sets: List[Candidate]):
+        for a, b in zip(sets, sets[1:]):
+            if b.starts_at - a.ends_at >= timedelta(minutes=breather_minutes):
+                yield a.ends_at, b.starts_at
+
+    for gap_start, gap_end in gaps(chosen):
+        if len([r for r in rests if r.reason.startswith("breather")]) >= max_breathers:
             break
-        breather, dropped = _carve(chosen, trigger - timedelta(minutes=90), breather_minutes, "breather")
-        if not breather:
-            break
-        rests.append(breather)
-        if dropped:
-            chosen.remove(dropped)
+        if any(_overlaps(gap_start, gap_end, r.starts_at, r.ends_at) for r in rests):
+            continue
+        covered = [r for r in rests if r.ends_at <= gap_start]
+        since = max([r.ends_at for r in covered], default=day_start)
+        if (gap_start - since) >= timedelta(minutes=max_run_minutes) or not covered:
+            length = min(gap_end - gap_start, timedelta(minutes=breather_minutes))
+            rests.append(Slot("REST", gap_start, gap_start + length, reason="breather"))
 
     def describe(c: Candidate) -> str:
         if c.is_pick:
@@ -187,7 +194,7 @@ def build_day(candidates: Sequence[Candidate],
     chosen_sorted = sorted(chosen, key=lambda c: c.starts_at)
     for earlier, later in zip(chosen_sorted, chosen_sorted[1:]):
         gap = later.starts_at - earlier.ends_at
-        if timedelta(minutes=45) <= gap <= timedelta(minutes=90):
+        if timedelta(minutes=30) <= gap <= timedelta(minutes=90):
             if not any(_overlaps(r.starts_at, r.ends_at, earlier.ends_at, later.starts_at) for r in rests):
                 slots.append(Slot("REST", earlier.ends_at, later.starts_at, reason="break between sets"))
 
