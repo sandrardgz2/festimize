@@ -229,7 +229,7 @@ def build_day(candidates: Sequence[Candidate],
 
     def _carve(sets: List[Candidate], after: datetime, minutes: int, label: str,
                taken: Optional[List[Slot]] = None, may_drop_a_pick: bool = False,
-               shortest_acceptable: Optional[int] = None):
+               shortest_acceptable: Optional[int] = None, may_drop: bool = True):
         """
         Place one break of `minutes` as soon as possible after `after`.
 
@@ -274,6 +274,9 @@ def build_day(candidates: Sequence[Candidate],
                 gap, start, end = min(usable, key=lambda u: u[1])
                 return Slot("REST", start, min(end, start + need), reason=label), None
 
+        if not may_drop:
+            return None, None
+
         droppable = [c for c in sets
                      if c.starts_at >= after and id(c) not in protected
                      and (c.ends_at - c.starts_at) >= need - timedelta(minutes=15)
@@ -294,11 +297,12 @@ def build_day(candidates: Sequence[Candidate],
     day_start = chosen[0].starts_at
     day_end = chosen[-1].ends_at
 
-    # One meal break in the second half of the day, where meals happen. This is
-    # the only break allowed to cost a set: everyone has to eat, and on a packed
-    # bill there is no free 45 minutes to eat in.
-    midpoint = day_start + (day_end - day_start) / 2
-    meal, dropped = _carve(chosen, midpoint, meal_minutes, "meal break", rests,
+    # One meal break, somewhere in the middle of the day. Restricting it to the
+    # second half meant ignoring a perfectly good gap at two in the afternoon
+    # and then giving up a set at five to eat — the worst of both. Forty per
+    # cent in is mid-afternoon on a festival day.
+    meal_window = day_start + (day_end - day_start) * 0.4
+    meal, dropped = _carve(chosen, meal_window, meal_minutes, "meal break", rests,
                            may_drop_a_pick=True, shortest_acceptable=30)
     if meal:
         rests.append(meal)
@@ -334,8 +338,11 @@ def build_day(candidates: Sequence[Candidate],
         run_start, run_end, length = longest_unbroken(chosen)
         if length <= max_run_minutes:
             break                          # the day already breaks itself up
+        # Breathers only ever use time the lineup already leaves free. Giving
+        # up a set to stand still is not pacing, and the user can always take
+        # their own break — the schedule is advice, not a cage.
         breather, dropped = _carve(chosen, run_start, breather_minutes, "breather", rests,
-                                   may_drop_a_pick=True, shortest_acceptable=20)
+                                   shortest_acceptable=20, may_drop=False)
         if not breather:
             break
         rests.append(breather)
