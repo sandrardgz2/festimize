@@ -1,0 +1,124 @@
+"""
+Schedule building.
+
+POST /plan/{user_id}?edition_id=N builds a day-by-day schedule for one festival
+edition and saves it to plan and plan_item, replacing any previous plan for that
+user and edition.
+
+The choosing is in app/scheduler.py; this module is the database half: load the
+candidates, call the scheduler once per festival day, write the result back.
+
+Targets Python 3.9 syntax.
+"""
+from datetime import datetime
+from typing import List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+from app.db import get_db
+from app.scheduler import Candidate, build_day
+
+router = APIRouter(tags=["planning"])
+
+
+class PlanSlot(BaseModel):
+    kind: str
+    starts_at: datetime
+    ends_at: datetime
+    artist: Optional[str] = None
+    stage: Optional[str] = None
+    reason: str = ""
+
+
+class PlanResponse(BaseModel):
+    user_id: int
+    edition_id: int
+    days: int
+    sets: int
+    rests: int
+    discoveries: int
+    slots: List[PlanSlot]
+
+
+@router.post("/plan/{user_id}", response_model=PlanResponse)
+def build_plan(
+    user_id: int,
+    edition_id: int = Query(..., description="Which festival edition to plan"),
+    discovery_quota: float = Query(1 / 3, ge=0.0, le=1.0),
+    max_run_minutes: int = Query(240, ge=60, le=600),
+    db: Session = Depends(get_db),
+) -> PlanResponse:
+    rows = db.execute(
+        text(
+            """
+            select p.performance_id, a.artist_id, a.name,
+                   coalesce(s.name, 'TBA') as stage,
+                   p.starts_at, p.ends_at,
+                   coalesce(sc.match_score, 0) as score,
+                   (ua.artist_id is not null) as is_pick
+            from fact_performance p
+            join dim_artist a on a.artist_id = p.artist_id
+            left join dim_stage s on s.stage_id = p.stage_id
+            left join artist_score sc on sc.artist_id = p.artist_id and sc.user_id = :uid
+            left join user_artist ua on ua.artist_id = p.artist_id and ua.user_id = :uid
+            where p.edition_id = :eid and p.starts_at is not null
+            order by p.starts_at
+            """
+        ),
+        {"uid": user_id, "eid": edition_id},
+    ).fetchall()
+
+    if not rows:
+        raise HTTPException(status_code=404, detail="No performances with set times for that edition.")
+
+    by_day = {}
+    for r in rows:
+        by_day.setdefault(r.starts_at.date(), []).append(
+            Candidate(r.performance_id, r.artist_id, r.name, r.stage,
+                      r.starts_at, r.ends_at, float(r.score), bool(r.is_pick))
+        )
+
+    slots = []
+    for day in sorted(by_day):
+        slots.extend(build_day(by_day[day],
+                               discovery_quota=discovery_quota,
+                               max_run_minutes=max_run_minutes))
+
+    # One plan per user per edition; rewrite it wholesale rather than diffing.
+    plan_id = db.execute(
+        text(
+            """
+            insert into plan (user_id, edition_id) values (:uid, :eid)
+            on conflict (user_id, edition_id) do update set updated_at = now()
+            returning plan_id
+            """
+        ),
+        {"uid": user_id, "eid": edition_id},
+    ).scalar_one()
+    db.execute(text("delete from plan_item where plan_id = :p"), {"p": plan_id})
+
+    for s in slots:
+        db.execute(
+            text(
+                """
+                insert into plan_item (plan_id, item_type, performance_id, starts_at, ends_at, reason)
+                values (:p, :kind, :perf, :start, :end, :reason)
+                """
+            ),
+            {"p": plan_id, "kind": s.kind, "perf": s.performance_id,
+             "start": s.starts_at, "end": s.ends_at, "reason": s.reason},
+        )
+    db.commit()
+
+    picks = sum(1 for s in slots if s.kind == "SET" and s.reason == "your pick")
+    sets = sum(1 for s in slots if s.kind == "SET")
+    return PlanResponse(
+        user_id=user_id, edition_id=edition_id, days=len(by_day),
+        sets=sets, rests=sum(1 for s in slots if s.kind == "REST"),
+        discoveries=sets - picks,
+        slots=[PlanSlot(kind=s.kind, starts_at=s.starts_at, ends_at=s.ends_at,
+                        artist=s.artist, stage=s.stage, reason=s.reason) for s in slots],
+    )

@@ -329,3 +329,11 @@ footer.site {
     color: #14161A;
     background: #FF9F45;
 }
+
+/* Schedule timeline: sets and the breaks between them. */
+.timeline { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 2rem; }
+.slot { display: flex; gap: 1rem; padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid #2A2F36; background: #1A1D23; }
+.slot-set { border-left: 3px solid #35D07F; }
+.slot-rest { border-left: 3px solid #FF9F45; background: rgba(255,159,69,0.06); }
+.slot-time { min-width: 120px; color: #8A93A0; font-variant-numeric: tabular-nums; }
+.slot-body .name { font-weight: 600; }

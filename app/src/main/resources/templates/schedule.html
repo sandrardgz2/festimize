@@ -5,40 +5,51 @@
 <header th:replace="~{layout :: topbar}"></header>
 
 <main class="wrap">
-    <h1 class="page-title">Your schedule</h1>
-    <p class="page-sub">Bloodstock Open Air 2027 · Saturday (placeholder)</p>
+    <h1 class="page-title" th:text="${festivalName} ?: 'Your schedule'">Your schedule</h1>
+    <p class="page-sub" th:if="${hasPlan}">
+        <span th:text="${sets}">0</span> sets ·
+        <span th:text="${picks}">0</span> of your picks ·
+        <span th:text="${discoveries}">0</span> discoveries ·
+        <span th:text="${rests}">0</span> breaks ·
+        <span th:text="${hours}">0h</span> of music
+    </p>
 
     <p class="demo-note">
         <strong>Demonstration data.</strong> These artists are real, but the 2027 lineup and set times are
-        illustrative and were entered by hand — they are not the festival's announced lineup. Historical
-        lineup data arrives in the next phase.
+        illustrative and were entered by hand — they are not the festival's announced lineup.
     </p>
 
+    <form method="post" th:action="@{/schedule/build}">
+        <input type="hidden" name="editionId" th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+        <button type="submit" class="btn" th:text="${hasPlan} ? 'Rebuild my schedule' : 'Build my schedule'">Build</button>
+        <span class="muted" th:if="${#lists.size(editions) > 1}">
+            &nbsp;
+            <a th:each="e : ${editions}" th:href="@{/schedule(editionId=${e.editionId})}"
+               th:text="${e.festival.name} + ' ' + ${e.year}" class="badge">Festival</a>
+        </span>
+    </form>
 
-    <p class="skeleton-note">
-        This page is a skeleton. The plan below is a fixed example — no plan is read from the
-        database and the scheduler does not exist yet.
+    <p class="muted" th:unless="${hasPlan}">
+        No schedule yet. Pick your artists on the <a th:href="@{/setup}">setup page</a>, then build one.
     </p>
 
-    <div class="grid grid-4">
-        <div class="card stat"><div class="value">14</div><div class="label">sets</div></div>
-        <div class="card stat"><div class="value">19h</div><div class="label">active</div></div>
-        <div class="card stat"><div class="value">6</div><div class="label">new artists</div></div>
-        <div class="card stat"><div class="value">8/10</div><div class="label">sustainability</div></div>
-    </div>
-
-    <section class="panel" style="margin-top:16px">
-        <h2>Saturday</h2>
-        <ul class="timeline">
-            <li><span class="time">13:00</span><span>Pupil Slicer</span></li>
-            <li><span class="time">14:10</span><span>Conjurer</span></li>
-            <li><span class="time">15:20</span><span class="break">rest — 40 min</span></li>
-            <li><span class="time">16:30</span><span>Green Lung</span></li>
-            <li><span class="time">20:00</span><span>Gojira</span></li>
-        </ul>
+    <section th:each="day : ${days}">
+        <h2 th:text="${day.key}">Day</h2>
+        <div class="timeline">
+            <div th:each="slot : ${day.value}"
+                 th:classappend="${slot.kind == 'REST'} ? 'slot slot-rest' : 'slot slot-set'" class="slot">
+                <div class="slot-time" th:text="${slot.time}">12:00 – 13:00</div>
+                <div class="slot-body">
+                    <div class="name" th:if="${slot.kind == 'SET'}" th:text="${slot.artist}">Artist</div>
+                    <div class="name" th:if="${slot.kind == 'REST'}">Break — <span th:text="${slot.minutes} + ' min'">40 min</span></div>
+                    <div class="tags">
+                        <span th:if="${slot.stage}" th:text="${slot.stage} + ' · '">Stage · </span>
+                        <span th:text="${slot.reason}">reason</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </section>
 </main>
-
-<footer th:replace="~{layout :: footer}"></footer>
 </body>
 </html>

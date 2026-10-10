@@ -16,10 +16,11 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.routes import scoring
+from app.routes import planning, scoring
 
 app = FastAPI(title="Festimize Analytics Service")
 app.include_router(scoring.router)
+app.include_router(planning.router)
 
 
 class HealthResponse(BaseModel):

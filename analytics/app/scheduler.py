@@ -15,7 +15,11 @@ Three things shape the result beyond raw taste score:
     whole point of the product. One set in three is reserved for artists the
     user did not name.
   * Rest. A long unbroken run on your feet is what ruins the last day of a
-    festival, so the scheduler inserts a break once you pass the limit.
+    festival, so the scheduler inserts a break once you pass the limit — and
+    it will drop a set to make room. On a packed day every gap is fifteen
+    minutes, so a break that only fits into existing gaps never happens,
+    which makes the whole pacing idea decorative. Resting has to cost
+    something or it is not a constraint.
 
 Targets Python 3.9 syntax.
 """
@@ -53,16 +57,30 @@ def _overlaps(a_start, a_end, b_start, b_end) -> bool:
 
 def build_day(candidates: Sequence[Candidate],
               discovery_quota: float = 1 / 3,
-              max_run_minutes: int = 240,
+              max_run_minutes: int = 210,
               rest_minutes: int = 40,
-              changeover_minutes: int = 10) -> List[Slot]:
+              changeover_minutes: int = 10,
+              min_score_ratio: float = 0.25,
+              min_score_floor: float = 0.02) -> List[Slot]:
     """
     Choose sets for one day and slot rest around them.
 
     discovery_quota is the share of chosen sets that must be artists the user
     did not name. max_run_minutes is how long they can be on their feet before
-    a break is forced in.
+    a break is forced in — three and a half hours of standing, which is long
+    enough to matter and short enough to be realistic.
+
+    Weak recommendations are dropped, but the bar is relative: a quarter of the
+    best score on the day, never below the floor. An absolute threshold does
+    not survive contact with real data — when the strongest match on a lineup
+    is 16%, a fixed 5% bar is meaningless, and on a lineup full of 80% matches
+    it is far too generous.
     """
+    if not candidates:
+        return []
+    best_score = max((c.score for c in candidates if not c.is_pick), default=0.0)
+    bar = max(min_score_floor, best_score * min_score_ratio)
+    candidates = [c for c in candidates if c.is_pick or c.score >= bar]
     if not candidates:
         return []
 
@@ -101,18 +119,44 @@ def build_day(candidates: Sequence[Candidate],
 
     chosen.sort(key=lambda c: c.starts_at)
 
-    # Walk the day and force a break once the run gets too long.
+    # Walk the day, forcing a break once the run gets too long. If no gap is
+    # long enough, the next set is given up for the break: the weakest match
+    # loses, and a pick is only sacrificed when there is nothing else to drop.
     slots: List[Slot] = []
     run_start: Optional[datetime] = None
-    for cand in chosen:
+    hours = timedelta(minutes=max_run_minutes)
+    rest = timedelta(minutes=rest_minutes)
+
+    queue = list(chosen)
+    while queue:
+        cand = queue.pop(0)
         if run_start is None:
             run_start = cand.starts_at
-        elif (cand.ends_at - run_start) > timedelta(minutes=max_run_minutes):
+        elif slots and (cand.starts_at - slots[-1].ends_at) >= rest:
+            # A long gap between sets is already a break. Show it as one: the
+            # point of the schedule is to tell someone when they are off their
+            # feet, and free time counts.
+            slots.append(Slot("REST", slots[-1].ends_at, cand.starts_at,
+                              reason="break in the lineup"))
+            run_start = cand.starts_at
+        elif (cand.ends_at - run_start) > hours:
             gap_start = slots[-1].ends_at
-            if (cand.starts_at - gap_start) >= timedelta(minutes=rest_minutes):
-                slots.append(Slot("REST", gap_start, gap_start + timedelta(minutes=rest_minutes),
-                                  reason="%d minutes on your feet" % max_run_minutes))
+            if (cand.starts_at - gap_start) >= rest:
+                slots.append(Slot("REST", gap_start, gap_start + rest,
+                                  reason="%d hours on your feet" % (max_run_minutes // 60)))
                 run_start = cand.starts_at
+            elif cand.is_pick or cand.score >= 0.8 * best_score or not queue:
+                # Never give up a set they asked for, the strongest match of the
+                # day, or the last set of the day, just to rest. The break waits.
+                pass
+            else:
+                # Sacrifice this set so the break can happen: the weakest thing
+                # standing between them and a sit down.
+                slots.append(Slot("REST", gap_start, max(gap_start + rest, cand.ends_at),
+                                  reason="%d hours on your feet — %s dropped to rest"
+                                         % (max_run_minutes // 60, cand.artist)))
+                run_start = None
+                continue
         slots.append(Slot("SET", cand.starts_at, cand.ends_at, cand.performance_id, cand.artist,
                           cand.stage,
                           "your pick" if cand.is_pick else "%d%% match" % round(cand.score * 100)))
