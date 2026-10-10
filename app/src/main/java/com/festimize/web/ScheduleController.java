@@ -9,6 +9,7 @@ import com.festimize.repo.AppUserRepository;
 import com.festimize.repo.FestivalEditionRepository;
 import com.festimize.repo.PlanItemRepository;
 import com.festimize.repo.PlanRepository;
+import com.festimize.repo.UserArtistRepository;
 import java.security.Principal;
 import java.time.Duration;
 import java.time.format.DateTimeFormatter;
@@ -35,20 +36,25 @@ public class ScheduleController {
     private final PlanRepository plans;
     private final PlanItemRepository items;
     private final PlanningClient planning;
+    private final UserArtistRepository saved;
 
     public ScheduleController(FestivalEditionRepository editions, AppUserRepository users,
-                              PlanRepository plans, PlanItemRepository items, PlanningClient planning) {
+                              PlanRepository plans, PlanItemRepository items, PlanningClient planning,
+                              UserArtistRepository saved) {
         this.editions = editions;
         this.users = users;
         this.plans = plans;
         this.items = items;
         this.planning = planning;
+        this.saved = saved;
     }
 
     public record Slot(String kind, String time, String artist, String stage, String reason, int minutes) {}
 
     @GetMapping("/schedule")
-    public String schedule(@RequestParam(required = false) Long editionId, Principal principal, Model model) {
+    public String schedule(@RequestParam(required = false) Long editionId,
+                           @RequestParam(required = false) String error,
+                           Principal principal, Model model) {
         List<FestivalEdition> all = editions.findAllWithFestival();
         if (all.isEmpty()) {
             model.addAttribute("activeNav", "schedule");
@@ -97,13 +103,15 @@ public class ScheduleController {
         model.addAttribute("discoveries", sets - picks);
         model.addAttribute("hours", String.format("%dh %02dm", minutes / 60, minutes % 60));
         model.addAttribute("hasPlan", !byDay.isEmpty());
+        model.addAttribute("hasPicks", !saved.findSavedArtists(me.getUserId()).isEmpty());
+        model.addAttribute("buildFailed", error != null);
         return "schedule";
     }
 
     @PostMapping("/schedule/build")
     public String build(@RequestParam Long editionId, Principal principal, Model model) {
         AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
-        planning.buildPlan(me.getUserId(), editionId);
-        return "redirect:/schedule?editionId=" + editionId;
+        boolean built = planning.buildPlan(me.getUserId(), editionId);
+        return "redirect:/schedule?editionId=" + editionId + (built ? "" : "&error=analytics");
     }
 }

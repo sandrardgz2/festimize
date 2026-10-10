@@ -29,8 +29,15 @@
         </span>
     </form>
 
-    <p class="muted" th:unless="${hasPlan}">
-        No schedule yet. Pick your artists on the <a th:href="@{/setup}">setup page</a>, then build one.
+    <p class="muted" th:if="${buildFailed}">
+        The schedule could not be built — the analytics service did not respond. Start it with
+        <code>cd analytics &amp;&amp; .venv/bin/python -m uvicorn app.main:app --port 8000</code> and try again.
+    </p>
+    <p class="muted" th:if="${!hasPlan and !hasPicks}">
+        Pick your artists on the <a th:href="@{/setup}">setup page</a> first — the schedule is built around them.
+    </p>
+    <p class="muted" th:if="${!hasPlan and hasPicks and !buildFailed}">
+        No schedule for this festival yet. Press <strong>Build my schedule</strong> above.
     </p>
 
     <section th:each="day : ${days}">
