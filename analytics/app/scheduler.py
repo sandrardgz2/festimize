@@ -274,16 +274,29 @@ def build_day(candidates: Sequence[Candidate],
     slots = [Slot("SET", c.starts_at, c.ends_at, c.performance_id, c.artist, c.stage, describe(c))
              for c in chosen] + rests
 
-    # Only show a gap when it is genuinely a hole in the day. Half an hour
-    # between sets is changeover time — walking between stages, getting a drink
-    # — and labelling every one of them a break turns the schedule into a list
-    # of waiting. Breaks the scheduler actually chose are already in rests.
+    # Account for every minute. A gap left blank on a timeline looks like a
+    # mistake, so short ones are shown as what they are — changeover time —
+    # while the breaks the scheduler chose stay visually distinct.
     chosen_sorted = sorted(chosen, key=lambda c: c.starts_at)
     for earlier, later in zip(chosen_sorted, chosen_sorted[1:]):
-        gap = later.starts_at - earlier.ends_at
-        if timedelta(minutes=60) <= gap <= timedelta(minutes=120):
-            if not any(_overlaps(r.starts_at, r.ends_at, earlier.ends_at, later.starts_at) for r in rests):
-                slots.append(Slot("REST", earlier.ends_at, later.starts_at, reason="break between sets"))
+        # Subtract any breaks already placed, and show whatever is left over.
+        free = [(earlier.ends_at, later.starts_at)]
+        for r in sorted(rests, key=lambda r: r.starts_at):
+            carved = []
+            for f_start, f_end in free:
+                if r.ends_at <= f_start or r.starts_at >= f_end:
+                    carved.append((f_start, f_end))
+                    continue
+                if r.starts_at > f_start:
+                    carved.append((f_start, r.starts_at))
+                if r.ends_at < f_end:
+                    carved.append((r.ends_at, f_end))
+            free = carved
+        for f_start, f_end in free:
+            minutes = int((f_end - f_start).total_seconds() // 60)
+            if minutes >= 15:
+                slots.append(Slot("REST", f_start, f_end,
+                                  reason="gap — %d minutes between sets" % minutes))
 
     slots.sort(key=lambda s: s.starts_at)
     return slots

@@ -49,7 +49,10 @@ public class ScheduleController {
         this.saved = saved;
     }
 
-    public record Slot(String kind, String time, String artist, String stage, String reason, int minutes) {}
+    public record Slot(String kind, String time, String artist, String stage, String reason, int minutes) {
+        /** A plain changeover, as opposed to a break the scheduler chose. */
+        public boolean gap() { return reason != null && reason.startsWith("gap"); }
+    }
 
     @GetMapping("/schedule")
     public String schedule(@RequestParam(required = false) Long editionId,

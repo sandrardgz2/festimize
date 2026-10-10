@@ -337,3 +337,8 @@ footer.site {
 .slot-rest { border-left: 3px solid #FF9F45; background: rgba(255,159,69,0.06); }
 .slot-time { min-width: 120px; color: #8A93A0; font-variant-numeric: tabular-nums; }
 .slot-body .name { font-weight: 600; }
+
+/* A changeover is not a break: quieter, so the real breaks stand out. */
+.slot-gap { border: 1px dashed #2A2F36; border-left: 3px solid #2A2F36; background: transparent; padding: 0.4rem 1rem; }
+.slot-gap .slot-time { color: #5A6472; font-size: 0.85rem; }
+.gap-label { color: #5A6472; font-size: 0.85rem; }

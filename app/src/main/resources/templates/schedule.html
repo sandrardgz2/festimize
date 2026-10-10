@@ -44,11 +44,12 @@
         <h2 th:text="${day.key}">Day</h2>
         <div class="timeline">
             <div th:each="slot : ${day.value}"
-                 th:classappend="${slot.kind == 'REST'} ? 'slot slot-rest' : 'slot slot-set'" class="slot">
+                 th:classappend="${slot.gap} ? 'slot slot-gap' : (${slot.kind == 'REST'} ? 'slot slot-rest' : 'slot slot-set')" class="slot">
                 <div class="slot-time" th:text="${slot.time}">12:00 – 13:00</div>
                 <div class="slot-body">
                     <div class="name" th:if="${slot.kind == 'SET'}" th:text="${slot.artist}">Artist</div>
-                    <div class="name" th:if="${slot.kind == 'REST'}">Break — <span th:text="${slot.minutes} + ' min'">40 min</span></div>
+                    <div class="name" th:if="${slot.kind == 'REST' and !slot.gap}">Break — <span th:text="${slot.minutes} + ' min'">40 min</span></div>
+                    <div class="gap-label" th:if="${slot.gap}" th:text="${slot.minutes} + ' min changeover'">30 min changeover</div>
                     <div class="tags">
                         <span th:if="${slot.stage}" th:text="${slot.stage} + ' · '">Stage · </span>
                         <span th:text="${slot.reason}">reason</span>
