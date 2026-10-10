@@ -81,7 +81,7 @@ public class ScheduleController {
                 if (isSet) {
                     sets++;
                     minutes += mins;
-                    if ("your pick".equals(item.getReason())) picks++;
+                    if (item.getReason() != null && item.getReason().startsWith("your pick")) picks++;
                 } else {
                     rests++;
                 }

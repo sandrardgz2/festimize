@@ -81,69 +81,75 @@ def choose_greedy(candidates: Sequence[Candidate],
 def choose_best(candidates: Sequence[Candidate],
                 changeover_minutes: int = 10,
                 pick_bonus: float = 10.0,
-                minute_value: float = 0.0005) -> List[Candidate]:
+                minute_value: float = 0.0005,
+                least_worth_catching: int = 25,
+                least_fraction: float = 0.6) -> List[tuple]:
     """
-    Choose the best possible set of non-overlapping performances.
+    Choose the best possible set of performances, allowing late arrivals.
 
-    This is weighted interval scheduling, solved exactly rather than greedily.
-    Sort every performance by when it ends. Work through them in that order and
-    ask one question of each: is the day better with this set, or without it?
+    This is weighted interval scheduling solved exactly. Sort every performance
+    by when it ends, then work through them asking one question of each: is the
+    day better with this set, or without it? "With it" means this set's value
+    plus the best day that could have come before it, which is already known
+    because the list is in end-time order.
 
-      * without it — the best day already worked out from everything that
-        finished earlier
-      * with it — this set's value, plus the best day that finished before this
-        set starts, which is already known because the list is sorted by end time
+    Two sets no longer have to be strictly sequential. If one ends as another
+    starts, you can still walk over and catch most of the second — missing ten
+    minutes of a band beats standing in a field for an hour. A set counts only
+    if at least `least_worth_catching` minutes of it remain once you arrive,
+    and it is valued by the part you would actually see.
 
-    Keep whichever is larger and move on. The final entry is the best day
-    available, and walking the choices backwards recovers which sets it used.
-
-    Greedy cannot find this. Taking a 41% set at 19:30 locks out a 37% set at
-    20:00 that would have led to a better evening, and greedy never reconsiders.
-
-    Value of a set = match score x hours, plus minute_value per minute so a full
-    day beats an empty one, plus pick_bonus for an artist the user chose, which
-    is large enough that picks are never traded for recommendations.
-
-    minute_value is deliberately tiny — about three points of match quality per
-    hour. It exists to break ties in favour of watching something rather than
-    nothing, and nothing more. Set any higher and length starts beating taste:
-    at 0.004 a 37% set five minutes longer than a 41% set won the slot, which
-    is not a trade anyone would make.
+    Returns (candidate, arrive_at) pairs, where arrive_at may be later than the
+    set's advertised start.
     """
     if not candidates:
         return []
 
     sets = sorted(candidates, key=lambda c: c.ends_at)
     changeover = timedelta(minutes=changeover_minutes)
+    least = timedelta(minutes=least_worth_catching)
+    n = len(sets)
 
-    def value(c: Candidate) -> float:
-        minutes = (c.ends_at - c.starts_at).total_seconds() / 60
-        return c.score * (minutes / 60) + minute_value * minutes + (pick_bonus if c.is_pick else 0.0)
+    def arrival(prev_index: int, i: int):
+        """When they could get to set i, having come from set prev_index (-1 = start of day)."""
+        earliest = sets[i].starts_at
+        if prev_index >= 0:
+            earliest = max(earliest, sets[prev_index].ends_at + changeover)
+        full = sets[i].ends_at - sets[i].starts_at
+        enough = max(least, full * least_fraction)
+        return earliest if (sets[i].ends_at - earliest) >= enough else None
 
-    # last_compatible[i] = index of the latest set that finishes early enough
-    # to still get to set i, or -1 if there is none.
-    last_compatible = []
-    for i, c in enumerate(sets):
-        j = i - 1
-        while j >= 0 and sets[j].ends_at + changeover > c.starts_at:
-            j -= 1
-        last_compatible.append(j)
+    def value(i: int, arrive) -> float:
+        minutes = (sets[i].ends_at - arrive).total_seconds() / 60
+        return (sets[i].score * (minutes / 60) + minute_value * minutes
+                + (pick_bonus if sets[i].is_pick else 0.0))
 
-    best = [0.0] * (len(sets) + 1)      # best[i] = best value using the first i sets
-    for i, c in enumerate(sets, start=1):
-        take = value(c) + best[last_compatible[i - 1] + 1]
-        best[i] = max(best[i - 1], take)
+    # best[i] = best achievable value considering the first i sets, and the
+    # choice that produced it. O(n^2), which at festival size is nothing.
+    best = [0.0] * (n + 1)
+    took = [None] * (n + 1)
+    for i in range(1, n + 1):
+        best[i], took[i] = best[i - 1], None
+        for j in range(i):                      # j = number of earlier sets used
+            arrive = arrival(j - 1, i - 1)
+            if arrive is None:
+                continue
+            if j > 0 and sets[j - 1].ends_at + changeover > sets[i - 1].ends_at:
+                continue                        # cannot have finished the earlier one
+            total = best[j] + value(i - 1, arrive)
+            if total > best[i]:
+                best[i], took[i] = total, (j, arrive)
 
-    chosen: List[Candidate] = []
-    i = len(sets)
+    chosen = []
+    i = n
     while i > 0:
-        c = sets[i - 1]
-        if best[i] != best[i - 1]:      # this set is in the best schedule
-            chosen.append(c)
-            i = last_compatible[i - 1] + 1
-        else:
+        if took[i] is None:
             i -= 1
-    return sorted(chosen, key=lambda c: c.starts_at)
+            continue
+        j, arrive = took[i]
+        chosen.append((sets[i - 1], arrive))
+        i = j
+    return sorted(chosen, key=lambda pair: pair[1])
 
 
 def build_day(candidates: Sequence[Candidate],
@@ -177,10 +183,21 @@ def build_day(candidates: Sequence[Candidate],
     ranked = sorted(candidates, key=lambda c: (not c.is_pick, -c.score, c.starts_at))
     best_score = max((c.score for c in candidates if not c.is_pick), default=0.0)
 
-    # Choose the best possible non-overlapping set of performances. See
-    # choose_best: greedy used to do this and needed a repair pass afterwards
-    # to patch the holes it left; this does not.
-    chosen = list(choose_best(candidates, changeover_minutes=changeover_minutes))
+    # Choose the best possible set of performances. See choose_best: greedy
+    # used to do this and needed a repair pass to patch the holes it left.
+    picked = choose_best(candidates, changeover_minutes=changeover_minutes)
+
+    # Some sets are joined late, having walked from somewhere else. Record how
+    # much is missed, then treat the arrival as the start for everything that
+    # follows — the gaps, the breaks and the timeline are all about where the
+    # person actually is.
+    missed = {}
+    chosen = []
+    for cand, arrive in picked:
+        if arrive > cand.starts_at:
+            missed[id(cand)] = int((arrive - cand.starts_at).total_seconds() // 60)
+            cand.starts_at = arrive
+        chosen.append(cand)
 
     # Discovery quota: swap the weakest picks out for the best new artists.
     def discoveries(sets): return sum(1 for c in sets if not c.is_pick)
@@ -251,7 +268,10 @@ def build_day(candidates: Sequence[Candidate],
                 if gap >= timedelta(minutes=shortest_acceptable) and free(sets[i].ends_at, sets[i + 1].starts_at):
                     usable.append((gap, sets[i].ends_at, sets[i + 1].starts_at))
             if usable:
-                gap, start, end = max(usable)
+                # Earliest workable gap, not the longest: people eat when they
+                # get the chance, and holding out for a marginally longer break
+                # pushed dinner to quarter past six.
+                gap, start, end = min(usable, key=lambda u: u[1])
                 return Slot("REST", start, min(end, start + need), reason=label), None
 
         droppable = [c for c in sets
@@ -347,9 +367,12 @@ def build_day(candidates: Sequence[Candidate],
         if rival is not None and (rival.score > 0.05 or rival.is_pick):
             minutes = int((rival.ends_at - rival.starts_at).total_seconds() // 60)
             mine = int((c.ends_at - c.starts_at).total_seconds() // 60)
-            rival_label = "also your pick" if rival.is_pick else "%d%%" % round(rival.score * 100)
+            rival_label = ("also your pick, %d%%" % round(rival.score * 100)
+                           if rival.is_pick else "%d%%" % round(rival.score * 100))
             reason += " · chosen over %s (%s, %d min against %d)" % (
                 rival.artist, rival_label, minutes, mine)
+        if id(c) in missed:
+            reason += " · joined %d min late, walking from the last set" % missed[id(c)]
         slots.append(Slot("SET", c.starts_at, c.ends_at, c.performance_id, c.artist, c.stage, reason))
     slots += rests
 
