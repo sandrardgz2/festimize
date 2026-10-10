@@ -297,16 +297,37 @@ def build_day(candidates: Sequence[Candidate],
             if dropped:
                 chosen.remove(dropped)
 
+    # What each choice cost. A schedule that simply appears is hard to trust;
+    # one that says what it turned down can be argued with, which is better.
+    def displaced(c: Candidate) -> Optional[Candidate]:
+        rivals = [o for o in candidates
+                  if o not in chosen
+                  and _overlaps(c.starts_at, c.ends_at,
+                                o.starts_at - timedelta(minutes=changeover_minutes),
+                                o.ends_at + timedelta(minutes=changeover_minutes))]
+        return max(rivals, key=lambda o: o.score) if rivals else None
+
     def describe(c: Candidate) -> str:
         if c.is_pick:
             return "your pick"
         pct = round(c.score * 100)
         # Below 5% there is no meaningful tag overlap. Saying "2% match" implies a
         # precision the number does not have; it is filling the slot, and should say so.
-        return "%d%% match" % pct if pct >= 5 else "no close match — fills the slot"
+        base = "%d%% match" % pct if pct >= 5 else "no close match — fills the slot"
+        return base
 
-    slots = [Slot("SET", c.starts_at, c.ends_at, c.performance_id, c.artist, c.stage, describe(c))
-             for c in chosen] + rests
+    slots = []
+    for c in chosen:
+        reason = describe(c)
+        rival = displaced(c)
+        if rival is not None and (rival.score > 0.05 or rival.is_pick):
+            minutes = int((rival.ends_at - rival.starts_at).total_seconds() // 60)
+            mine = int((c.ends_at - c.starts_at).total_seconds() // 60)
+            rival_label = "also your pick" if rival.is_pick else "%d%%" % round(rival.score * 100)
+            reason += " · chosen over %s (%s, %d min against %d)" % (
+                rival.artist, rival_label, minutes, mine)
+        slots.append(Slot("SET", c.starts_at, c.ends_at, c.performance_id, c.artist, c.stage, reason))
+    slots += rests
 
     # Account for every minute. A gap left blank on a timeline looks like a
     # mistake, so short ones are shown as what they are — changeover time —

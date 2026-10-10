@@ -54,6 +54,7 @@
                         <span th:if="${slot.stage}" th:text="${slot.stage} + ' · '">Stage · </span>
                         <span th:text="${slot.reason}">reason</span>
                     </div>
+                    <div class="tradeoff" th:if="${slot.tradeoff}" th:text="${slot.tradeoff}">chosen over …</div>
                 </div>
             </div>
         </div>

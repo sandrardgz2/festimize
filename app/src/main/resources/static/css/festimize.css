@@ -342,3 +342,6 @@ footer.site {
 .slot-gap { border: 1px dashed #2A2F36; border-left: 3px solid #2A2F36; background: transparent; padding: 0.4rem 1rem; }
 .slot-gap .slot-time { color: #5A6472; font-size: 0.85rem; }
 .gap-label { color: #5A6472; font-size: 0.85rem; }
+
+/* Why this set won its slot. Quiet: it is an explanation, not a headline. */
+.tradeoff { color: #6B7480; font-size: 0.82rem; margin-top: 0.15rem; font-style: italic; }

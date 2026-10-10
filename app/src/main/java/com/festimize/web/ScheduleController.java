@@ -49,7 +49,8 @@ public class ScheduleController {
         this.saved = saved;
     }
 
-    public record Slot(String kind, String time, String artist, String stage, String reason, int minutes) {
+    public record Slot(String kind, String time, String artist, String stage, String reason,
+                       String tradeoff, int minutes) {
         /** A plain changeover, as opposed to a break the scheduler chose. */
         public boolean gap() { return reason != null && reason.startsWith("gap"); }
     }
@@ -90,8 +91,7 @@ public class ScheduleController {
                         isSet && item.getPerformance() != null ? item.getPerformance().getArtist().getName() : null,
                         isSet && item.getPerformance() != null && item.getPerformance().getStage() != null
                                 ? item.getPerformance().getStage().getName() : null,
-                        item.getReason() == null ? "" : item.getReason(),
-                        mins));
+                        reasonOf(item), tradeoffOf(item), mins));
             }
         }
 
@@ -116,5 +116,19 @@ public class ScheduleController {
         AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
         boolean built = planning.buildPlan(me.getUserId(), editionId);
         return "redirect:/schedule?editionId=" + editionId + (built ? "" : "&error=analytics");
+    }
+
+    /** The match or pick label, without the explanation of what it beat. */
+    private static String reasonOf(PlanItem item) {
+        String r = item.getReason() == null ? "" : item.getReason();
+        int at = r.indexOf(" \u00b7 chosen over ");
+        return at < 0 ? r : r.substring(0, at);
+    }
+
+    /** "chosen over X" — why this set won its slot, shown quietly beneath it. */
+    private static String tradeoffOf(PlanItem item) {
+        String r = item.getReason() == null ? "" : item.getReason();
+        int at = r.indexOf(" \u00b7 chosen over ");
+        return at < 0 ? null : r.substring(at + 3);
     }
 }

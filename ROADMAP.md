@@ -25,6 +25,11 @@ Ideas raised while building, parked on purpose so the current scope stays delive
   the walk between stages, and showing split blocks on the timeline. Worth doing, and bigger
   than it looks.
 
+- **Switching a choice.** The schedule now says what each set beat — "Slipknot over Deftones,
+  75 minutes against 70". The obvious next step is a button that takes the alternative and
+  rebuilds the rest of the day around it, which is the "lock a set and regenerate" idea from
+  the wireframes.
+
 - **A discovery dial.** The scheduler reserves one set in three for artists the user did not
   name. That ratio is a configuration value today; exposing it as a slider ("how adventurous")
   would let people choose between a favourites weekend and a discovery weekend, and makes the
