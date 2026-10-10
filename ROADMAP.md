@@ -18,6 +18,13 @@ Ideas raised while building, parked on purpose so the current scope stays delive
   just in theory — it is the normal case for anyone with range.
 
 ## Scheduling
+- **Splitting a clash.** The scheduler treats a set as all or nothing, so when two artists
+  someone loves play at once, one is simply lost. People do not behave that way: they watch
+  half of one and walk to the other. Modelling it means deciding how much of a set's value
+  half of it is worth (not half — the headline moment is usually at the end), accounting for
+  the walk between stages, and showing split blocks on the timeline. Worth doing, and bigger
+  than it looks.
+
 - **A discovery dial.** The scheduler reserves one set in three for artists the user did not
   name. That ratio is a configuration value today; exposing it as a slider ("how adventurous")
   would let people choose between a favourites weekend and a discovery weekend, and makes the

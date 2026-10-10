@@ -61,7 +61,8 @@ def build_day(candidates: Sequence[Candidate],
               breather_minutes: int = 30,
               max_breathers: int = 2,
               max_run_minutes: int = 180,
-              changeover_minutes: int = 10) -> List[Slot]:
+              changeover_minutes: int = 10,
+              swap_tolerance: float = 0.10) -> List[Slot]:
     """
     Fill a day with music, then carve breaks out of it.
 
@@ -69,6 +70,10 @@ def build_day(candidates: Sequence[Candidate],
     did not name. max_run_minutes is how long someone goes without a break
     before one is worth taking — three hours on site, which on an eleven-hour
     day means a meal break and two or three breathers.
+
+    swap_tolerance is how much match quality may be given up to remove dead
+    time: a set scoring within ten points of the one it replaces may take its
+    place when doing so buys back at least twenty minutes of standing around.
 
     Breaks are taken from existing gaps wherever possible. Where no gap is long
     enough, the weakest set in the window is given up, because a break that
@@ -114,6 +119,52 @@ def build_day(candidates: Sequence[Candidate],
     chosen.sort(key=lambda c: c.starts_at)
     if not chosen:
         return []
+
+    # Greedy leaves holes. It takes the best set at each step without noticing
+    # what that choice costs afterwards: a 41% match ending at 20:40 can lock
+    # out a 37% match that would have run to 21:15, leaving an hour of standing
+    # around for four points of match quality. This pass looks for long dead
+    # time and tries one swap at a time, accepting a slightly weaker match when
+    # it buys back music or removes a long wait.
+    def idle_minutes(sets: List[Candidate]) -> int:
+        sets = sorted(sets, key=lambda c: c.starts_at)
+        total = 0
+        for a, b in zip(sets, sets[1:]):
+            total += max(0, int((b.starts_at - a.ends_at).total_seconds() // 60))
+        return total
+
+    def fits(cand: Candidate, sets: List[Candidate]) -> bool:
+        return not any(_overlaps(cand.starts_at, cand.ends_at,
+                                 c.starts_at - timedelta(minutes=changeover_minutes),
+                                 c.ends_at + timedelta(minutes=changeover_minutes)) for c in sets)
+
+    for _ in range(6):                      # a handful of passes is plenty
+        best_swap = None
+        current_idle = idle_minutes(chosen)
+        for out in list(chosen):
+            if out.is_pick:                 # never trade away an artist they chose
+                continue
+            remaining = [c for c in chosen if c is not out]
+            for cand in ranked:
+                if cand in chosen or not fits(cand, remaining):
+                    continue
+                if cand.score < out.score - swap_tolerance:
+                    continue
+                gain = current_idle - idle_minutes(remaining + [cand])
+                music = int(((cand.ends_at - cand.starts_at) - (out.ends_at - out.starts_at)).total_seconds() // 60)
+                # More music, or meaningfully less standing around. Either is
+                # worth a few points of match quality: someone would rather
+                # watch a 37% artist than wait an hour for the headliner.
+                if music >= 5 or gain >= 20:
+                    score = (music + gain, cand.score - out.score)
+                    if best_swap is None or score > best_swap[0]:
+                        best_swap = (score, out, cand)
+        if not best_swap:
+            break
+        _, out, cand = best_swap
+        chosen.remove(out)
+        chosen.append(cand)
+        chosen.sort(key=lambda c: c.starts_at)
 
     protected = {id(c) for c in chosen if c.is_pick or c.score >= 0.95 * best_score}
     protected.add(id(chosen[-1]))           # never trade the last set of the day for a break
