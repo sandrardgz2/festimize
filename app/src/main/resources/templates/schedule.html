@@ -21,7 +21,7 @@
 
     <form method="post" th:action="@{/schedule/build}">
         <input type="hidden" name="editionId" th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
-        <button type="submit" class="btn" th:text="${hasPlan} ? 'Rebuild my schedule' : 'Build my schedule'">Build</button>
+        <button type="submit" class="btn" th:text="${hasPlan} ? 'Update my schedule' : 'Build my schedule'">Build</button>
         <span class="muted" th:if="${#lists.size(editions) > 1}">
             &nbsp;
             <a th:each="e : ${editions}" th:href="@{/schedule(editionId=${e.editionId})}"
@@ -35,6 +35,10 @@
     </p>
     <p class="muted" th:if="${!hasPlan and !hasPicks}">
         Pick your artists on the <a th:href="@{/setup}">setup page</a> first — the schedule is built around them.
+    </p>
+    <p class="muted" th:if="${hasPlan}">
+        Built from the artists you have saved. The schedule only changes when your picks do —
+        it is not shuffled, and pressing this again gives the same day.
     </p>
     <p class="muted" th:if="${!hasPlan and hasPicks and !buildFailed}">
         No schedule for this festival yet. Press <strong>Build my schedule</strong> above.
