@@ -211,12 +211,14 @@ def build_day(candidates: Sequence[Candidate],
     protected.add(id(chosen[-1]))           # never trade the last set of the day for a break
 
     def _carve(sets: List[Candidate], after: datetime, minutes: int, label: str,
-               taken: Optional[List[Slot]] = None, may_drop_a_pick: bool = False):
+               taken: Optional[List[Slot]] = None, may_drop_a_pick: bool = False,
+               shortest_acceptable: Optional[int] = None):
         """
         Place one break of `minutes` as soon as possible after `after`.
 
-        Prefers an existing gap. Failing that, drops the weakest unprotected set
-        and rests instead.
+        Prefers an existing gap, and will take a shorter one rather than give up
+        a set: eating in half an hour beats missing a band to eat in
+        three-quarters of one. Only when nothing usable exists does a set go.
 
         may_drop_a_pick is for the meal break only. Someone whose whole day is
         artists they chose still has to eat, and protecting every pick means
@@ -237,6 +239,20 @@ def build_day(candidates: Sequence[Candidate],
             gap = sets[i + 1].starts_at - sets[i].ends_at
             if gap >= need and free(sets[i].ends_at, sets[i].ends_at + need):
                 return Slot("REST", sets[i].ends_at, sets[i].ends_at + need, reason=label), None
+
+        # Nothing long enough: take the longest gap that is still usable before
+        # considering dropping a set for it.
+        if shortest_acceptable is not None:
+            usable = []
+            for i in range(len(sets) - 1):
+                if sets[i].ends_at < after:
+                    continue
+                gap = sets[i + 1].starts_at - sets[i].ends_at
+                if gap >= timedelta(minutes=shortest_acceptable) and free(sets[i].ends_at, sets[i + 1].starts_at):
+                    usable.append((gap, sets[i].ends_at, sets[i + 1].starts_at))
+            if usable:
+                gap, start, end = max(usable)
+                return Slot("REST", start, min(end, start + need), reason=label), None
 
         droppable = [c for c in sets
                      if c.starts_at >= after and id(c) not in protected
@@ -262,7 +278,8 @@ def build_day(candidates: Sequence[Candidate],
     # the only break allowed to cost a set: everyone has to eat, and on a packed
     # bill there is no free 45 minutes to eat in.
     midpoint = day_start + (day_end - day_start) / 2
-    meal, dropped = _carve(chosen, midpoint, meal_minutes, "meal break", rests, may_drop_a_pick=True)
+    meal, dropped = _carve(chosen, midpoint, meal_minutes, "meal break", rests,
+                           may_drop_a_pick=True, shortest_acceptable=30)
     if meal:
         rests.append(meal)
         if dropped:
@@ -282,8 +299,15 @@ def build_day(candidates: Sequence[Candidate],
             continue
         covered = [r for r in rests if r.ends_at <= gap_start]
         since = max([r.ends_at for r in covered], default=day_start)
-        if (gap_start - since) >= timedelta(minutes=max_run_minutes) or not covered:
-            length = min(gap_end - gap_start, timedelta(minutes=breather_minutes))
+        # Only once they have actually been on their feet a while. A breather
+        # forty-five minutes into the day is not pacing, it is loitering.
+        if (gap_start - since) >= timedelta(minutes=max_run_minutes):
+            # Use the whole gap: carving 30 minutes out of a 65-minute hole and
+            # calling the remaining 35 a separate gap is two rows describing one
+            # break. Anything longer than an hour and a half stays a hole.
+            length = gap_end - gap_start
+            if length > timedelta(minutes=90):
+                length = timedelta(minutes=breather_minutes)
             rests.append(Slot("REST", gap_start, gap_start + length, reason="breather"))
 
     # A long day with no gaps still needs more than lunch. If the lineup leaves
@@ -292,12 +316,14 @@ def build_day(candidates: Sequence[Candidate],
     long_day = (day_end - day_start) >= timedelta(hours=8)
     if long_day and len(rests) < 2:
         gap_starts = [r.ends_at for r in rests] or [day_start]
-        after = max(gap_starts)
+        after = max(gap_starts) + timedelta(minutes=max_run_minutes)
         breather, dropped = _carve(chosen, after, breather_minutes, "breather", rests,
                                    may_drop_a_pick=True)
         if not breather:
-            breather, dropped = _carve(chosen, day_start, breather_minutes, "breather", rests,
-                                       may_drop_a_pick=True)
+            # Still only after a decent stretch on their feet — never in the
+            # first hours of the day.
+            breather, dropped = _carve(chosen, day_start + timedelta(minutes=max_run_minutes),
+                                       breather_minutes, "breather", rests, may_drop_a_pick=True)
         if breather:
             rests.append(breather)
             if dropped:

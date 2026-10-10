@@ -48,7 +48,9 @@ def build_plan(
     user_id: int,
     edition_id: int = Query(..., description="Which festival edition to plan"),
     discovery_quota: float = Query(1 / 3, ge=0.0, le=1.0),
-    max_run_minutes: int = Query(240, ge=60, le=600),
+    # Keep in step with the scheduler default; overriding it here silently
+    # changed pacing behaviour and cost a set.
+    max_run_minutes: int = Query(180, ge=60, le=600),
     db: Session = Depends(get_db),
 ) -> PlanResponse:
     rows = db.execute(
