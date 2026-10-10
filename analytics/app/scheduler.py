@@ -104,7 +104,10 @@ def build_day(candidates: Sequence[Candidate],
                                      c.ends_at + timedelta(minutes=changeover_minutes))]
             if not clashing:
                 chosen.append(new)
-            elif len(clashing) == 1 and clashing[0].is_pick and clashing[0].score <= new.score + 0.15:
+            elif len(clashing) == 1 and not clashing[0].is_pick and clashing[0].score < new.score:
+                # Only ever displace a weaker recommendation. An artist the user
+                # named is never traded away to hit a discovery target — that is
+                # the quota overruling the person it is supposed to serve.
                 chosen.remove(clashing[0])
                 chosen.append(new)
 
@@ -116,12 +119,19 @@ def build_day(candidates: Sequence[Candidate],
     protected.add(id(chosen[-1]))           # never trade the last set of the day for a break
 
     def _carve(sets: List[Candidate], after: datetime, minutes: int, label: str,
-               taken: Optional[List[Slot]] = None):
+               taken: Optional[List[Slot]] = None, may_drop_a_pick: bool = False):
         """
         Place one break of `minutes` as soon as possible after `after`.
 
         Prefers an existing gap. Failing that, drops the weakest unprotected set
-        and rests instead. Returns (slot, dropped_candidate) or (None, None).
+        and rests instead.
+
+        may_drop_a_pick is for the meal break only. Someone whose whole day is
+        artists they chose still has to eat, and protecting every pick means
+        they would get no break at all. In that case the weakest pick goes —
+        never the strongest set of the day, and never the last one.
+
+        Returns (slot, dropped_candidate) or (None, None).
         """
         need = timedelta(minutes=minutes)
         taken = taken or []
@@ -139,6 +149,14 @@ def build_day(candidates: Sequence[Candidate],
                      if c.starts_at >= after and id(c) not in protected
                      and (c.ends_at - c.starts_at) >= need - timedelta(minutes=15)
                      and free(c.starts_at, c.starts_at + need)]
+        if not droppable and may_drop_a_pick:
+            # A day made entirely of picks: give up the weakest one rather than
+            # scheduling eleven hours with nothing to eat.
+            keep = {id(max(sets, key=lambda c: c.score)), id(sets[-1])}
+            droppable = [c for c in sets
+                         if c.starts_at >= after and id(c) not in keep
+                         and (c.ends_at - c.starts_at) >= need - timedelta(minutes=15)
+                         and free(c.starts_at, c.starts_at + need)]
         if droppable:
             victim = min(droppable, key=lambda c: c.score)
             return (Slot("REST", victim.starts_at, victim.starts_at + need,
@@ -153,7 +171,7 @@ def build_day(candidates: Sequence[Candidate],
     # the only break allowed to cost a set: everyone has to eat, and on a packed
     # bill there is no free 45 minutes to eat in.
     midpoint = day_start + (day_end - day_start) / 2
-    meal, dropped = _carve(chosen, midpoint, meal_minutes, "meal break", rests)
+    meal, dropped = _carve(chosen, midpoint, meal_minutes, "meal break", rests, may_drop_a_pick=True)
     if meal:
         rests.append(meal)
         if dropped:
@@ -176,6 +194,23 @@ def build_day(candidates: Sequence[Candidate],
         if (gap_start - since) >= timedelta(minutes=max_run_minutes) or not covered:
             length = min(gap_end - gap_start, timedelta(minutes=breather_minutes))
             rests.append(Slot("REST", gap_start, gap_start + length, reason="breather"))
+
+    # A long day with no gaps still needs more than lunch. If the lineup leaves
+    # no room, take it from the weakest set — the alternative is ten hours on
+    # your feet with one sit-down, which is the thing this product exists to stop.
+    long_day = (day_end - day_start) >= timedelta(hours=8)
+    if long_day and len(rests) < 2:
+        gap_starts = [r.ends_at for r in rests] or [day_start]
+        after = max(gap_starts)
+        breather, dropped = _carve(chosen, after, breather_minutes, "breather", rests,
+                                   may_drop_a_pick=True)
+        if not breather:
+            breather, dropped = _carve(chosen, day_start, breather_minutes, "breather", rests,
+                                       may_drop_a_pick=True)
+        if breather:
+            rests.append(breather)
+            if dropped:
+                chosen.remove(dropped)
 
     def describe(c: Candidate) -> str:
         if c.is_pick:
