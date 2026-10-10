@@ -229,7 +229,8 @@ def build_day(candidates: Sequence[Candidate],
 
     def _carve(sets: List[Candidate], after: datetime, minutes: int, label: str,
                taken: Optional[List[Slot]] = None, may_drop_a_pick: bool = False,
-               shortest_acceptable: Optional[int] = None, may_drop: bool = True):
+               shortest_acceptable: Optional[int] = None, may_drop: bool = True,
+               prefer_latest_before: Optional[datetime] = None):
         """
         Place one break of `minutes` as soon as possible after `after`.
 
@@ -268,10 +269,13 @@ def build_day(candidates: Sequence[Candidate],
                 if gap >= timedelta(minutes=shortest_acceptable) and free(sets[i].ends_at, sets[i + 1].starts_at):
                     usable.append((gap, sets[i].ends_at, sets[i + 1].starts_at))
             if usable:
-                # Earliest workable gap, not the longest: people eat when they
-                # get the chance, and holding out for a marginally longer break
-                # pushed dinner to quarter past six.
-                gap, start, end = min(usable, key=lambda u: u[1])
+                # For a meal: the latest gap that still lands before evening.
+                # Quarter to three is early to eat at a festival, and holding
+                # out for the very last gap pushed dinner to quarter past six.
+                in_window = [u for u in usable
+                             if prefer_latest_before is None or u[1] <= prefer_latest_before]
+                gap, start, end = (max(in_window, key=lambda u: u[1]) if in_window
+                                   else min(usable, key=lambda u: u[1]))
                 return Slot("REST", start, min(end, start + need), reason=label), None
 
         if not may_drop:
@@ -302,8 +306,10 @@ def build_day(candidates: Sequence[Candidate],
     # and then giving up a set at five to eat — the worst of both. Forty per
     # cent in is mid-afternoon on a festival day.
     meal_window = day_start + (day_end - day_start) * 0.4
+    dinner_by = day_start.replace(hour=18, minute=0, second=0, microsecond=0)
     meal, dropped = _carve(chosen, meal_window, meal_minutes, "meal break", rests,
-                           may_drop_a_pick=True, shortest_acceptable=30)
+                           may_drop_a_pick=True, shortest_acceptable=30,
+                           prefer_latest_before=dinner_by)
     if meal:
         rests.append(meal)
         if dropped:
