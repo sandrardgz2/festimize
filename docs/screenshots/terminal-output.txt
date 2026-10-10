@@ -1,0 +1,27 @@
+$ docker compose ps
+SERVICE     IMAGE                 STATUS
+analytics   festimize-analytics   Up 31 minutes
+db          postgres:17           Up 31 minutes (healthy)
+web         festimize-web         Up 31 minutes
+
+$ python3 smoke_test.py
+Festimize smoke test
+  ok   analytics health — {"status":"ok","database":"connected"}
+  ok   register and sign in — HTTP 200
+  ok   setup page lists artists — 139 offered
+  ok   test artists are available — 12 of 12 found
+  ok   saving picks — HTTP 200
+Bloodstock Open Air
+  ok   lineup scores artists — 46 scored, 2 of them my picks
+  ok   schedule builds — HTTP 200
+  ok   schedule has sets — 21 sets, 3 breaks
+Ravenstone Festival
+  ok   lineup scores artists — 22 scored, 0 of them my picks
+  ok   schedule builds — HTTP 200
+  ok   schedule has sets — 11 sets, 2 breaks
+Sick New World
+  ok   lineup scores artists — 17 scored, 6 of them my picks
+  ok   schedule builds — HTTP 200
+  ok   schedule has sets — 8 sets, 1 breaks
+
+Everything passed.
