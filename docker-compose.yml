@@ -4,7 +4,7 @@
 #   open http://localhost:8080
 #
 # Postgres loads db/schema.sql and the seed files on first start, so the app
-# comes up with two demonstration festivals and 101 artists already in place.
+# comes up with three demonstration festivals and every artist already in place.
 services:
   db:
     image: postgres:17
@@ -15,10 +15,15 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      # Run in filename order: schema first, then the two seed files.
+      # Run in filename order: schema, then the seeds. Artists must be loaded
+      # before the lineup that references them, so Sick New World's artists
+      # (05) come before its performances (06).
       - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
       - ./db/seed_demo.sql:/docker-entrypoint-initdb.d/02-seed-demo.sql:ro
       - ./db/seed_artists_us.sql:/docker-entrypoint-initdb.d/03-seed-artists-us.sql:ro
+      - ./db/seed_artists_modern.sql:/docker-entrypoint-initdb.d/04-seed-artists-modern.sql:ro
+      - ./db/seed_artists_snw.sql:/docker-entrypoint-initdb.d/05-seed-artists-snw.sql:ro
+      - ./db/seed_sick_new_world.sql:/docker-entrypoint-initdb.d/06-seed-sick-new-world.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U festimize -d festimize"]
       interval: 5s

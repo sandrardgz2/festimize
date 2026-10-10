@@ -25,12 +25,23 @@ dependencies inside the images). When it finishes, open **http://localhost:8080*
 Then:
 
 1. **Register** an account — any email, nothing is sent anywhere.
-2. **Setup** — tick artists you like. Ten is plenty; 101 are loaded.
+2. **Setup** — tick artists you like. Ten is plenty; 139 are loaded.
 3. **Lineup** — every artist at the festival, scored against your taste, best match first.
    Artists you chose yourself are marked "Your pick" rather than given a percentage.
 4. **Schedule** — press *Build my schedule* for a day-by-day plan with breaks.
 
 To stop: `docker compose down`. To wipe the database too: `docker compose down -v`.
+
+### Checking it works
+
+With the stack running, this registers an account, saves some artists, and builds a schedule
+for all three festivals, printing what it found:
+
+```bash
+python3 smoke_test.py
+```
+
+It needs only the Python standard library. Every line should read `ok`.
 
 ### What gets created
 
