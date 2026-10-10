@@ -81,7 +81,7 @@ def choose_greedy(candidates: Sequence[Candidate],
 def choose_best(candidates: Sequence[Candidate],
                 changeover_minutes: int = 10,
                 pick_bonus: float = 10.0,
-                minute_value: float = 0.004) -> List[Candidate]:
+                minute_value: float = 0.0005) -> List[Candidate]:
     """
     Choose the best possible set of non-overlapping performances.
 
@@ -103,6 +103,12 @@ def choose_best(candidates: Sequence[Candidate],
     Value of a set = match score x hours, plus minute_value per minute so a full
     day beats an empty one, plus pick_bonus for an artist the user chose, which
     is large enough that picks are never traded for recommendations.
+
+    minute_value is deliberately tiny — about three points of match quality per
+    hour. It exists to break ties in favour of watching something rather than
+    nothing, and nothing more. Set any higher and length starts beating taste:
+    at 0.004 a 37% set five minutes longer than a 41% set won the slot, which
+    is not a trade anyone would make.
     """
     if not candidates:
         return []
@@ -349,9 +355,24 @@ def build_day(candidates: Sequence[Candidate],
             free = carved
         for f_start, f_end in free:
             minutes = int((f_end - f_start).total_seconds() // 60)
-            if minutes >= 15:
-                slots.append(Slot("REST", f_start, f_end,
-                                  reason="gap — %d minutes between sets" % minutes))
+            if minutes < 15:
+                continue
+            reason = "gap — %d minutes between sets" % minutes
+            # Say what is on during a long gap. Standing around for an hour is
+            # one thing; standing around while an artist you might like plays
+            # is another, and the user should be the one deciding.
+            if minutes >= 40:
+                playing = [o for o in candidates
+                           if o not in chosen and o.score > 0.05
+                           and _overlaps(f_start, f_end, o.starts_at, o.ends_at)]
+                if playing:
+                    best_other = max(playing, key=lambda o: o.score)
+                    reason += " · %s plays %s–%s (%d%%) if you would rather" % (
+                        best_other.artist,
+                        best_other.starts_at.strftime("%H:%M"),
+                        best_other.ends_at.strftime("%H:%M"),
+                        round(best_other.score * 100))
+            slots.append(Slot("REST", f_start, f_end, reason=reason))
 
     slots.sort(key=lambda s: s.starts_at)
     return slots
