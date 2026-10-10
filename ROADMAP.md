@@ -37,6 +37,13 @@ Ideas raised while building, parked on purpose so the current scope stays delive
 - Constraint solver (CP-SAT) benchmarked against the greedy scheduler.
 - Walking distance between stages; break timing informed by the weather forecast.
 
+## Data and models
+- **Artists as a graph, not just tags.** Once the real lineup history is loaded, artists who
+  keep appearing at the same festivals form a network. Similarity over that network would say
+  things tags cannot — particularly for obscure artists whose tags are thin or missing, which
+  is exactly the population the recommender exists to surface. It also gives "which festivals
+  are near-duplicates of each other" (already in scope) a natural form.
+
 ## Social
 - Group mode: one schedule that works for several people at once.
 - Plain-language refinement: "keep Sunday easy", and the day rebuilds.
