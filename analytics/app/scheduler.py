@@ -1,10 +1,15 @@
 """
 Building a day.
 
-Greedy, by design: take the best remaining set that still fits, repeat. A
-constraint solver would find a better optimum, but greedy is explainable —
-when someone asks why an artist was left out, the answer is always "something
-better overlapped it" or "a rule blocked it".
+The day is filled first and breaks are carved out of it afterwards. Filling is
+weighted interval scheduling: every set is worth its match score, and the day
+is worth the sum of the sets in it, so the best day is the highest-scoring set
+of performances that do not overlap. That is solved exactly by dynamic
+programming — sets sorted by finishing time, each asking whether the day is
+better with it or without it. An earlier version took the best remaining set
+repeatedly and needed a repair pass to patch the holes that left; see
+docs/evaluation/scheduler-comparison.md for the two measured against each
+other.
 
 Three things shape the result beyond raw taste score:
 
@@ -15,11 +20,15 @@ Three things shape the result beyond raw taste score:
     whole point of the product. One set in three is reserved for artists the
     user did not name.
   * Rest, in realistic amounts. People come for a full day of music, so the
-    day is filled first and breaks are then carved out of it: one 45-minute
-    meal break and at most two 30-minute breathers, each placed where it costs
-    the least. Earlier versions dropped weak matches and then labelled the
-    resulting holes "rest", which produced three-set days with two-hour gaps —
-    an empty schedule wearing a flattering name.
+    day is filled first and breaks are then carved out of it: one meal break,
+    and a breather only when the lineup does not already break the day up,
+    never more than an hour of arranged break in a day. Earlier versions
+    dropped weak matches and then labelled the resulting holes "rest", which
+    produced three-set days with two-hour gaps — an empty schedule wearing a
+    flattering name.
+
+A set may also be joined late rather than skipped, when enough of it remains
+to be worth walking in on: ten minutes missed beats an hour of nothing.
 
 Targets Python 3.9 syntax.
 """
