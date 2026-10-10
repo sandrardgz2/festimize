@@ -21,16 +21,30 @@ finished earlier. Match quality below is the sum of score x hours across the cho
 
 Dead time is the gap between chosen sets, before breaks are added.
 
-**Reading it.** The exact method is not cleverer about taste — same scores, same data. It is
-better at not painting itself into a corner, which shows up as more sets, more music and less
-waiting. Greedy needed a repair pass bolted on to patch its worst holes; this does not,
-because it does not create them.
+**Reading it: they tie.** On all three festivals, with the value function calibrated correctly,
+greedy and the exact method choose the same schedule. That is an honest negative result and
+worth stating plainly rather than burying.
 
-**A calibration note.** The value of a set is its match score times its length, plus a small
-bonus per minute so that watching something beats watching nothing. That bonus was first set
-at 0.004 per minute — worth roughly 24 points of match quality per hour — and it quietly took
-over: a 37% set five minutes longer than a 41% set won the slot. It is now 0.0005, about three
-points an hour, which breaks ties without overruling taste.
+Why they tie: these lineups are forgiving. Sets are short relative to the gaps between them,
+so taking the best-scoring set rarely blocks a better combination later — the case where
+greedy fails. It does exist (one long mediocre set shutting out two good short ones), but it
+does not arise often enough in this data to separate the two.
+
+Why keep the exact method anyway. It cannot be beaten, by construction, so no future lineup
+will embarrass it — whereas greedy's failure is a property of the data, not of the algorithm,
+and denser festivals with longer sets would expose it. It also removed the repair pass that
+greedy needed to patch the holes it left, which is less code and one fewer thing to explain.
+
+**The calibration mattered more than the algorithm.** The value of a set is its match score
+times its length, plus a small bonus per minute so that watching something beats watching
+nothing. That bonus was first set at 0.004 per minute — worth roughly 24 points of match
+quality per hour — and it quietly took over the objective: a 37% set five minutes longer than
+a 41% set won the slot. Measured against greedy at that setting, the exact method appeared to
+win by two sets and an hour of music. It was not winning; it was exploiting a bad objective.
+
+At 0.0005 per minute, about three points an hour, the bonus breaks ties without overruling
+taste, and the two methods agree. The lesson is that the objective function deserved more
+scrutiny than the search strategy.
 
 Both schedulers are kept in `analytics/app/scheduler.py`: `choose_greedy` as the baseline,
 `choose_best` as the one the application uses.
