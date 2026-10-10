@@ -1,0 +1,51 @@
+# Everything needed to run Festimize on a machine that has only Docker.
+#
+#   docker compose up --build
+#   open http://localhost:8080
+#
+# Postgres loads db/schema.sql and the seed files on first start, so the app
+# comes up with two demonstration festivals and 101 artists already in place.
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: festimize
+      POSTGRES_PASSWORD: festimize
+      POSTGRES_DB: festimize
+    ports:
+      - "5432:5432"
+    volumes:
+      # Run in filename order: schema first, then the two seed files.
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./db/seed_demo.sql:/docker-entrypoint-initdb.d/02-seed-demo.sql:ro
+      - ./db/seed_artists_us.sql:/docker-entrypoint-initdb.d/03-seed-artists-us.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U festimize -d festimize"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  analytics:
+    build: ./analytics
+    environment:
+      DATABASE_URL: postgresql+psycopg://festimize:festimize@db:5432/festimize
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build: ./app
+    environment:
+      DATABASE_URL: jdbc:postgresql://db:5432/festimize
+      DB_USER: festimize
+      DB_PASSWORD: festimize
+      FESTIMIZE_ANALYTICS_BASE-URL: http://analytics:8000
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      analytics:
+        condition: service_started
