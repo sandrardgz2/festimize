@@ -285,49 +285,42 @@ def build_day(candidates: Sequence[Candidate],
         if dropped:
             chosen.remove(dropped)
 
-    # Breathers come out of gaps that already exist. Giving up a set you would
-    # have enjoyed, to stand somewhere else doing nothing, is not pacing.
-    def gaps(sets: List[Candidate]):
+    # A breather is only worth adding when the day does not already provide
+    # one. These lineups leave half an hour between sets; calling one of those
+    # a "breather" tells the user nothing they cannot see. So: find the longest
+    # stretch with no usable gap in it, and only then make room.
+    RESTFUL = timedelta(minutes=20)       # a gap this long is already a sit down
+
+    def longest_unbroken(sets: List[Candidate]) -> tuple:
+        """Returns (start, end, minutes) of the longest stretch without a real gap."""
+        if not sets:
+            return None, None, 0
+        worst = (sets[0].starts_at, sets[0].ends_at, 0)
+        run_start = sets[0].starts_at
         for a, b in zip(sets, sets[1:]):
-            if b.starts_at - a.ends_at >= timedelta(minutes=breather_minutes):
-                yield a.ends_at, b.starts_at
+            breaks_here = (b.starts_at - a.ends_at) >= RESTFUL or any(
+                r.starts_at >= a.ends_at and r.ends_at <= b.starts_at for r in rests)
+            if breaks_here:
+                length = int((a.ends_at - run_start).total_seconds() // 60)
+                if length > worst[2]:
+                    worst = (run_start, a.ends_at, length)
+                run_start = b.starts_at
+        length = int((sets[-1].ends_at - run_start).total_seconds() // 60)
+        if length > worst[2]:
+            worst = (run_start, sets[-1].ends_at, length)
+        return worst
 
-    for gap_start, gap_end in gaps(chosen):
-        if len([r for r in rests if r.reason.startswith("breather")]) >= max_breathers:
-            break
-        if any(_overlaps(gap_start, gap_end, r.starts_at, r.ends_at) for r in rests):
-            continue
-        covered = [r for r in rests if r.ends_at <= gap_start]
-        since = max([r.ends_at for r in covered], default=day_start)
-        # Only once they have actually been on their feet a while. A breather
-        # forty-five minutes into the day is not pacing, it is loitering.
-        if (gap_start - since) >= timedelta(minutes=max_run_minutes):
-            # Use the whole gap: carving 30 minutes out of a 65-minute hole and
-            # calling the remaining 35 a separate gap is two rows describing one
-            # break. Anything longer than an hour and a half stays a hole.
-            length = gap_end - gap_start
-            if length > timedelta(minutes=90):
-                length = timedelta(minutes=breather_minutes)
-            rests.append(Slot("REST", gap_start, gap_start + length, reason="breather"))
-
-    # A long day with no gaps still needs more than lunch. If the lineup leaves
-    # no room, take it from the weakest set — the alternative is ten hours on
-    # your feet with one sit-down, which is the thing this product exists to stop.
-    long_day = (day_end - day_start) >= timedelta(hours=8)
-    if long_day and len(rests) < 2:
-        gap_starts = [r.ends_at for r in rests] or [day_start]
-        after = max(gap_starts) + timedelta(minutes=max_run_minutes)
-        breather, dropped = _carve(chosen, after, breather_minutes, "breather", rests,
-                                   may_drop_a_pick=True)
+    for _ in range(max_breathers):
+        run_start, run_end, length = longest_unbroken(chosen)
+        if length <= max_run_minutes:
+            break                          # the day already breaks itself up
+        breather, dropped = _carve(chosen, run_start, breather_minutes, "breather", rests,
+                                   may_drop_a_pick=True, shortest_acceptable=20)
         if not breather:
-            # Still only after a decent stretch on their feet — never in the
-            # first hours of the day.
-            breather, dropped = _carve(chosen, day_start + timedelta(minutes=max_run_minutes),
-                                       breather_minutes, "breather", rests, may_drop_a_pick=True)
-        if breather:
-            rests.append(breather)
-            if dropped:
-                chosen.remove(dropped)
+            break
+        rests.append(breather)
+        if dropped:
+            chosen.remove(dropped)
 
     # What each choice cost. A schedule that simply appears is hard to trust;
     # one that says what it turned down can be argued with, which is better.
@@ -345,8 +338,7 @@ def build_day(candidates: Sequence[Candidate],
         pct = round(c.score * 100)
         # Below 5% there is no meaningful tag overlap. Saying "2% match" implies a
         # precision the number does not have; it is filling the slot, and should say so.
-        base = "%d%% match" % pct if pct >= 5 else "no close match — fills the slot"
-        return base
+        return "%d%% match" % pct if pct >= 5 else "no close match — fills the slot"
 
     slots = []
     for c in chosen:
