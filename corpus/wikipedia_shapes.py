@@ -2,9 +2,9 @@
 Two article shapes that one-article-per-festival parsing cannot read.
 
 corpus/wikipedia.py assumes a festival keeps every year in one article, under
-one heading per year. Two festivals in the audit do not, and they are the two
-with the deepest history, so losing them is losing the years the rising-artist
-measure most needs:
+one heading per year. Two festivals in festivals.txt do not, and between them
+they hold more years of lineup than any other entry in the list, so skipping
+them would cost the rising-artist measure most of its history:
 
   * **An article per year.** Bonnaroo has no lineup section at all on its main
     article; each year lives in "2015 Bonnaroo Music Festival" and so on. The
@@ -46,8 +46,8 @@ import sys
 from typing import Dict, List, Optional
 
 sys.path.insert(0, __file__.rsplit('/', 2)[0])
-from corpus.wikipedia import (NOT_ARTIST, QUALIFIER, _name_of,       # noqa: E402
-                              _runs, page_wikitext)
+from corpus.wikipedia import (MONTHS, NOT_ARTIST, QUALIFIER,         # noqa: E402
+                              _name_of, _runs, page_wikitext)
 
 # Things a schedule grid lists in the artist column that nobody performs: the
 # tents themselves, and the parts of the festival that are not music. Applied
@@ -58,8 +58,11 @@ NOT_PERFORMANCE = re.compile(
     r'belly\s?dance|tribal dance|silent disco|yoga|buskers?|competition|'
     r'contest|interview|workshop|short movies|lounge|caf[eé])\b', re.I)
 # A prose lead-in that reads as a name: "On March 12, [[band]], [[band]]..."
-# puts the first clause of the sentence in the first comma-separated slot.
-DATED_PROSE = re.compile(r'(?:\b(?:19|20)\d\d\b|^(?:on|in|as of|by|during)\s)', re.I)
+# puts the first clause of the sentence in the first comma-separated slot. The
+# lead-in has to be followed by a date, or the rule eats the band ON an ON.
+DATED_PROSE = re.compile(r'\b(?:19|20)\d\d\b'
+                         r'|^(?:on|in|as of|by|during)\s+(?:the\s+)?'
+                         r'(?:mid-|early |late )?(?:\d|%s)' % MONTHS, re.I)
 
 MARK = re.compile(r'^(?:\{\{\s*(?:y|yes|ya|tick|check\s?mark)\s*\}\}|y|yes|✓|✔)$', re.I)
 YEAR = re.compile(r'\b(19[5-9]\d|20[0-4]\d)\b')
@@ -138,17 +141,22 @@ def _tables(text: str):
     text = re.sub(r'<ref.*?</ref>', '', text, flags=re.S | re.I)
     text = re.sub(r'<!--.*?-->', '', text, flags=re.S)
     table: Optional[List[str]] = None
+    depth = 0
     for line in text.splitlines():
         stripped = line.strip()
         if stripped.startswith('{|'):
-            table = []
-            continue
+            depth += 1
+            if depth == 1:
+                table = []
+                continue
         if table is None:
             continue
         if stripped.startswith('|}'):
-            yield table
-            table = None
-            continue
+            depth -= 1
+            if depth == 0:
+                yield table
+                table = None
+                continue
         table.append(line)
     if table:
         yield table

@@ -27,7 +27,7 @@ Bonnaroo Music Festival | pattern: {year} Bonnaroo Music Festival | 2002-2026
 Coachella | article: Coachella Festival line-ups
 Maryland Deathfest
 Ozzfest
-Mayhem Festival | article: List of Mayhem Festival lineups by year
+Mayhem Festival | article: List of Mayhem Festival lineups by year | matrix: yes
 Vans Warped Tour | article: List of Warped Tour lineups by year | matrix: yes
 
 # --- famous international ---
