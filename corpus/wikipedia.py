@@ -46,11 +46,19 @@ SKIP_NAMESPACE = re.compile(r'^(File|Image|Category|Template|Wikipedia|Help|Port
 QUALIFIER = re.compile(r'\s*\((?:band|musician|singer|rapper|DJ|duo|group|American|British|'
                        r'Swedish|Finnish|German|Norwegian|French|Danish|Dutch|Australian|'
                        r'Canadian|[A-Z]{2})\s*(?:band|musician|singer|duo|group)?\)\s*$', re.I)
-# Links that turn up inside lineup runs but are not artists.
+# Things that turn up inside lineup runs but are not artists. Dates matter
+# most: a table of days puts "October 2" in exactly the position a name goes.
+MONTHS = (r'january|february|march|april|may|june|july|august|september|october|november|december'
+          r'|jan|feb|mar|apr|jun|jul|aug|sept?|oct|nov|dec')
 NOT_ARTIST = re.compile(
-    r'^(stage|main stage|second stage|third stage|day \d|friday|saturday|sunday|thursday|'
-    r'monday|tuesday|wednesday|tba|to be announced|cancell?ed|headliners?|and more|'
-    r'hurricane .*|covid-19 pandemic|heavy metal|death metal|black metal|rock music)$', re.I)
+    r'^(?:'
+    r'stage|main stage|second stage|third stage|day \d+|friday|saturday|sunday|thursday|'
+    r'monday|tuesday|wednesday|tba|tbc|to be announced|cancell?ed|headliners?|and more|'
+    r'hurricane .*|covid-19 pandemic|heavy metal|death metal|black metal|rock music|'
+    r'(?:19|20)\d\d|\d{1,2}(?::\d\d)?(?:am|pm)?|'
+    r'(?:%s)\s*\d{0,2}(?:st|nd|rd|th)?|'          # October 2
+    r'\d{1,2}(?:st|nd|rd|th)?\s+(?:%s)'            # 2 October
+    r')$' % (MONTHS, MONTHS), re.I)
 STAGE_LINE = re.compile(r"(?:'''|\|\s*)?\s*\[?\[?([^|\]']{2,60}?)\]?\]?\s*(?:'''\s*)?(?:stage|tent|arena)\b", re.I)
 
 
