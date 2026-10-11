@@ -1,0 +1,41 @@
+# Festivals to put in the corpus — one per line. Edit this list freely.
+#
+# Write the festival's ordinary name; the checker finds its Wikipedia article.
+# Add "| 2015-2026" to limit the years, and "| article: Exact Page Title" when
+# the search picks the wrong page. Lines starting with # are ignored, so you can
+# park a festival here rather than delete it.
+#
+# Run `python3 corpus/coverage.py` after editing: it reports, per festival, how
+# many years have a real lineup and how many artists it can read, so you can
+# decide with numbers rather than guesses.
+
+# --- United States ---
+Louder Than Life
+Aftershock Festival
+Welcome to Rockville
+Sonic Temple Art & Music Festival
+Riot Fest
+Lollapalooza
+# Bonnaroo Music Festival   <- one article per year ("2004 Bonnaroo Music Festival"), not yet supported
+Coachella | article: Coachella Festival line-ups
+Maryland Deathfest
+Ozzfest
+Mayhem Festival | article: List of Mayhem Festival lineups by year
+Vans Warped Tour | article: List of Warped Tour lineups by year
+
+# --- famous international ---
+Download Festival
+Glastonbury Festival
+Reading and Leeds Festivals
+Wacken Open Air
+Hellfest
+Rock am Ring and Rock im Park
+Rock in Rio
+Roskilde Festival
+Primavera Sound
+Fuji Rock Festival
+
+# --- electronic, if you want the recommender tested outside metal ---
+# Ultra Music Festival
+# Tomorrowland
+# Electric Daisy Carnival

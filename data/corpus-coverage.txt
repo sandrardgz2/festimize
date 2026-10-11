@@ -1,0 +1,23 @@
+festival                           article                             years  sample artists  verdict
+------------------------------------------------------------------------------------------------------------
+Louder Than Life                   Louder Than Life                       11 2024-2026     169  good
+Aftershock Festival                Aftershock Festival                    14 2024-2026     136  good
+Welcome to Rockville               Welcome to Rockville                   14 2023-2025     124  good
+Sonic Temple Art & Music Festival  Sonic Temple (festival)                 5 2024-2026     118  good
+Riot Fest                          Riot Fest                              13 2023-2026       8  thin
+Lollapalooza                       List of Lollapalooza lineups by ye     31 2024-2026     147  good
+Coachella                          Coachella Festival line-ups            27 2024-2026     219  good
+Maryland Deathfest                 Maryland Deathfest                     14 2014-2016      87  good
+Ozzfest                            Ozzfest lineups by year                19 2016-2018      28  thin
+Mayhem Festival                    List of Mayhem Festival lineups by      0       -       -  no year sections
+Vans Warped Tour                   List of Warped Tour lineups by yea      0       -       -  no year sections
+Download Festival                  Download Festival                      24 2024-2026     111  good
+Glastonbury Festival               Glastonbury Festival line-ups          32 2023-2025     108  good
+Reading and Leeds Festivals        Reading and Leeds Festivals line-u     37 2024-2026      52  good
+Wacken Open Air                    Wacken Open Air                         0       -       -  no year sections
+Hellfest                           Hellfest                                1 2020-2020       0  unusable — needs setlist.fm
+Rock am Ring and Rock im Park      Rock am Ring and Rock im Park          17 2023-2025       5  unusable — needs setlist.fm
+Rock in Rio                        Rock in Rio                            18 2022-2026      39  good
+Roskilde Festival                  Roskilde Festival                      12 2018-2020      15  thin
+Primavera Sound                    Primavera Sound                         5 2010-2024      35  good
+Fuji Rock Festival                 Fuji Rock Festival                     30 2024-2026      38  good
