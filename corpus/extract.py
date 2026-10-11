@@ -28,17 +28,35 @@ def main():
     path = os.path.join(OUT, 'appearances.jsonl')
     total, per_festival = 0, []
     with open(path, 'w', encoding='utf-8') as handle:
-        for name, first, last, pinned in wanted():
+        for name, first, last, how in wanted():
             try:
-                page = pinned or article_for(name)
-                rows = collect(page, first, last) if page else []
+                rows, page, source = [], None, 'wikipedia'
+                if 'setlistfm' in how:
+                    from corpus.setlistfm import collect as setlist_collect
+                    page = how['setlistfm'].split('=', 1)[1]
+                    rows, source = setlist_collect(page, first, last), 'setlistfm'
+                elif 'pattern' in how:
+                    from corpus.wikipedia_shapes import per_year_articles
+                    page = how['pattern']
+                    rows = per_year_articles(page, first, last)
+                elif 'matrix' in how:
+                    from corpus.wikipedia_shapes import matrix_article
+                    page = how.get('article') or article_for(name)
+                    rows = [r for r in matrix_article(page) if first <= r['year'] <= last]
+                else:
+                    page = how.get('article') or article_for(name)
+                    rows = collect(page, first, last) if page else []
             except Exception as error:
                 print('%-34s failed: %s' % (name[:34], error))
                 continue
             years = sorted({row['year'] for row in rows})
             for row in rows:
-                handle.write(json.dumps(dict(row, festival=name, source='wikipedia',
-                                             confidence=1.0 if row['linked'] else 0.7)) + '\n')
+                # an editorial lineup is firmer evidence than a crowd-sourced
+                # setlist, and an unlinked name is firmer than neither
+                confidence = (0.85 if source == 'setlistfm' else
+                              1.0 if row.get('linked') else 0.7)
+                handle.write(json.dumps(dict(row, festival=name, source=source,
+                                             confidence=confidence)) + '\n')
             total += len(rows)
             per_festival.append((name, page, len(rows), len(years),
                                  years[0] if years else None, years[-1] if years else None,

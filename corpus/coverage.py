@@ -37,15 +37,17 @@ def wanted():
         if not line:
             continue
         parts = [p.strip() for p in line.split('|')]
-        name, first, last, article = parts[0], 1990, 2026, None
+        name, first, last = parts[0], 1990, 2026
+        how = {}
         for part in parts[1:]:
-            if part.lower().startswith('article:'):
-                article = part.split(':', 1)[1].strip()
+            key, sep, value = part.partition(':')
+            if sep:
+                how[key.strip().lower()] = value.strip()
             else:
                 years = re.findall(r'(?:19|20)\d\d', part)
                 if len(years) == 2:
                     first, last = int(years[0]), int(years[1])
-        out.append((name, first, last, article))
+        out.append((name, first, last, how))
     return out
 
 
@@ -65,9 +67,20 @@ def main():
     full = '--full' in sys.argv
     print('%-34s %-34s %6s %7s %7s  %s' % ('festival', 'article', 'years', 'sample', 'artists', 'verdict'))
     print('-' * 108)
-    for name, first, last, pinned in wanted():
+    for name, first, last, how in wanted():
         try:
-            page = pinned or article_for(name)
+            if 'setlistfm' in how:
+                from corpus.setlistfm import collect as setlist_collect
+                city = how['setlistfm'].split('=', 1)[1]
+                rows = setlist_collect(city, first, last)
+                years = sorted({r['year'] for r in rows})
+                average = round(len(rows) / len(years)) if years else 0
+                print('%-34s %-34s %6d %7s %7d  %s'
+                      % (name[:34], 'setlist.fm: ' + city, len(years),
+                         '%d-%d' % (years[0], years[-1]) if years else '-', average,
+                         'good' if average >= 30 else 'thin'))
+                continue
+            page = how.get('article') or article_for(name)
             if not page:
                 print('%-34s %-34s %6s %7s %7s  no article' % (name[:34], '—', '-', '-', '-'))
                 continue

@@ -1,9 +1,16 @@
 # Festivals to put in the corpus — one per line. Edit this list freely.
 #
 # Write the festival's ordinary name; the checker finds its Wikipedia article.
-# Add "| 2015-2026" to limit the years, and "| article: Exact Page Title" when
-# the search picks the wrong page. Lines starting with # are ignored, so you can
-# park a festival here rather than delete it.
+# Lines starting with # are ignored, so you can park a festival rather than
+# delete it. After the name, add any of these, separated by | :
+#
+#   2015-2026                      only these years
+#   article: Exact Page Title      when the search picks the wrong page
+#   setlistfm: city=Wacken         read from setlist.fm instead of Wikipedia,
+#                                  for festivals whose article names only
+#                                  the headliners
+#   pattern: {year} Bonnaroo ...   when each year has its own article
+#   matrix: yes                    when one table lists bands against years
 #
 # Run `python3 corpus/coverage.py` after editing: it reports, per festival, how
 # many years have a real lineup and how many artists it can read, so you can
@@ -16,20 +23,20 @@ Welcome to Rockville
 Sonic Temple Art & Music Festival
 Riot Fest
 Lollapalooza
-# Bonnaroo Music Festival   <- one article per year ("2004 Bonnaroo Music Festival"), not yet supported
+Bonnaroo Music Festival | pattern: {year} Bonnaroo Music Festival | 2002-2026
 Coachella | article: Coachella Festival line-ups
 Maryland Deathfest
 Ozzfest
 Mayhem Festival | article: List of Mayhem Festival lineups by year
-Vans Warped Tour | article: List of Warped Tour lineups by year
+Vans Warped Tour | article: List of Warped Tour lineups by year | matrix: yes
 
 # --- famous international ---
 Download Festival
 Glastonbury Festival
 Reading and Leeds Festivals
-Wacken Open Air
-Hellfest
-Rock am Ring and Rock im Park
+Wacken Open Air | setlistfm: city=Wacken | 1999-2026
+Hellfest | setlistfm: city=Clisson | 2006-2026
+Rock am Ring and Rock im Park | setlistfm: city=Nürburg | 2008-2026
 Rock in Rio
 Roskilde Festival
 Primavera Sound
