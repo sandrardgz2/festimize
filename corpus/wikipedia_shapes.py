@@ -127,7 +127,7 @@ def per_year_articles(pattern: str, first: int, last: int) -> List[dict]:
             text = page_wikitext(page)
         except Exception:                 # no such article, or the fetch failed
             continue
-        for names, stage in _runs(text):
+        for names, stage, _edition in _runs(text):
             label = _stage(stage)
             for name, title, bold in names:
                 if _usable(name, title):

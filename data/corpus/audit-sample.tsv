@@ -1,0 +1,101 @@
+verdict	festival	year	artist	source	identified	page	note
+ok	Aftershock Festival	2025	Turnstile	wikipedia	yes	Aftershock Festival	
+ok	Coachella	2015	Willem Wolfe	wikipedia	no	Coachella Festival line-ups	Heineken House, Coachella 2015 weekend 1 — checked against the article
+ok	Coachella	2016	Tensnake	wikipedia	yes	Coachella Festival line-ups	
+ok	Coachella	2018	Magic Giant	wikipedia	yes	Coachella Festival line-ups	
+ok	Coachella	2020	Calvin Harris	wikipedia	yes	Coachella Festival line-ups	
+ok	Coachella	2022	Patricio	wikipedia	no	Coachella Festival line-ups	
+ok	Coachella	2023	Jan Blomqvist	wikipedia	no	Coachella Festival line-ups	
+ok	Coachella	2024	Gabe Real	wikipedia	no	Coachella Festival line-ups	Coachella 2024 weekend 1 — checked against the article
+ok	Coachella	2025	Beltran	wikipedia	no	Coachella Festival line-ups	
+ok	Creamfields	2017	Stormzy	wikipedia	no	List of Creamfields line-ups	Creamfields 2017; carries no wiki link in this row, which costs identity, not correctness
+ok	Creamfields	2018	James Dutton	wikipedia	no	List of Creamfields line-ups	a Creamfields 2018 stage bill — checked against the article
+ok	Download Festival	2019	Batushka	wikipedia	yes	Download Festival	
+ok	Download Festival	2021	Vukovi	wikipedia	yes	Download Festival	
+ok	Download Festival	2023	Electric Callboy	wikipedia	yes	Download Festival	
+ok	Electric Daisy Carnival	2017	Getter	setlistfm	yes	setlist.fm/Las Vegas Motor Speedway	
+ok	Electric Daisy Carnival	2017	Reid Speed	setlistfm	yes	setlist.fm/Las Vegas Motor Speedway	
+ok	Electric Daisy Carnival	2018	Armin van Buuren	setlistfm	yes	setlist.fm/Las Vegas Motor Speedway	
+ok	Electric Daisy Carnival	2025	Alesso	setlistfm	yes	setlist.fm/Las Vegas Motor Speedway	
+ok	Electric Forest Festival	2017	Breakbot	wikipedia	yes	Electric Forest	
+ok	Electric Forest Festival	2022	Honeycomb	wikipedia	no	Electric Forest	
+ok	Electric Forest Festival	2023	STS9	wikipedia	yes	Electric Forest	
+ok	Fuji Rock Festival	2022	Dinosaur Jr.	wikipedia	yes	Fuji Rock Festival	
+ok	Furnace Fest	2021	Stavesacre	wikipedia	yes	Furnace Fest	
+ok	Glastonbury Festival	2022	Enny	wikipedia	yes	Glastonbury Festival line-ups	
+ok	Glastonbury Festival	2024	Paul Heaton	wikipedia	yes	Glastonbury Festival line-ups	
+ok	Hellfest	2016	Bad Religion	setlistfm	yes	setlist.fm/Clisson	
+ok	Hellfest	2018	Breed Machine	setlistfm	yes	setlist.fm/Clisson	
+ok	Hellfest	2018	Knocked Loose	setlistfm	yes	setlist.fm/Clisson	
+ok	Hellfest	2022	Deadly Apples	setlistfm	yes	setlist.fm/Clisson	
+ok	Hellfest	2025	The Chainsaw Motel	setlistfm	yes	setlist.fm/Clisson	
+ok	Hellfest	2025	VOLA	setlistfm	yes	setlist.fm/Clisson	
+ok	Hellfest	2026	Esodic	setlistfm	yes	setlist.fm/Clisson	
+ok	Hellfest	2026	Ring of Cash	setlistfm	yes	setlist.fm/Clisson	
+ok	Lollapalooza	2016	Yellow Claw	wikipedia	yes	List of Lollapalooza lineups by year	
+ok	Lollapalooza	2018	K?d	wikipedia	yes	List of Lollapalooza lineups by year	
+ok	Lollapalooza	2018	The Vaccines	wikipedia	yes	List of Lollapalooza lineups by year	
+ok	Lollapalooza	2019	AJR	wikipedia	yes	List of Lollapalooza lineups by year	
+ok	Lollapalooza	2019	Harry Hudson	wikipedia	yes	List of Lollapalooza lineups by year	
+ok	Lollapalooza	2019	Rosalía	wikipedia	yes	List of Lollapalooza lineups by year	
+wrong-festival	Lollapalooza	2020	Sofia Portanet	wikipedia	no	List of Lollapalooza lineups by year	"Lollapalooza Berlin 2020, not Chicago; the heading read ""Lollapalooza Berlin (Canceled)"" and the trailing note defeated the edition test — found by this audit, now fixed"
+ok	Lost Lands Music Festival	2025	Vastive	setlistfm	yes	setlist.fm/Legend Valley	
+ok	Lost Lands Music Festival	2026	Big Florida	setlistfm	yes	setlist.fm/Legend Valley	
+ok	Louder Than Life	2017	Eagles of Death Metal	wikipedia	yes	Louder Than Life	
+ok	Primavera Sound	2022	DJ Seinfeld	setlistfm	yes	setlist.fm/Parc del Fòrum	
+ok	Primavera Sound	2024	Justice	setlistfm	yes	setlist.fm/Parc del Fòrum	
+ok	Primavera Sound	2024	Nieve Ella	setlistfm	yes	setlist.fm/Parc del Fòrum	
+ok	Psycho Las Vegas	2021	T.S.O.L.	setlistfm	yes	setlist.fm/Mandalay Bay	
+ok	Reading and Leeds Festivals	2015	Lethal Bizzle	wikipedia	yes	Reading and Leeds Festivals line-ups	
+ok	Reading and Leeds Festivals	2015	Youth Man	wikipedia	yes	Reading and Leeds Festivals line-ups	
+ok	Reading and Leeds Festivals	2016	Troyboi	wikipedia	no	Reading and Leeds Festivals line-ups	
+ok	Reading and Leeds Festivals	2018	Nothing But Thieves	wikipedia	yes	Reading and Leeds Festivals line-ups	
+ok	Reading and Leeds Festivals	2020	Lady Leshurr	wikipedia	yes	Reading and Leeds Festivals line-ups	
+ok	Riot Fest	2023	Big Skeez	setlistfm	yes	setlist.fm/Douglas Park/Douglass Park	
+ok	Riot Fest	2025	Samiam	setlistfm	yes	setlist.fm/Douglas Park/Douglass Park	
+ok	Roadburn Festival	2018	Dawn Ray’d	setlistfm	yes	setlist.fm/Tilburg	
+ok	Roadburn Festival	2022	40 Watt Sun	setlistfm	yes	setlist.fm/Tilburg	
+ok	Roadburn Festival	2025	Vuur & Zijde	setlistfm	yes	setlist.fm/Tilburg	
+ok	Rock Werchter	2024	Johnny Marr	setlistfm	yes	setlist.fm/Werchter	
+ok	Rock Werchter	2024	Manz	setlistfm	yes	setlist.fm/Werchter	
+ok	Rock Werchter	2026	Bad Nerves	setlistfm	yes	setlist.fm/Werchter	
+ok	Rock am Ring and Rock im Park	2017	Motionless in White	setlistfm	yes	setlist.fm/Nürburg/Nuremberg	
+ok	Rock am Ring and Rock im Park	2018	Taking Back Sunday	setlistfm	yes	setlist.fm/Nürburg/Nuremberg	
+ok	Rock am Ring and Rock im Park	2022	The Toasters	setlistfm	yes	setlist.fm/Nürburg/Nuremberg	
+ok	Rock am Ring and Rock im Park	2023	Brutus	setlistfm	yes	setlist.fm/Nürburg/Nuremberg	
+ok	Rock am Ring and Rock im Park	2024	Kerry King	setlistfm	yes	setlist.fm/Nürburg/Nuremberg	
+ok	Rock am Ring and Rock im Park	2025	Tocotronic	setlistfm	yes	setlist.fm/Nürburg/Nuremberg	
+ok	Rock in Rio	2015	Seal	wikipedia	yes	Rock in Rio	
+ok	Rolling Loud	2018	Woop	setlistfm	yes	setlist.fm/Hard Rock Stadium	
+ok	Roskilde Festival	2017	Madame Gandhi	setlistfm	yes	setlist.fm/Roskilde	
+ok	Roskilde Festival	2023	Minyo Crusaders	setlistfm	yes	setlist.fm/Roskilde	
+ok	Roskilde Festival	2024	Lankum	setlistfm	yes	setlist.fm/Roskilde	
+ok	Roskilde Festival	2025	Jaleesa	setlistfm	yes	setlist.fm/Roskilde	
+ok	Roskilde Festival	2025	Ki!	setlistfm	yes	setlist.fm/Roskilde	
+ok	Roskilde Festival	2026	Poison Ruïn	setlistfm	yes	setlist.fm/Roskilde	
+wrong-festival	Sick New World	2022	Snoop Dogg	setlistfm	yes	setlist.fm/Las Vegas Festival Grounds	Lovers & Friends, 30 April 2022, at the same Las Vegas field; Sick New World did not exist until 2023 — found by this audit, now scoped to 2023-2026
+ok	Suwannee Hulaween	2024	Alleycvtt	wikipedia	no	Suwannee Hulaween	ALLEYCVT, spelled with two t's in the article; resolving names to MusicBrainz is the next task and will join these
+ok	Sziget Festival	2015	Dead Bronco	setlistfm	yes	setlist.fm/Óbudai-Sziget	
+ok	Sziget Festival	2017	Makai	setlistfm	yes	setlist.fm/Óbudai-Sziget	
+ok	Sziget Festival	2019	Pop X	setlistfm	yes	setlist.fm/Óbudai-Sziget	
+ok	Sziget Festival	2025	Bongor	setlistfm	yes	setlist.fm/Óbudai-Sziget	
+ok	Sziget Festival	2025	Upper90	setlistfm	yes	setlist.fm/Óbudai-Sziget	
+ok	Tomorrowland	2017	Patrick Topping	setlistfm	yes	setlist.fm/Boom	
+ok	Tomorrowland	2018	Angello & Ingrosso	setlistfm	yes	setlist.fm/Boom	
+ok	Tomorrowland	2019	Lars Moston	setlistfm	yes	setlist.fm/Boom	
+ok	Tomorrowland	2022	Insolate	setlistfm	yes	setlist.fm/Boom	
+ok	Tomorrowland	2023	Amari	setlistfm	yes	setlist.fm/Boom	
+ok	Tomorrowland	2023	Devin Wild	setlistfm	yes	setlist.fm/Boom	
+ok	Tomorrowland	2023	Pombak	setlistfm	yes	setlist.fm/Boom	
+ok	Tomorrowland	2024	Phara	setlistfm	yes	setlist.fm/Boom	
+ok	Tomorrowland	2026	HAAi	setlistfm	yes	setlist.fm/Boom	
+ok	Tomorrowland	2026	Stadiumx	setlistfm	yes	setlist.fm/Boom	
+ok	Ultra Music Festival	2018	Bassjackers	setlistfm	yes	setlist.fm/Bayfront Park	
+ok	Ultra Music Festival	2018	Tommie Sunshine	setlistfm	yes	setlist.fm/Bayfront Park	
+ok	Wacken Open Air	2015	Skindred	setlistfm	yes	setlist.fm/Wacken	
+ok	Wacken Open Air	2018	Helloween	setlistfm	yes	setlist.fm/Wacken	
+ok	Wacken Open Air	2019	Deathstars	setlistfm	yes	setlist.fm/Wacken	
+ok	Wacken Open Air	2024	KK’s Priest	setlistfm	yes	setlist.fm/Wacken	
+ok	Welcome to Rockville	2015	Korn	wikipedia	yes	Welcome to Rockville	
+ok	Welcome to Rockville	2021	Revised	wikipedia	no	Welcome to Rockville	
+ok	Welcome to Rockville	2021	Staind	wikipedia	yes	Welcome to Rockville	

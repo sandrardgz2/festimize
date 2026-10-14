@@ -71,7 +71,7 @@ def main():
         try:
             if 'setlistfm' in how:
                 from corpus.setlistfm import collect as setlist_collect
-                city = how['setlistfm'].split('=', 1)[1]
+                city = how['setlistfm']
                 rows = setlist_collect(city, first, last)
                 years = sorted({r['year'] for r in rows})
                 average = round(len(rows) / len(years)) if years else 0
