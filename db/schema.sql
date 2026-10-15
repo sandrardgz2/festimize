@@ -49,6 +49,11 @@ CREATE TABLE dim_festival_edition (
     year         smallint NOT NULL,
     start_date   date,
     end_date     date,
+    -- An edition that was announced and then called off. The lineup is kept
+    -- rather than deleted: it is a real fact about who was booked, and it is
+    -- not an appearance. Counting one would show an artist's career carrying
+    -- on through a year nobody played, so the rising measure filters on this.
+    happened     boolean NOT NULL DEFAULT true,
     UNIQUE (festival_id, year)
 );
 
@@ -89,6 +94,15 @@ CREATE TABLE fact_performance (
 CREATE INDEX idx_perf_artist  ON fact_performance (artist_id);
 CREATE INDEX idx_perf_edition ON fact_performance (edition_id);
 CREATE INDEX idx_perf_review  ON fact_performance (confidence) WHERE confidence < 1.0;
+-- Historical rows have no set time, and in Postgres one NULL is never equal to
+-- another, so the index above can never fire for them. This is the key the
+-- corpus actually has: one artist, one edition, one stage.
+CREATE UNIQUE INDEX idx_perf_historical
+    ON fact_performance (artist_id, edition_id, COALESCE(stage_id, 0))
+    WHERE starts_at IS NULL;
+-- Which source a row came from decides whether it may be used commercially:
+-- Wikipedia facts and MusicBrainz are fine, setlist.fm's API is non-commercial.
+CREATE INDEX idx_perf_source ON fact_performance (source);
 
 -- ---------------------------------------------------------------- the app
 CREATE TABLE app_user (
@@ -143,8 +157,19 @@ CREATE TABLE artist_momentum (
     artist_id       bigint PRIMARY KEY REFERENCES dim_artist ON DELETE CASCADE,
     momentum_score  numeric(5,4) NOT NULL,
     appearances     smallint NOT NULL,
+    -- How many different festivals, which is not the same as how many
+    -- appearances: two neighbouring festivals every year is a residency, not
+    -- a rise, and three is the least a rising badge accepts.
+    festivals       smallint,
     first_year      smallint,
     last_year       smallint,
+    -- Which case produced the score. 'trajectory' is a measured climb over
+    -- three or more years; 'returning' is the same climb by an artist who
+    -- formed decades ago; 'new' is too little history to say anything, and the
+    -- page shows the bookings instead; 'arrived' is an artist already at the
+    -- top of the circuit, excluded on purpose because a rising badge on them
+    -- tells a user nothing. See docs/evaluation/momentum-backtest.md.
+    basis           text NOT NULL DEFAULT 'trajectory',
     computed_at     timestamptz NOT NULL DEFAULT now()
 );
 
