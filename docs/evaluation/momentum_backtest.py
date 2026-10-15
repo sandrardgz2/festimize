@@ -55,6 +55,11 @@ LAST_TRAIN = 2022          # the model sees nothing after this
 TEST = (2023, 2025)        # and is judged on these
 ANNOUNCED_ONLY = 2026      # lineups published but not yet played
 TOP = 100                  # how many of each candidate's picks to inspect
+# A year holding less than this much of the usual festival count is too thin to
+# compare. Half was the first threshold and 2021 scraped past it at exactly the
+# cut — 15 festivals against a median of 30 — so every pandemic booking counted
+# double. The shipped measure uses seven tenths and so must the evidence for it.
+THIN = 0.7
 SMALL = 1e-6
 
 
@@ -70,7 +75,7 @@ def usable_years(rows):
         festivals[row['year']].add(row['festival'])
     typical = statistics.median(len(f) for f in festivals.values())
     return (sorted(year for year, found in festivals.items()
-                   if len(found) >= typical / 2 and year != ANNOUNCED_ONLY),
+                   if len(found) >= typical * THIN and year != ANNOUNCED_ONLY),
             {year: len(found) for year, found in festivals.items()}, typical)
 
 
