@@ -55,6 +55,15 @@ def main():
             log(handle, 'sleeping %d minutes before trying those again' % (BETWEEN_TRIES // 60))
             time.sleep(BETWEEN_TRIES)
 
+        # Names to MusicBrainz ids. After the crawl, because a festival that
+        # arrives late brings artists with it, and before validation so the
+        # report describes the dataset the loader will actually read. Its own
+        # cache makes a repeat run cost almost nothing.
+        code, output = run('resolve.py')
+        handle.write(output + '\n')
+        settled = [line for line in output.splitlines() if 'names resolved' in line]
+        log(handle, 'identity: %s' % (settled[0] if settled else 'not reported'))
+
         code, output = run('validate.py', '--write')
         handle.write(output + '\n')
         clean = code == 0

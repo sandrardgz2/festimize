@@ -19,7 +19,7 @@ import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from corpus.clean import is_music, looks_like_artist     # noqa: E402
+from corpus.clean import is_music, looks_like_artist, stage_name   # noqa: E402
 from corpus.coverage import article_for, wanted          # noqa: E402
 from corpus.wikipedia import collect, year_blocks        # noqa: E402
 
@@ -121,6 +121,34 @@ def main():
                 else:
                     page = how.get('article') or article_for(name)
                     rows = collect(page, first, last) if page else []
+                # An article that stops before the festival did leaves a hole
+                # that reads as every artist on its bills retiring that year:
+                # Wikipedia has a per-year Bonnaroo article through 2019 and
+                # none after, though the festival ran on. `fill:` closes the
+                # gap with a setlist.fm search used only for the years the
+                # article does not reach, so the editorial lineup still wins
+                # where it exists and the commercially usable rows are not
+                # traded away for the years it covers. Its own try: a rate
+                # limit on the fill must not cost us the article as well.
+                if 'fill' in how and source != 'setlistfm':
+                    try:
+                        from corpus.setlistfm import collect as setlist_collect
+                        held = {row['year'] for row in rows}
+                        months = [int(m) for m in re.findall(r'\d+', how.get('months', ''))]
+                        filled = [row for row in setlist_collect(
+                                      how['fill'], first, last, months=months or None,
+                                      least_days=int(how.get('days', 1) or 1),
+                                      least_per_day=int(how.get('per_day', 5) or 5))
+                                  if row['year'] not in held]
+                        for row in filled:
+                            row['source'] = 'setlistfm'
+                        rows = rows + filled
+                        print('%-34s %d rows added for %s from setlist.fm'
+                              % ('', len(filled),
+                                 ', '.join(str(y) for y in
+                                           sorted({r['year'] for r in filled})) or 'no year'))
+                    except Exception as gap:
+                        print('%-34s gap not filled: %s' % ('', gap))
             except Exception as error:
                 # A rate limit is not evidence that a festival has no lineup.
                 # Keep what the last run found rather than quietly dropping it.
@@ -141,6 +169,8 @@ def main():
                                              row.get('linked') or row.get('musicbrainz_id'))]
                 for row in kept:
                     row.setdefault('source', 'wikipedia')
+                    if row['source'] != 'setlistfm':
+                        row['stage'] = stage_name(row.get('stage'), name)
                     # Flagged so the report can say which festivals are serving
                     # an older crawl rather than what this run actually read.
                     row['carried'] = True
@@ -173,6 +203,13 @@ def main():
                     and is_music(row)
                     and looks_like_artist(row.get('artist'),
                                           row.get('linked') or row.get('musicbrainz_id'))]
+            # The heading above a block of names is cleaned only now, after
+            # is_music has judged the raw text: a comedy tent must not be
+            # renamed out of reach of that test. setlist.fm rows hold a venue
+            # in this field rather than a stage, and are left as they are.
+            for row in rows:
+                if row.get('source', source) != 'setlistfm':
+                    row['stage'] = stage_name(row.get('stage'), name)
             # An announced lineup for an edition that never happened is still
             # information, but it is not an appearance: counting it would show
             # an artist's career continuing through a year nobody played.
@@ -182,12 +219,16 @@ def main():
             years = sorted({row['year'] for row in rows})
             for row in rows:
                 # an editorial lineup is firmer evidence than a crowd-sourced
-                # setlist, and an unlinked name is firmer than neither
-                confidence = (0.85 if source == 'setlistfm' else
+                # setlist, and an unlinked name is firmer than neither. The
+                # source is read off the row, because a festival read from its
+                # article can have later years filled in from setlist.fm, and
+                # the two do not carry the same licence.
+                came_from = row.get('source', source)
+                confidence = (0.85 if came_from == 'setlistfm' else
                               1.0 if row.get('linked') else 0.7)
-                handle.write(json.dumps(dict(row, festival=name, source=source,
+                handle.write(json.dumps(dict(row, festival=name, source=came_from,
                                              confidence=confidence,
-                                             **LICENSING[source])) + '\n')
+                                             **LICENSING[came_from])) + '\n')
             total += len(rows)
             per_festival.append((name, page, len(rows), len(years),
                                  years[0] if years else None, years[-1] if years else None,

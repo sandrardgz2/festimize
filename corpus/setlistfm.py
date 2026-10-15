@@ -83,9 +83,27 @@ def _api(path: str, **params) -> dict:
 
 
 def _terms(where: str) -> Dict[str, str]:
-    """"city=Wacken" or "venue=Douglass Park" as the API wants it."""
-    key, _, value = where.partition('=')
-    return {'cityName' if key.strip() == 'city' else 'venueName': value.strip()}
+    """
+    "city=Wacken", "venue=Douglass Park", or the two joined with & as the API
+    wants them.
+
+    Pairing a city with a venue is what a generic venue name needs. setlist.fm
+    matches a venue name loosely, so "Waterfront Park" on its own also returns
+    the Waterfront Parks in Louisville, Portland and Burlington — and parks
+    that merely share a word, like St. Petersburg's Vinoy Park — along with
+    whatever festival each of them holds.
+    """
+    found = {}
+    for pair in where.split('&'):
+        key, _, value = pair.partition('=')
+        found['cityName' if key.strip() == 'city' else 'venueName'] = value.strip()
+    return found
+
+
+def _in_city(entry: dict, city: str) -> bool:
+    """Whether a setlist was logged in this city, which a loose match needs asked."""
+    where = ((entry.get('venue') or {}).get('city') or {}).get('name') or ''
+    return where.strip().lower() == city.strip().lower()
 
 
 def _pages(where: Dict[str, str], first: int, last: int) -> List[dict]:
@@ -168,7 +186,9 @@ def collect(where, first: int, last: int, least_per_day: int = 5,
 
     `where` is "city=Wacken" or "venue=Douglass Park" — a village name is
     enough for a festival that is the only thing happening there, and a big
-    city needs the venue or it picks up every club gig in town.
+    city needs the venue or it picks up every club gig in town. A common venue
+    name needs both, joined with &, or it also finds the parks of that name in
+    other cities.
 
     A date counts as a festival day only when several different artists played
     it, which is what separates a festival from a Tuesday night in the same
@@ -192,7 +212,14 @@ def collect(where, first: int, last: int, least_per_day: int = 5,
         where = [where]
     setlists, where_tags = [], []
     for search in where:
-        setlists.extend(_pages(search, first, last))
+        found = _pages(search, first, last)
+        # A search that names both is asking for one park in one city, so the
+        # loose venue match is held to it; a city or a venue on its own is
+        # trusted as given, because a festival site can straddle a boundary
+        # (Primavera's Parc del Forum is half in Sant Adria de Besos).
+        if 'cityName' in search and 'venueName' in search:
+            found = [entry for entry in found if _in_city(entry, search['cityName'])]
+        setlists.extend(found)
         where_tags.extend(search.values())
     by_date: Dict[str, List[dict]] = collections.defaultdict(list)
     for entry in setlists:

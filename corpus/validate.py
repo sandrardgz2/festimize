@@ -71,9 +71,19 @@ FORBIDDEN = [
     ('The Sword', 'Download Festival', 2015, 'pulled out; named only in a paragraph about it'),
     ('King 810', 'Download Festival', 2015, 'pulled out'),
     ('Leicestershire Police', 'Download Festival', 2015, 'a police force in a prose paragraph'),
+    # Psycho Las Vegas was parked on 14 October, so this one now passes because
+    # the festival is absent rather than because the rule works. It stays as a
+    # record of how the comedian arrived; is_music is what keeps him out, and
+    # the Sonic Temple case below exercises that rule on a festival still here.
     ('Max Amini', 'Psycho Las Vegas', 2026, 'a comedian; a city search picked up a club show'),
     ('Celeste', 'Glastonbury Festival', 2020, 'announced for an edition that was cancelled'),
     ('Andrew Dice Clay', 'Sonic Temple Art & Music Festival', 2019, 'a comedian in the spoken-word tent'),
+    ('Gogol Bordello', 'CRSSD Festival', 2015,
+     'Gasparilla Music Festival in Tampa; a venue search for Waterfront Park '
+     'matched any park with a shared word, in any city'),
+    ('Davido', 'Riot Fest', 2023,
+     'an Afrobeats festival at Doug Jennings Park on the Gold Coast, '
+     'matched by a search for Chicago\'s Douglass Park'),
 ]
 
 
@@ -192,6 +202,13 @@ def main():
     # One bad year does not condemn a festival: Hellfest has ten good years and a
     # 2021 with twenty acts in it. What matters is how many years are properly
     # covered, because that is how many points a trend has to be drawn through.
+    say('What this column does not ask is whether the rows are any good. A festival')
+    say('with two complete bills in it cannot show its own trend, and still adds two')
+    say('real points to the career of every artist on those bills — which is what the')
+    say('rising-artist score is measured over. Sick New World is kept on exactly that')
+    say('reasoning; Defqon.1 was cut on the opposite one, because six acts out of a')
+    say('hundred is a fragment of a bill rather than a short history.')
+    say()
     say('| festival | years | usable | median | smallest | largest | enough for a trend |')
     say('|---|---|---|---|---|---|---|')
     rank = sorted(sizes, key=lambda f: (-sum(1 for c in sizes[f]

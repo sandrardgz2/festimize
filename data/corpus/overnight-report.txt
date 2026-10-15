@@ -1,19 +1,20 @@
-20:58  started; will keep trying until 10:58
+21:12  started; will keep trying until 11:12
 Louder Than Life                     969 rows  10 years  2015-2026
 Aftershock Festival                  804 rows  11 years  2015-2026
 Welcome to Rockville                 757 rows  10 years  2015-2025
 Sonic Temple Art & Music Festival    473 rows   5 years  2019-2026
-Riot Fest                           1037 rows  10 years  2015-2026
+Riot Fest                           1017 rows  10 years  2015-2026
                                    1813 rows dropped as other editions: Lollapalooza Argentina 416, Lollapalooza Chile 291, Lollapalooza Berlin 242, Lollapalooza Paris 182, Lollapalooza Stockholm 165, Lollapalooza Brazil 148, Lollapalooza Brasil 78, Lollapalooza Brazil (Canceled) 64, Lollapalooza India 64, Lollapalooza Stockholm (Canceled) 49, Lollapalooza Argentina (Canceled) 47, Lollapalooza Berlin (Canceled) 42, Lollapalooza Paris (Canceled) 25
 Lollapalooza                        1371 rows  10 years  2015-2026
-Bonnaroo Music Festival              726 rows   5 years  2015-2019
+                                   643 rows added for 2022, 2023, 2024, 2025, 2026 from setlist.fm
+Bonnaroo Music Festival             1369 rows  10 years  2015-2026
 Coachella                           2419 rows  11 years  2015-2026
 Vans Warped Tour                     751 rows   7 years  2015-2026
 Sick New World                       143 rows   2 years  2023-2024
+                                   0 rows added for no year from setlist.fm
                                    239 rows dropped as other editions: Mexico 109, Australia 44, Japan 41, Brazil 24, Germany 6, Chile 5, Italy 4, Knotfest Roadshow USA 2, Los Angeles 2, Argentina 2
 Knotfest                             233 rows   7 years  2015-2024
 Rolling Loud                         665 rows   7 years  2018-2026
-Psycho Las Vegas                     124 rows   4 years  2019-2026
 Furnace Fest                         449 rows   5 years  2021-2025
                                    271 rows dropped as other editions: Spain 104, France 97, Australia 54, Japan 9, Germany 7
 Download Festival                   1144 rows  11 years  2015-2026
@@ -33,974 +34,122 @@ Electric Daisy Carnival             1388 rows  10 years  2015-2025
 Ultra Music Festival                 802 rows  10 years  2015-2026
 Tomorrowland                        4658 rows  10 years  2015-2026
 Electric Zoo                         201 rows  10 years  2015-2026
-Electric Forest Festival            1089 rows   8 years  2015-2024
-HARD Summer                            0 rows   0 years  none
+                                   225 rows added for 2025, 2026 from setlist.fm
+Electric Forest Festival            1314 rows  10 years  2015-2026
 Lost Lands Music Festival            704 rows   5 years  2022-2026
-CRSSD Festival                     failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Okeechobee Music & Arts Festival   failed: setlist.fm daily quota is exhausted; this festival needs a later run
+CRSSD Festival                       542 rows  12 years  2015-2026
+Okeechobee Music & Arts Festival     613 rows   7 years  2016-2026
+                                   0 rows added for no year from setlist.fm
 Creamfields                         1052 rows   6 years  2015-2020
-Defqon.1 Festival                  failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Suwannee Hulaween                    375 rows   9 years  2015-2024
+                                   37 rows added for 2025 from setlist.fm
+Suwannee Hulaween                    412 rows  10 years  2015-2025
 
-37601 appearance rows written to /Users/sandra/PennState/festimize/data/corpus/appearances.jsonl
-33056 of them (88%) carry a Wikipedia link, which resolves to a MusicBrainz id
+39517 appearance rows written to /Users/sandra/PennState/festimize/data/corpus/appearances.jsonl
+34972 of them (88%) carry a Wikipedia link, which resolves to a MusicBrainz id
 490 rows are announced lineups for editions that were cancelled
-15534 distinct artist names
+15966 distinct artist names
 
-20:58  extract finished; 3 festivals still blocked by the quota
-20:58  sleeping 45 minutes before trying those again
-Louder Than Life                     969 rows  10 years  2015-2026
-Aftershock Festival                  804 rows  11 years  2015-2026
-Welcome to Rockville                 757 rows  10 years  2015-2025
-Sonic Temple Art & Music Festival    473 rows   5 years  2019-2026
-Riot Fest                           1037 rows  10 years  2015-2026
-                                   1813 rows dropped as other editions: Lollapalooza Argentina 416, Lollapalooza Chile 291, Lollapalooza Berlin 242, Lollapalooza Paris 182, Lollapalooza Stockholm 165, Lollapalooza Brazil 148, Lollapalooza Brasil 78, Lollapalooza Brazil (Canceled) 64, Lollapalooza India 64, Lollapalooza Stockholm (Canceled) 49, Lollapalooza Argentina (Canceled) 47, Lollapalooza Berlin (Canceled) 42, Lollapalooza Paris (Canceled) 25
-Lollapalooza                        1371 rows  10 years  2015-2026
-Bonnaroo Music Festival              726 rows   5 years  2015-2019
-Coachella                           2419 rows  11 years  2015-2026
-Vans Warped Tour                     751 rows   7 years  2015-2026
-Sick New World                       143 rows   2 years  2023-2024
-                                   239 rows dropped as other editions: Mexico 109, Australia 44, Japan 41, Brazil 24, Germany 6, Chile 5, Italy 4, Knotfest Roadshow USA 2, Los Angeles 2, Argentina 2
-Knotfest                             233 rows   7 years  2015-2024
-Rolling Loud                         665 rows   7 years  2018-2026
-Psycho Las Vegas                     124 rows   4 years  2019-2026
-Furnace Fest                         449 rows   5 years  2021-2025
-                                   271 rows dropped as other editions: Spain 104, France 97, Australia 54, Japan 9, Germany 7
-Download Festival                   1144 rows  11 years  2015-2026
-Glastonbury Festival                1061 rows  10 years  2015-2025
-Reading and Leeds Festivals         1460 rows  11 years  2015-2026
-Wacken Open Air                     1799 rows  10 years  2015-2026
-Hellfest                            2078 rows  11 years  2015-2026
-Rock am Ring and Rock im Park        937 rows  10 years  2015-2026
-Rock in Rio                          259 rows   7 years  2015-2026
-Roskilde Festival                   1437 rows  10 years  2015-2026
-Primavera Sound                     1509 rows   9 years  2015-2025
-Fuji Rock Festival                   436 rows  11 years  2015-2026
-Sziget Festival                     1842 rows  10 years  2015-2026
-Rock Werchter                       1242 rows  10 years  2015-2026
-Roadburn Festival                   1207 rows  10 years  2015-2026
-Electric Daisy Carnival             1388 rows  10 years  2015-2025
-Ultra Music Festival                 802 rows  10 years  2015-2026
-Tomorrowland                        4658 rows  10 years  2015-2026
-Electric Zoo                         201 rows  10 years  2015-2026
-Electric Forest Festival            1089 rows   8 years  2015-2024
-HARD Summer                            0 rows   0 years  none
-Lost Lands Music Festival            704 rows   5 years  2022-2026
-CRSSD Festival                     failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Okeechobee Music & Arts Festival   failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Creamfields                         1052 rows   6 years  2015-2020
-Defqon.1 Festival                  failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Suwannee Hulaween                    375 rows   9 years  2015-2024
+21:16  extract finished; 0 festivals still blocked by the quota
+16446 distinct names over 39517 appearance rows
+2560 names carry a Wikipedia title
+  wikidata    50/2560 titles
+  wikidata   100/2560 titles
+  wikidata   150/2560 titles
+  wikidata   200/2560 titles
+  wikidata   250/2560 titles
+  wikidata   300/2560 titles
+  wikidata   350/2560 titles
+  wikidata   400/2560 titles
+  wikidata   450/2560 titles
+  wikidata   500/2560 titles
+  wikidata   550/2560 titles
+  wikidata   600/2560 titles
+  wikidata   650/2560 titles
+  wikidata   700/2560 titles
+  wikidata   750/2560 titles
+  wikidata   800/2560 titles
+  wikidata   850/2560 titles
+  wikidata   900/2560 titles
+  wikidata   950/2560 titles
+  wikidata  1000/2560 titles
+  wikidata  1050/2560 titles
+  wikidata  1100/2560 titles
+  wikidata  1150/2560 titles
+  wikidata  1200/2560 titles
+  wikidata  1250/2560 titles
+  wikidata  1300/2560 titles
+  wikidata  1350/2560 titles
+  wikidata  1400/2560 titles
+  wikidata  1450/2560 titles
+  wikidata  1500/2560 titles
+  wikidata  1550/2560 titles
+  wikidata  1600/2560 titles
+  wikidata  1650/2560 titles
+  wikidata  1700/2560 titles
+  wikidata  1750/2560 titles
+  wikidata  1800/2560 titles
+  wikidata  1850/2560 titles
+  wikidata  1900/2560 titles
+  wikidata  1950/2560 titles
+  wikidata  2000/2560 titles
+  wikidata  2050/2560 titles
+  wikidata  2100/2560 titles
+  wikidata  2150/2560 titles
+  wikidata  2200/2560 titles
+  wikidata  2250/2560 titles
+  wikidata  2300/2560 titles
+  wikidata  2350/2560 titles
+  wikidata  2400/2560 titles
+  wikidata  2450/2560 titles
+  wikidata  2500/2560 titles
+  wikidata  2550/2560 titles
+  wikidata  2560/2560 titles
+2716 names need a name search
+  searched   200/2716 names
+  searched   400/2716 names
+  searched   600/2716 names
+  searched   800/2716 names
+  searched  1000/2716 names
+  searched  1200/2716 names
+  searched  1400/2716 names
+  searched  1600/2716 names
+  searched  1800/2716 names
+  searched  2000/2716 names
+Traceback (most recent call last):
+  File "/Users/sandra/PennState/festimize/corpus/resolve.py", line 362, in <module>
+    main()
+  File "/Users/sandra/PennState/festimize/corpus/resolve.py", line 329, in main
+    settled = resolve(found, search=search and not report_only)
+  File "/Users/sandra/PennState/festimize/corpus/resolve.py", line 280, in resolve
+    mbid = search_musicbrainz(name)
+  File "/Users/sandra/PennState/festimize/corpus/resolve.py", line 203, in search_musicbrainz
+    answer = _cached(tag, fetch)
+  File "/Users/sandra/PennState/festimize/corpus/resolve.py", line 92, in _cached
+    made = build()
+  File "/Users/sandra/PennState/festimize/corpus/resolve.py", line 201, in fetch
+    return _get(url)
+  File "/Users/sandra/PennState/festimize/corpus/resolve.py", line 83, in _get
+    raise last
+  File "/Users/sandra/PennState/festimize/corpus/resolve.py", line 73, in _get
+    with urllib.request.urlopen(request, timeout=45) as response:
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/urllib/request.py", line 214, in urlopen
+    return opener.open(url, data, timeout)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/urllib/request.py", line 523, in open
+    response = meth(req, response)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/urllib/request.py", line 632, in http_response
+    response = self.parent.error(
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/urllib/request.py", line 561, in error
+    return self._call_chain(*args)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/urllib/request.py", line 494, in _call_chain
+    result = func(*args)
+  File "/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/lib/python3.9/urllib/request.py", line 641, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 503: Service Temporarily Unavailable
 
-37601 appearance rows written to /Users/sandra/PennState/festimize/data/corpus/appearances.jsonl
-33056 of them (88%) carry a Wikipedia link, which resolves to a MusicBrainz id
-490 rows are announced lineups for editions that were cancelled
-15534 distinct artist names
-
-21:44  extract finished; 3 festivals still blocked by the quota
-21:44  sleeping 45 minutes before trying those again
-Louder Than Life                     969 rows  10 years  2015-2026
-Aftershock Festival                  804 rows  11 years  2015-2026
-Welcome to Rockville                 757 rows  10 years  2015-2025
-Sonic Temple Art & Music Festival    473 rows   5 years  2019-2026
-Riot Fest                           1037 rows  10 years  2015-2026
-                                   1813 rows dropped as other editions: Lollapalooza Argentina 416, Lollapalooza Chile 291, Lollapalooza Berlin 242, Lollapalooza Paris 182, Lollapalooza Stockholm 165, Lollapalooza Brazil 148, Lollapalooza Brasil 78, Lollapalooza Brazil (Canceled) 64, Lollapalooza India 64, Lollapalooza Stockholm (Canceled) 49, Lollapalooza Argentina (Canceled) 47, Lollapalooza Berlin (Canceled) 42, Lollapalooza Paris (Canceled) 25
-Lollapalooza                        1371 rows  10 years  2015-2026
-Bonnaroo Music Festival              726 rows   5 years  2015-2019
-Coachella                           2419 rows  11 years  2015-2026
-Vans Warped Tour                     751 rows   7 years  2015-2026
-Sick New World                       143 rows   2 years  2023-2024
-                                   239 rows dropped as other editions: Mexico 109, Australia 44, Japan 41, Brazil 24, Germany 6, Chile 5, Italy 4, Knotfest Roadshow USA 2, Los Angeles 2, Argentina 2
-Knotfest                             233 rows   7 years  2015-2024
-Rolling Loud                         665 rows   7 years  2018-2026
-Psycho Las Vegas                     124 rows   4 years  2019-2026
-Furnace Fest                         449 rows   5 years  2021-2025
-                                   271 rows dropped as other editions: Spain 104, France 97, Australia 54, Japan 9, Germany 7
-Download Festival                   1144 rows  11 years  2015-2026
-Glastonbury Festival                1061 rows  10 years  2015-2025
-Reading and Leeds Festivals         1460 rows  11 years  2015-2026
-Wacken Open Air                     1799 rows  10 years  2015-2026
-Hellfest                            2078 rows  11 years  2015-2026
-Rock am Ring and Rock im Park        937 rows  10 years  2015-2026
-Rock in Rio                          259 rows   7 years  2015-2026
-Roskilde Festival                   1437 rows  10 years  2015-2026
-Primavera Sound                     1509 rows   9 years  2015-2025
-Fuji Rock Festival                   436 rows  11 years  2015-2026
-Sziget Festival                     1842 rows  10 years  2015-2026
-Rock Werchter                       1242 rows  10 years  2015-2026
-Roadburn Festival                   1207 rows  10 years  2015-2026
-Electric Daisy Carnival             1388 rows  10 years  2015-2025
-Ultra Music Festival                 802 rows  10 years  2015-2026
-Tomorrowland                        4658 rows  10 years  2015-2026
-Electric Zoo                         201 rows  10 years  2015-2026
-Electric Forest Festival            1089 rows   8 years  2015-2024
-HARD Summer                            0 rows   0 years  none
-Lost Lands Music Festival            704 rows   5 years  2022-2026
-CRSSD Festival                     failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Okeechobee Music & Arts Festival   failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Creamfields                         1052 rows   6 years  2015-2020
-Defqon.1 Festival                  failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Suwannee Hulaween                    375 rows   9 years  2015-2024
-
-37601 appearance rows written to /Users/sandra/PennState/festimize/data/corpus/appearances.jsonl
-33056 of them (88%) carry a Wikipedia link, which resolves to a MusicBrainz id
-490 rows are announced lineups for editions that were cancelled
-15534 distinct artist names
-
-22:29  extract finished; 3 festivals still blocked by the quota
-22:29  sleeping 45 minutes before trying those again
-Louder Than Life                     969 rows  10 years  2015-2026
-Aftershock Festival                  804 rows  11 years  2015-2026
-Welcome to Rockville                 757 rows  10 years  2015-2025
-Sonic Temple Art & Music Festival    473 rows   5 years  2019-2026
-Riot Fest                           1037 rows  10 years  2015-2026
-                                   1813 rows dropped as other editions: Lollapalooza Argentina 416, Lollapalooza Chile 291, Lollapalooza Berlin 242, Lollapalooza Paris 182, Lollapalooza Stockholm 165, Lollapalooza Brazil 148, Lollapalooza Brasil 78, Lollapalooza Brazil (Canceled) 64, Lollapalooza India 64, Lollapalooza Stockholm (Canceled) 49, Lollapalooza Argentina (Canceled) 47, Lollapalooza Berlin (Canceled) 42, Lollapalooza Paris (Canceled) 25
-Lollapalooza                        1371 rows  10 years  2015-2026
-Bonnaroo Music Festival              726 rows   5 years  2015-2019
-Coachella                           2419 rows  11 years  2015-2026
-Vans Warped Tour                     751 rows   7 years  2015-2026
-Sick New World                       143 rows   2 years  2023-2024
-                                   239 rows dropped as other editions: Mexico 109, Australia 44, Japan 41, Brazil 24, Germany 6, Chile 5, Italy 4, Knotfest Roadshow USA 2, Los Angeles 2, Argentina 2
-Knotfest                             233 rows   7 years  2015-2024
-Rolling Loud                         665 rows   7 years  2018-2026
-Psycho Las Vegas                     124 rows   4 years  2019-2026
-Furnace Fest                         449 rows   5 years  2021-2025
-                                   271 rows dropped as other editions: Spain 104, France 97, Australia 54, Japan 9, Germany 7
-Download Festival                   1144 rows  11 years  2015-2026
-Glastonbury Festival                1061 rows  10 years  2015-2025
-Reading and Leeds Festivals         1460 rows  11 years  2015-2026
-Wacken Open Air                     1799 rows  10 years  2015-2026
-Hellfest                            2078 rows  11 years  2015-2026
-Rock am Ring and Rock im Park        937 rows  10 years  2015-2026
-Rock in Rio                          259 rows   7 years  2015-2026
-Roskilde Festival                   1437 rows  10 years  2015-2026
-Primavera Sound                     1509 rows   9 years  2015-2025
-Fuji Rock Festival                   436 rows  11 years  2015-2026
-Sziget Festival                     1842 rows  10 years  2015-2026
-Rock Werchter                       1242 rows  10 years  2015-2026
-Roadburn Festival                   1207 rows  10 years  2015-2026
-Electric Daisy Carnival             1388 rows  10 years  2015-2025
-Ultra Music Festival                 802 rows  10 years  2015-2026
-Tomorrowland                        4658 rows  10 years  2015-2026
-Electric Zoo                         201 rows  10 years  2015-2026
-Electric Forest Festival            1089 rows   8 years  2015-2024
-HARD Summer                            0 rows   0 years  none
-Lost Lands Music Festival            704 rows   5 years  2022-2026
-CRSSD Festival                     failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Okeechobee Music & Arts Festival   failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Creamfields                         1052 rows   6 years  2015-2020
-Defqon.1 Festival                  failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Suwannee Hulaween                    375 rows   9 years  2015-2024
-
-37601 appearance rows written to /Users/sandra/PennState/festimize/data/corpus/appearances.jsonl
-33056 of them (88%) carry a Wikipedia link, which resolves to a MusicBrainz id
-490 rows are announced lineups for editions that were cancelled
-15534 distinct artist names
-
-23:15  extract finished; 3 festivals still blocked by the quota
-23:15  sleeping 45 minutes before trying those again
-Louder Than Life                     969 rows  10 years  2015-2026
-Aftershock Festival                  804 rows  11 years  2015-2026
-Welcome to Rockville                 757 rows  10 years  2015-2025
-Sonic Temple Art & Music Festival    473 rows   5 years  2019-2026
-Riot Fest                           1037 rows  10 years  2015-2026
-                                   1813 rows dropped as other editions: Lollapalooza Argentina 416, Lollapalooza Chile 291, Lollapalooza Berlin 242, Lollapalooza Paris 182, Lollapalooza Stockholm 165, Lollapalooza Brazil 148, Lollapalooza Brasil 78, Lollapalooza Brazil (Canceled) 64, Lollapalooza India 64, Lollapalooza Stockholm (Canceled) 49, Lollapalooza Argentina (Canceled) 47, Lollapalooza Berlin (Canceled) 42, Lollapalooza Paris (Canceled) 25
-Lollapalooza                        1371 rows  10 years  2015-2026
-Bonnaroo Music Festival              726 rows   5 years  2015-2019
-Coachella                           2419 rows  11 years  2015-2026
-Vans Warped Tour                     751 rows   7 years  2015-2026
-Sick New World                       143 rows   2 years  2023-2024
-                                   239 rows dropped as other editions: Mexico 109, Australia 44, Japan 41, Brazil 24, Germany 6, Chile 5, Italy 4, Knotfest Roadshow USA 2, Los Angeles 2, Argentina 2
-Knotfest                             233 rows   7 years  2015-2024
-Rolling Loud                         665 rows   7 years  2018-2026
-Psycho Las Vegas                     124 rows   4 years  2019-2026
-Furnace Fest                         449 rows   5 years  2021-2025
-                                   271 rows dropped as other editions: Spain 104, France 97, Australia 54, Japan 9, Germany 7
-Download Festival                   1144 rows  11 years  2015-2026
-Glastonbury Festival                1061 rows  10 years  2015-2025
-Reading and Leeds Festivals         1460 rows  11 years  2015-2026
-Wacken Open Air                     1799 rows  10 years  2015-2026
-Hellfest                            2078 rows  11 years  2015-2026
-Rock am Ring and Rock im Park        937 rows  10 years  2015-2026
-Rock in Rio                          259 rows   7 years  2015-2026
-Roskilde Festival                   1437 rows  10 years  2015-2026
-Primavera Sound                     1509 rows   9 years  2015-2025
-Fuji Rock Festival                   436 rows  11 years  2015-2026
-Sziget Festival                     1842 rows  10 years  2015-2026
-Rock Werchter                       1242 rows  10 years  2015-2026
-Roadburn Festival                   1207 rows  10 years  2015-2026
-Electric Daisy Carnival             1388 rows  10 years  2015-2025
-Ultra Music Festival                 802 rows  10 years  2015-2026
-Tomorrowland                        4658 rows  10 years  2015-2026
-Electric Zoo                         201 rows  10 years  2015-2026
-Electric Forest Festival            1089 rows   8 years  2015-2024
-HARD Summer                            0 rows   0 years  none
-Lost Lands Music Festival            704 rows   5 years  2022-2026
-CRSSD Festival                     failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Okeechobee Music & Arts Festival   failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Creamfields                         1052 rows   6 years  2015-2020
-Defqon.1 Festival                  failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Suwannee Hulaween                    375 rows   9 years  2015-2024
-
-37601 appearance rows written to /Users/sandra/PennState/festimize/data/corpus/appearances.jsonl
-33056 of them (88%) carry a Wikipedia link, which resolves to a MusicBrainz id
-490 rows are announced lineups for editions that were cancelled
-15534 distinct artist names
-
-00:00  extract finished; 3 festivals still blocked by the quota
-00:00  sleeping 45 minutes before trying those again
-Louder Than Life                     969 rows  10 years  2015-2026
-Aftershock Festival                  804 rows  11 years  2015-2026
-Welcome to Rockville                 757 rows  10 years  2015-2025
-Sonic Temple Art & Music Festival    473 rows   5 years  2019-2026
-Riot Fest                           1037 rows  10 years  2015-2026
-                                   1813 rows dropped as other editions: Lollapalooza Argentina 416, Lollapalooza Chile 291, Lollapalooza Berlin 242, Lollapalooza Paris 182, Lollapalooza Stockholm 165, Lollapalooza Brazil 148, Lollapalooza Brasil 78, Lollapalooza Brazil (Canceled) 64, Lollapalooza India 64, Lollapalooza Stockholm (Canceled) 49, Lollapalooza Argentina (Canceled) 47, Lollapalooza Berlin (Canceled) 42, Lollapalooza Paris (Canceled) 25
-Lollapalooza                        1371 rows  10 years  2015-2026
-Bonnaroo Music Festival              726 rows   5 years  2015-2019
-Coachella                           2419 rows  11 years  2015-2026
-Vans Warped Tour                     751 rows   7 years  2015-2026
-Sick New World                       143 rows   2 years  2023-2024
-                                   239 rows dropped as other editions: Mexico 109, Australia 44, Japan 41, Brazil 24, Germany 6, Chile 5, Italy 4, Knotfest Roadshow USA 2, Los Angeles 2, Argentina 2
-Knotfest                             233 rows   7 years  2015-2024
-Rolling Loud                         665 rows   7 years  2018-2026
-Psycho Las Vegas                     124 rows   4 years  2019-2026
-Furnace Fest                         449 rows   5 years  2021-2025
-                                   271 rows dropped as other editions: Spain 104, France 97, Australia 54, Japan 9, Germany 7
-Download Festival                   1144 rows  11 years  2015-2026
-Glastonbury Festival                1061 rows  10 years  2015-2025
-Reading and Leeds Festivals         1460 rows  11 years  2015-2026
-Wacken Open Air                     1799 rows  10 years  2015-2026
-Hellfest                            2078 rows  11 years  2015-2026
-Rock am Ring and Rock im Park        937 rows  10 years  2015-2026
-Rock in Rio                          259 rows   7 years  2015-2026
-Roskilde Festival                   1437 rows  10 years  2015-2026
-Primavera Sound                     1509 rows   9 years  2015-2025
-Fuji Rock Festival                   436 rows  11 years  2015-2026
-Sziget Festival                     1842 rows  10 years  2015-2026
-Rock Werchter                       1242 rows  10 years  2015-2026
-Roadburn Festival                   1207 rows  10 years  2015-2026
-Electric Daisy Carnival             1388 rows  10 years  2015-2025
-Ultra Music Festival                 802 rows  10 years  2015-2026
-Tomorrowland                        4658 rows  10 years  2015-2026
-Electric Zoo                         201 rows  10 years  2015-2026
-Electric Forest Festival            1089 rows   8 years  2015-2024
-HARD Summer                            0 rows   0 years  none
-Lost Lands Music Festival            704 rows   5 years  2022-2026
-CRSSD Festival                     failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Okeechobee Music & Arts Festival   failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Creamfields                         1052 rows   6 years  2015-2020
-Defqon.1 Festival                  failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Suwannee Hulaween                    375 rows   9 years  2015-2024
-
-37601 appearance rows written to /Users/sandra/PennState/festimize/data/corpus/appearances.jsonl
-33056 of them (88%) carry a Wikipedia link, which resolves to a MusicBrainz id
-490 rows are announced lineups for editions that were cancelled
-15534 distinct artist names
-
-00:45  extract finished; 3 festivals still blocked by the quota
-00:45  sleeping 45 minutes before trying those again
-Louder Than Life                     969 rows  10 years  2015-2026
-Aftershock Festival                  804 rows  11 years  2015-2026
-Welcome to Rockville                 757 rows  10 years  2015-2025
-Sonic Temple Art & Music Festival    473 rows   5 years  2019-2026
-Riot Fest                           1037 rows  10 years  2015-2026
-                                   1813 rows dropped as other editions: Lollapalooza Argentina 416, Lollapalooza Chile 291, Lollapalooza Berlin 242, Lollapalooza Paris 182, Lollapalooza Stockholm 165, Lollapalooza Brazil 148, Lollapalooza Brasil 78, Lollapalooza Brazil (Canceled) 64, Lollapalooza India 64, Lollapalooza Stockholm (Canceled) 49, Lollapalooza Argentina (Canceled) 47, Lollapalooza Berlin (Canceled) 42, Lollapalooza Paris (Canceled) 25
-Lollapalooza                        1371 rows  10 years  2015-2026
-Bonnaroo Music Festival              726 rows   5 years  2015-2019
-Coachella                           2419 rows  11 years  2015-2026
-Vans Warped Tour                     751 rows   7 years  2015-2026
-Sick New World                       143 rows   2 years  2023-2024
-                                   239 rows dropped as other editions: Mexico 109, Australia 44, Japan 41, Brazil 24, Germany 6, Chile 5, Italy 4, Knotfest Roadshow USA 2, Los Angeles 2, Argentina 2
-Knotfest                             233 rows   7 years  2015-2024
-Rolling Loud                         665 rows   7 years  2018-2026
-Psycho Las Vegas                     124 rows   4 years  2019-2026
-Furnace Fest                         449 rows   5 years  2021-2025
-                                   271 rows dropped as other editions: Spain 104, France 97, Australia 54, Japan 9, Germany 7
-Download Festival                   1144 rows  11 years  2015-2026
-Glastonbury Festival                1061 rows  10 years  2015-2025
-Reading and Leeds Festivals         1460 rows  11 years  2015-2026
-Wacken Open Air                     1799 rows  10 years  2015-2026
-Hellfest                            2078 rows  11 years  2015-2026
-Rock am Ring and Rock im Park        937 rows  10 years  2015-2026
-Rock in Rio                          259 rows   7 years  2015-2026
-Roskilde Festival                   1437 rows  10 years  2015-2026
-Primavera Sound                     1509 rows   9 years  2015-2025
-Fuji Rock Festival                   436 rows  11 years  2015-2026
-Sziget Festival                     1842 rows  10 years  2015-2026
-Rock Werchter                       1242 rows  10 years  2015-2026
-Roadburn Festival                   1207 rows  10 years  2015-2026
-Electric Daisy Carnival             1388 rows  10 years  2015-2025
-Ultra Music Festival                 802 rows  10 years  2015-2026
-Tomorrowland                        4658 rows  10 years  2015-2026
-Electric Zoo                         201 rows  10 years  2015-2026
-Electric Forest Festival            1089 rows   8 years  2015-2024
-HARD Summer                            0 rows   0 years  none
-Lost Lands Music Festival            704 rows   5 years  2022-2026
-CRSSD Festival                     failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Okeechobee Music & Arts Festival   failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Creamfields                         1052 rows   6 years  2015-2020
-Defqon.1 Festival                  failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Suwannee Hulaween                    375 rows   9 years  2015-2024
-
-37601 appearance rows written to /Users/sandra/PennState/festimize/data/corpus/appearances.jsonl
-33056 of them (88%) carry a Wikipedia link, which resolves to a MusicBrainz id
-490 rows are announced lineups for editions that were cancelled
-15534 distinct artist names
-
-01:31  extract finished; 3 festivals still blocked by the quota
-01:31  sleeping 45 minutes before trying those again
-Louder Than Life                     969 rows  10 years  2015-2026
-Aftershock Festival                  804 rows  11 years  2015-2026
-Welcome to Rockville                 757 rows  10 years  2015-2025
-Sonic Temple Art & Music Festival    473 rows   5 years  2019-2026
-Riot Fest                           1037 rows  10 years  2015-2026
-                                   1813 rows dropped as other editions: Lollapalooza Argentina 416, Lollapalooza Chile 291, Lollapalooza Berlin 242, Lollapalooza Paris 182, Lollapalooza Stockholm 165, Lollapalooza Brazil 148, Lollapalooza Brasil 78, Lollapalooza Brazil (Canceled) 64, Lollapalooza India 64, Lollapalooza Stockholm (Canceled) 49, Lollapalooza Argentina (Canceled) 47, Lollapalooza Berlin (Canceled) 42, Lollapalooza Paris (Canceled) 25
-Lollapalooza                        1371 rows  10 years  2015-2026
-Bonnaroo Music Festival              726 rows   5 years  2015-2019
-Coachella                           2419 rows  11 years  2015-2026
-Vans Warped Tour                     751 rows   7 years  2015-2026
-Sick New World                       143 rows   2 years  2023-2024
-                                   239 rows dropped as other editions: Mexico 109, Australia 44, Japan 41, Brazil 24, Germany 6, Chile 5, Italy 4, Knotfest Roadshow USA 2, Los Angeles 2, Argentina 2
-Knotfest                             233 rows   7 years  2015-2024
-Rolling Loud                         665 rows   7 years  2018-2026
-Psycho Las Vegas                     124 rows   4 years  2019-2026
-Furnace Fest                         449 rows   5 years  2021-2025
-                                   271 rows dropped as other editions: Spain 104, France 97, Australia 54, Japan 9, Germany 7
-Download Festival                   1144 rows  11 years  2015-2026
-Glastonbury Festival                1061 rows  10 years  2015-2025
-Reading and Leeds Festivals         1460 rows  11 years  2015-2026
-Wacken Open Air                     1799 rows  10 years  2015-2026
-Hellfest                            2078 rows  11 years  2015-2026
-Rock am Ring and Rock im Park        937 rows  10 years  2015-2026
-Rock in Rio                          259 rows   7 years  2015-2026
-Roskilde Festival                   1437 rows  10 years  2015-2026
-Primavera Sound                     1509 rows   9 years  2015-2025
-Fuji Rock Festival                   436 rows  11 years  2015-2026
-Sziget Festival                     1842 rows  10 years  2015-2026
-Rock Werchter                       1242 rows  10 years  2015-2026
-Roadburn Festival                   1207 rows  10 years  2015-2026
-Electric Daisy Carnival             1388 rows  10 years  2015-2025
-Ultra Music Festival                 802 rows  10 years  2015-2026
-Tomorrowland                        4658 rows  10 years  2015-2026
-Electric Zoo                         201 rows  10 years  2015-2026
-Electric Forest Festival            1089 rows   8 years  2015-2024
-HARD Summer                            0 rows   0 years  none
-Lost Lands Music Festival            704 rows   5 years  2022-2026
-CRSSD Festival                     failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Okeechobee Music & Arts Festival   failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Creamfields                         1052 rows   6 years  2015-2020
-Defqon.1 Festival                  failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Suwannee Hulaween                    375 rows   9 years  2015-2024
-
-37601 appearance rows written to /Users/sandra/PennState/festimize/data/corpus/appearances.jsonl
-33056 of them (88%) carry a Wikipedia link, which resolves to a MusicBrainz id
-490 rows are announced lineups for editions that were cancelled
-15534 distinct artist names
-
-02:16  extract finished; 3 festivals still blocked by the quota
-02:16  sleeping 45 minutes before trying those again
-Louder Than Life                     969 rows  10 years  2015-2026
-Aftershock Festival                  804 rows  11 years  2015-2026
-Welcome to Rockville                 757 rows  10 years  2015-2025
-Sonic Temple Art & Music Festival    473 rows   5 years  2019-2026
-Riot Fest                           1037 rows  10 years  2015-2026
-                                   1813 rows dropped as other editions: Lollapalooza Argentina 416, Lollapalooza Chile 291, Lollapalooza Berlin 242, Lollapalooza Paris 182, Lollapalooza Stockholm 165, Lollapalooza Brazil 148, Lollapalooza Brasil 78, Lollapalooza Brazil (Canceled) 64, Lollapalooza India 64, Lollapalooza Stockholm (Canceled) 49, Lollapalooza Argentina (Canceled) 47, Lollapalooza Berlin (Canceled) 42, Lollapalooza Paris (Canceled) 25
-Lollapalooza                        1371 rows  10 years  2015-2026
-Bonnaroo Music Festival              726 rows   5 years  2015-2019
-Coachella                           2419 rows  11 years  2015-2026
-Vans Warped Tour                     751 rows   7 years  2015-2026
-Sick New World                       143 rows   2 years  2023-2024
-                                   239 rows dropped as other editions: Mexico 109, Australia 44, Japan 41, Brazil 24, Germany 6, Chile 5, Italy 4, Knotfest Roadshow USA 2, Los Angeles 2, Argentina 2
-Knotfest                             233 rows   7 years  2015-2024
-Rolling Loud                         665 rows   7 years  2018-2026
-Psycho Las Vegas                     124 rows   4 years  2019-2026
-Furnace Fest                         449 rows   5 years  2021-2025
-                                   271 rows dropped as other editions: Spain 104, France 97, Australia 54, Japan 9, Germany 7
-Download Festival                   1144 rows  11 years  2015-2026
-Glastonbury Festival                1061 rows  10 years  2015-2025
-Reading and Leeds Festivals         1460 rows  11 years  2015-2026
-Wacken Open Air                     1799 rows  10 years  2015-2026
-Hellfest                            2078 rows  11 years  2015-2026
-Rock am Ring and Rock im Park        937 rows  10 years  2015-2026
-Rock in Rio                          259 rows   7 years  2015-2026
-Roskilde Festival                   1437 rows  10 years  2015-2026
-Primavera Sound                     1509 rows   9 years  2015-2025
-Fuji Rock Festival                   436 rows  11 years  2015-2026
-Sziget Festival                     1842 rows  10 years  2015-2026
-Rock Werchter                       1242 rows  10 years  2015-2026
-Roadburn Festival                   1207 rows  10 years  2015-2026
-Electric Daisy Carnival             1388 rows  10 years  2015-2025
-Ultra Music Festival                 802 rows  10 years  2015-2026
-Tomorrowland                        4658 rows  10 years  2015-2026
-Electric Zoo                         201 rows  10 years  2015-2026
-Electric Forest Festival            1089 rows   8 years  2015-2024
-HARD Summer                            0 rows   0 years  none
-Lost Lands Music Festival            704 rows   5 years  2022-2026
-CRSSD Festival                     failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Okeechobee Music & Arts Festival   failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Creamfields                         1052 rows   6 years  2015-2020
-Defqon.1 Festival                  failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Suwannee Hulaween                    375 rows   9 years  2015-2024
-
-37601 appearance rows written to /Users/sandra/PennState/festimize/data/corpus/appearances.jsonl
-33056 of them (88%) carry a Wikipedia link, which resolves to a MusicBrainz id
-490 rows are announced lineups for editions that were cancelled
-15534 distinct artist names
-
-03:02  extract finished; 3 festivals still blocked by the quota
-03:02  sleeping 45 minutes before trying those again
-Louder Than Life                     969 rows  10 years  2015-2026
-Aftershock Festival                  804 rows  11 years  2015-2026
-Welcome to Rockville                 757 rows  10 years  2015-2025
-Sonic Temple Art & Music Festival    473 rows   5 years  2019-2026
-Riot Fest                           1037 rows  10 years  2015-2026
-                                   1813 rows dropped as other editions: Lollapalooza Argentina 416, Lollapalooza Chile 291, Lollapalooza Berlin 242, Lollapalooza Paris 182, Lollapalooza Stockholm 165, Lollapalooza Brazil 148, Lollapalooza Brasil 78, Lollapalooza Brazil (Canceled) 64, Lollapalooza India 64, Lollapalooza Stockholm (Canceled) 49, Lollapalooza Argentina (Canceled) 47, Lollapalooza Berlin (Canceled) 42, Lollapalooza Paris (Canceled) 25
-Lollapalooza                        1371 rows  10 years  2015-2026
-Bonnaroo Music Festival              726 rows   5 years  2015-2019
-Coachella                           2419 rows  11 years  2015-2026
-Vans Warped Tour                     751 rows   7 years  2015-2026
-Sick New World                       143 rows   2 years  2023-2024
-                                   239 rows dropped as other editions: Mexico 109, Australia 44, Japan 41, Brazil 24, Germany 6, Chile 5, Italy 4, Knotfest Roadshow USA 2, Los Angeles 2, Argentina 2
-Knotfest                             233 rows   7 years  2015-2024
-Rolling Loud                         665 rows   7 years  2018-2026
-Psycho Las Vegas                     124 rows   4 years  2019-2026
-Furnace Fest                         449 rows   5 years  2021-2025
-                                   271 rows dropped as other editions: Spain 104, France 97, Australia 54, Japan 9, Germany 7
-Download Festival                   1144 rows  11 years  2015-2026
-Glastonbury Festival                1061 rows  10 years  2015-2025
-Reading and Leeds Festivals         1460 rows  11 years  2015-2026
-Wacken Open Air                     1799 rows  10 years  2015-2026
-Hellfest                            2078 rows  11 years  2015-2026
-Rock am Ring and Rock im Park        937 rows  10 years  2015-2026
-Rock in Rio                          259 rows   7 years  2015-2026
-Roskilde Festival                   1437 rows  10 years  2015-2026
-Primavera Sound                     1509 rows   9 years  2015-2025
-Fuji Rock Festival                   436 rows  11 years  2015-2026
-Sziget Festival                     1842 rows  10 years  2015-2026
-Rock Werchter                       1242 rows  10 years  2015-2026
-Roadburn Festival                   1207 rows  10 years  2015-2026
-Electric Daisy Carnival             1388 rows  10 years  2015-2025
-Ultra Music Festival                 802 rows  10 years  2015-2026
-Tomorrowland                        4658 rows  10 years  2015-2026
-Electric Zoo                         201 rows  10 years  2015-2026
-Electric Forest Festival            1089 rows   8 years  2015-2024
-HARD Summer                            0 rows   0 years  none
-Lost Lands Music Festival            704 rows   5 years  2022-2026
-CRSSD Festival                     failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Okeechobee Music & Arts Festival   failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Creamfields                         1052 rows   6 years  2015-2020
-Defqon.1 Festival                  failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Suwannee Hulaween                    375 rows   9 years  2015-2024
-
-37601 appearance rows written to /Users/sandra/PennState/festimize/data/corpus/appearances.jsonl
-33056 of them (88%) carry a Wikipedia link, which resolves to a MusicBrainz id
-490 rows are announced lineups for editions that were cancelled
-15534 distinct artist names
-
-03:47  extract finished; 3 festivals still blocked by the quota
-03:47  sleeping 45 minutes before trying those again
-Louder Than Life                     969 rows  10 years  2015-2026
-Aftershock Festival                  804 rows  11 years  2015-2026
-Welcome to Rockville                 757 rows  10 years  2015-2025
-Sonic Temple Art & Music Festival    473 rows   5 years  2019-2026
-Riot Fest                           1037 rows  10 years  2015-2026
-                                   1813 rows dropped as other editions: Lollapalooza Argentina 416, Lollapalooza Chile 291, Lollapalooza Berlin 242, Lollapalooza Paris 182, Lollapalooza Stockholm 165, Lollapalooza Brazil 148, Lollapalooza Brasil 78, Lollapalooza Brazil (Canceled) 64, Lollapalooza India 64, Lollapalooza Stockholm (Canceled) 49, Lollapalooza Argentina (Canceled) 47, Lollapalooza Berlin (Canceled) 42, Lollapalooza Paris (Canceled) 25
-Lollapalooza                        1371 rows  10 years  2015-2026
-Bonnaroo Music Festival              726 rows   5 years  2015-2019
-Coachella                           2419 rows  11 years  2015-2026
-Vans Warped Tour                     751 rows   7 years  2015-2026
-Sick New World                       143 rows   2 years  2023-2024
-                                   239 rows dropped as other editions: Mexico 109, Australia 44, Japan 41, Brazil 24, Germany 6, Chile 5, Italy 4, Knotfest Roadshow USA 2, Los Angeles 2, Argentina 2
-Knotfest                             233 rows   7 years  2015-2024
-Rolling Loud                         665 rows   7 years  2018-2026
-Psycho Las Vegas                     124 rows   4 years  2019-2026
-Furnace Fest                         449 rows   5 years  2021-2025
-                                   271 rows dropped as other editions: Spain 104, France 97, Australia 54, Japan 9, Germany 7
-Download Festival                   1144 rows  11 years  2015-2026
-Glastonbury Festival                1061 rows  10 years  2015-2025
-Reading and Leeds Festivals         1460 rows  11 years  2015-2026
-Wacken Open Air                     1799 rows  10 years  2015-2026
-Hellfest                            2078 rows  11 years  2015-2026
-Rock am Ring and Rock im Park        937 rows  10 years  2015-2026
-Rock in Rio                          259 rows   7 years  2015-2026
-Roskilde Festival                   1437 rows  10 years  2015-2026
-Primavera Sound                     1509 rows   9 years  2015-2025
-Fuji Rock Festival                   436 rows  11 years  2015-2026
-Sziget Festival                     1842 rows  10 years  2015-2026
-Rock Werchter                       1242 rows  10 years  2015-2026
-Roadburn Festival                   1207 rows  10 years  2015-2026
-Electric Daisy Carnival             1388 rows  10 years  2015-2025
-Ultra Music Festival                 802 rows  10 years  2015-2026
-Tomorrowland                        4658 rows  10 years  2015-2026
-Electric Zoo                         201 rows  10 years  2015-2026
-Electric Forest Festival            1089 rows   8 years  2015-2024
-HARD Summer                            0 rows   0 years  none
-Lost Lands Music Festival            704 rows   5 years  2022-2026
-CRSSD Festival                     failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Okeechobee Music & Arts Festival   failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Creamfields                         1052 rows   6 years  2015-2020
-Defqon.1 Festival                  failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Suwannee Hulaween                    375 rows   9 years  2015-2024
-
-37601 appearance rows written to /Users/sandra/PennState/festimize/data/corpus/appearances.jsonl
-33056 of them (88%) carry a Wikipedia link, which resolves to a MusicBrainz id
-490 rows are announced lineups for editions that were cancelled
-15534 distinct artist names
-
-04:33  extract finished; 3 festivals still blocked by the quota
-04:33  sleeping 45 minutes before trying those again
-Louder Than Life                     969 rows  10 years  2015-2026
-Aftershock Festival                  804 rows  11 years  2015-2026
-Welcome to Rockville                 757 rows  10 years  2015-2025
-Sonic Temple Art & Music Festival    473 rows   5 years  2019-2026
-Riot Fest                           1037 rows  10 years  2015-2026
-                                   1813 rows dropped as other editions: Lollapalooza Argentina 416, Lollapalooza Chile 291, Lollapalooza Berlin 242, Lollapalooza Paris 182, Lollapalooza Stockholm 165, Lollapalooza Brazil 148, Lollapalooza Brasil 78, Lollapalooza Brazil (Canceled) 64, Lollapalooza India 64, Lollapalooza Stockholm (Canceled) 49, Lollapalooza Argentina (Canceled) 47, Lollapalooza Berlin (Canceled) 42, Lollapalooza Paris (Canceled) 25
-Lollapalooza                        1371 rows  10 years  2015-2026
-Bonnaroo Music Festival              726 rows   5 years  2015-2019
-Coachella                           2419 rows  11 years  2015-2026
-Vans Warped Tour                     751 rows   7 years  2015-2026
-Sick New World                       143 rows   2 years  2023-2024
-                                   239 rows dropped as other editions: Mexico 109, Australia 44, Japan 41, Brazil 24, Germany 6, Chile 5, Italy 4, Knotfest Roadshow USA 2, Los Angeles 2, Argentina 2
-Knotfest                             233 rows   7 years  2015-2024
-Rolling Loud                         665 rows   7 years  2018-2026
-Psycho Las Vegas                     124 rows   4 years  2019-2026
-Furnace Fest                         449 rows   5 years  2021-2025
-                                   271 rows dropped as other editions: Spain 104, France 97, Australia 54, Japan 9, Germany 7
-Download Festival                   1144 rows  11 years  2015-2026
-Glastonbury Festival                1061 rows  10 years  2015-2025
-Reading and Leeds Festivals         1460 rows  11 years  2015-2026
-Wacken Open Air                     1799 rows  10 years  2015-2026
-Hellfest                            2078 rows  11 years  2015-2026
-Rock am Ring and Rock im Park        937 rows  10 years  2015-2026
-Rock in Rio                          259 rows   7 years  2015-2026
-Roskilde Festival                   1437 rows  10 years  2015-2026
-Primavera Sound                     1509 rows   9 years  2015-2025
-Fuji Rock Festival                   436 rows  11 years  2015-2026
-Sziget Festival                     1842 rows  10 years  2015-2026
-Rock Werchter                       1242 rows  10 years  2015-2026
-Roadburn Festival                   1207 rows  10 years  2015-2026
-Electric Daisy Carnival             1388 rows  10 years  2015-2025
-Ultra Music Festival                 802 rows  10 years  2015-2026
-Tomorrowland                        4658 rows  10 years  2015-2026
-Electric Zoo                         201 rows  10 years  2015-2026
-Electric Forest Festival            1089 rows   8 years  2015-2024
-HARD Summer                            0 rows   0 years  none
-Lost Lands Music Festival            704 rows   5 years  2022-2026
-CRSSD Festival                     failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Okeechobee Music & Arts Festival   failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Creamfields                         1052 rows   6 years  2015-2020
-Defqon.1 Festival                  failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Suwannee Hulaween                    375 rows   9 years  2015-2024
-
-37601 appearance rows written to /Users/sandra/PennState/festimize/data/corpus/appearances.jsonl
-33056 of them (88%) carry a Wikipedia link, which resolves to a MusicBrainz id
-490 rows are announced lineups for editions that were cancelled
-15534 distinct artist names
-
-05:18  extract finished; 3 festivals still blocked by the quota
-05:18  sleeping 45 minutes before trying those again
-Louder Than Life                     969 rows  10 years  2015-2026
-Aftershock Festival                  804 rows  11 years  2015-2026
-Welcome to Rockville                 757 rows  10 years  2015-2025
-Sonic Temple Art & Music Festival    473 rows   5 years  2019-2026
-Riot Fest                           1037 rows  10 years  2015-2026
-                                   1813 rows dropped as other editions: Lollapalooza Argentina 416, Lollapalooza Chile 291, Lollapalooza Berlin 242, Lollapalooza Paris 182, Lollapalooza Stockholm 165, Lollapalooza Brazil 148, Lollapalooza Brasil 78, Lollapalooza Brazil (Canceled) 64, Lollapalooza India 64, Lollapalooza Stockholm (Canceled) 49, Lollapalooza Argentina (Canceled) 47, Lollapalooza Berlin (Canceled) 42, Lollapalooza Paris (Canceled) 25
-Lollapalooza                        1371 rows  10 years  2015-2026
-Bonnaroo Music Festival              726 rows   5 years  2015-2019
-Coachella                           2419 rows  11 years  2015-2026
-Vans Warped Tour                     751 rows   7 years  2015-2026
-Sick New World                       143 rows   2 years  2023-2024
-                                   239 rows dropped as other editions: Mexico 109, Australia 44, Japan 41, Brazil 24, Germany 6, Chile 5, Italy 4, Knotfest Roadshow USA 2, Los Angeles 2, Argentina 2
-Knotfest                             233 rows   7 years  2015-2024
-Rolling Loud                         665 rows   7 years  2018-2026
-Psycho Las Vegas                     124 rows   4 years  2019-2026
-Furnace Fest                         449 rows   5 years  2021-2025
-                                   271 rows dropped as other editions: Spain 104, France 97, Australia 54, Japan 9, Germany 7
-Download Festival                   1144 rows  11 years  2015-2026
-Glastonbury Festival                1061 rows  10 years  2015-2025
-Reading and Leeds Festivals         1460 rows  11 years  2015-2026
-Wacken Open Air                     1799 rows  10 years  2015-2026
-Hellfest                            2078 rows  11 years  2015-2026
-Rock am Ring and Rock im Park        937 rows  10 years  2015-2026
-Rock in Rio                          259 rows   7 years  2015-2026
-Roskilde Festival                   1437 rows  10 years  2015-2026
-Primavera Sound                     1509 rows   9 years  2015-2025
-Fuji Rock Festival                   436 rows  11 years  2015-2026
-Sziget Festival                     1842 rows  10 years  2015-2026
-Rock Werchter                       1242 rows  10 years  2015-2026
-Roadburn Festival                   1207 rows  10 years  2015-2026
-Electric Daisy Carnival             1388 rows  10 years  2015-2025
-Ultra Music Festival                 802 rows  10 years  2015-2026
-Tomorrowland                        4658 rows  10 years  2015-2026
-Electric Zoo                         201 rows  10 years  2015-2026
-Electric Forest Festival            1089 rows   8 years  2015-2024
-HARD Summer                            0 rows   0 years  none
-Lost Lands Music Festival            704 rows   5 years  2022-2026
-CRSSD Festival                     failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Okeechobee Music & Arts Festival   failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Creamfields                         1052 rows   6 years  2015-2020
-Defqon.1 Festival                  failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Suwannee Hulaween                    375 rows   9 years  2015-2024
-
-37601 appearance rows written to /Users/sandra/PennState/festimize/data/corpus/appearances.jsonl
-33056 of them (88%) carry a Wikipedia link, which resolves to a MusicBrainz id
-490 rows are announced lineups for editions that were cancelled
-15534 distinct artist names
-
-06:03  extract finished; 3 festivals still blocked by the quota
-06:03  sleeping 45 minutes before trying those again
-Louder Than Life                     969 rows  10 years  2015-2026
-Aftershock Festival                  804 rows  11 years  2015-2026
-Welcome to Rockville                 757 rows  10 years  2015-2025
-Sonic Temple Art & Music Festival    473 rows   5 years  2019-2026
-Riot Fest                           1037 rows  10 years  2015-2026
-                                   1813 rows dropped as other editions: Lollapalooza Argentina 416, Lollapalooza Chile 291, Lollapalooza Berlin 242, Lollapalooza Paris 182, Lollapalooza Stockholm 165, Lollapalooza Brazil 148, Lollapalooza Brasil 78, Lollapalooza Brazil (Canceled) 64, Lollapalooza India 64, Lollapalooza Stockholm (Canceled) 49, Lollapalooza Argentina (Canceled) 47, Lollapalooza Berlin (Canceled) 42, Lollapalooza Paris (Canceled) 25
-Lollapalooza                        1371 rows  10 years  2015-2026
-Bonnaroo Music Festival              726 rows   5 years  2015-2019
-Coachella                           2419 rows  11 years  2015-2026
-Vans Warped Tour                     751 rows   7 years  2015-2026
-Sick New World                       143 rows   2 years  2023-2024
-                                   239 rows dropped as other editions: Mexico 109, Australia 44, Japan 41, Brazil 24, Germany 6, Chile 5, Italy 4, Knotfest Roadshow USA 2, Los Angeles 2, Argentina 2
-Knotfest                             233 rows   7 years  2015-2024
-Rolling Loud                         665 rows   7 years  2018-2026
-Psycho Las Vegas                     124 rows   4 years  2019-2026
-Furnace Fest                         449 rows   5 years  2021-2025
-                                   271 rows dropped as other editions: Spain 104, France 97, Australia 54, Japan 9, Germany 7
-Download Festival                   1144 rows  11 years  2015-2026
-Glastonbury Festival                1061 rows  10 years  2015-2025
-Reading and Leeds Festivals         1460 rows  11 years  2015-2026
-Wacken Open Air                     1799 rows  10 years  2015-2026
-Hellfest                            2078 rows  11 years  2015-2026
-Rock am Ring and Rock im Park        937 rows  10 years  2015-2026
-Rock in Rio                          259 rows   7 years  2015-2026
-Roskilde Festival                   1437 rows  10 years  2015-2026
-Primavera Sound                     1509 rows   9 years  2015-2025
-Fuji Rock Festival                   436 rows  11 years  2015-2026
-Sziget Festival                     1842 rows  10 years  2015-2026
-Rock Werchter                       1242 rows  10 years  2015-2026
-Roadburn Festival                   1207 rows  10 years  2015-2026
-Electric Daisy Carnival             1388 rows  10 years  2015-2025
-Ultra Music Festival                 802 rows  10 years  2015-2026
-Tomorrowland                        4658 rows  10 years  2015-2026
-Electric Zoo                         201 rows  10 years  2015-2026
-Electric Forest Festival            1089 rows   8 years  2015-2024
-HARD Summer                            0 rows   0 years  none
-Lost Lands Music Festival            704 rows   5 years  2022-2026
-CRSSD Festival                     failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Okeechobee Music & Arts Festival   failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Creamfields                         1052 rows   6 years  2015-2020
-Defqon.1 Festival                  failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Suwannee Hulaween                    375 rows   9 years  2015-2024
-
-37601 appearance rows written to /Users/sandra/PennState/festimize/data/corpus/appearances.jsonl
-33056 of them (88%) carry a Wikipedia link, which resolves to a MusicBrainz id
-490 rows are announced lineups for editions that were cancelled
-15534 distinct artist names
-
-06:49  extract finished; 3 festivals still blocked by the quota
-06:49  sleeping 45 minutes before trying those again
-Louder Than Life                     969 rows  10 years  2015-2026
-Aftershock Festival                  804 rows  11 years  2015-2026
-Welcome to Rockville                 757 rows  10 years  2015-2025
-Sonic Temple Art & Music Festival    473 rows   5 years  2019-2026
-Riot Fest                           1037 rows  10 years  2015-2026
-                                   1813 rows dropped as other editions: Lollapalooza Argentina 416, Lollapalooza Chile 291, Lollapalooza Berlin 242, Lollapalooza Paris 182, Lollapalooza Stockholm 165, Lollapalooza Brazil 148, Lollapalooza Brasil 78, Lollapalooza Brazil (Canceled) 64, Lollapalooza India 64, Lollapalooza Stockholm (Canceled) 49, Lollapalooza Argentina (Canceled) 47, Lollapalooza Berlin (Canceled) 42, Lollapalooza Paris (Canceled) 25
-Lollapalooza                        1371 rows  10 years  2015-2026
-Bonnaroo Music Festival              726 rows   5 years  2015-2019
-Coachella                           2419 rows  11 years  2015-2026
-Vans Warped Tour                     751 rows   7 years  2015-2026
-Sick New World                       143 rows   2 years  2023-2024
-                                   239 rows dropped as other editions: Mexico 109, Australia 44, Japan 41, Brazil 24, Germany 6, Chile 5, Italy 4, Knotfest Roadshow USA 2, Los Angeles 2, Argentina 2
-Knotfest                             233 rows   7 years  2015-2024
-Rolling Loud                         665 rows   7 years  2018-2026
-Psycho Las Vegas                     124 rows   4 years  2019-2026
-Furnace Fest                         449 rows   5 years  2021-2025
-                                   271 rows dropped as other editions: Spain 104, France 97, Australia 54, Japan 9, Germany 7
-Download Festival                   1144 rows  11 years  2015-2026
-Glastonbury Festival                1061 rows  10 years  2015-2025
-Reading and Leeds Festivals         1460 rows  11 years  2015-2026
-Wacken Open Air                     1799 rows  10 years  2015-2026
-Hellfest                            2078 rows  11 years  2015-2026
-Rock am Ring and Rock im Park        937 rows  10 years  2015-2026
-Rock in Rio                          259 rows   7 years  2015-2026
-Roskilde Festival                   1437 rows  10 years  2015-2026
-Primavera Sound                     1509 rows   9 years  2015-2025
-Fuji Rock Festival                   436 rows  11 years  2015-2026
-Sziget Festival                     1842 rows  10 years  2015-2026
-Rock Werchter                       1242 rows  10 years  2015-2026
-Roadburn Festival                   1207 rows  10 years  2015-2026
-Electric Daisy Carnival             1388 rows  10 years  2015-2025
-Ultra Music Festival                 802 rows  10 years  2015-2026
-Tomorrowland                        4658 rows  10 years  2015-2026
-Electric Zoo                         201 rows  10 years  2015-2026
-Electric Forest Festival            1089 rows   8 years  2015-2024
-HARD Summer                            0 rows   0 years  none
-Lost Lands Music Festival            704 rows   5 years  2022-2026
-CRSSD Festival                     failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Okeechobee Music & Arts Festival   failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Creamfields                         1052 rows   6 years  2015-2020
-Defqon.1 Festival                  failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Suwannee Hulaween                    375 rows   9 years  2015-2024
-
-37601 appearance rows written to /Users/sandra/PennState/festimize/data/corpus/appearances.jsonl
-33056 of them (88%) carry a Wikipedia link, which resolves to a MusicBrainz id
-490 rows are announced lineups for editions that were cancelled
-15534 distinct artist names
-
-07:34  extract finished; 3 festivals still blocked by the quota
-07:34  sleeping 45 minutes before trying those again
-Louder Than Life                     969 rows  10 years  2015-2026
-Aftershock Festival                  804 rows  11 years  2015-2026
-Welcome to Rockville                 757 rows  10 years  2015-2025
-Sonic Temple Art & Music Festival    473 rows   5 years  2019-2026
-Riot Fest                           1037 rows  10 years  2015-2026
-                                   1813 rows dropped as other editions: Lollapalooza Argentina 416, Lollapalooza Chile 291, Lollapalooza Berlin 242, Lollapalooza Paris 182, Lollapalooza Stockholm 165, Lollapalooza Brazil 148, Lollapalooza Brasil 78, Lollapalooza Brazil (Canceled) 64, Lollapalooza India 64, Lollapalooza Stockholm (Canceled) 49, Lollapalooza Argentina (Canceled) 47, Lollapalooza Berlin (Canceled) 42, Lollapalooza Paris (Canceled) 25
-Lollapalooza                        1371 rows  10 years  2015-2026
-Bonnaroo Music Festival              726 rows   5 years  2015-2019
-Coachella                           2419 rows  11 years  2015-2026
-Vans Warped Tour                     751 rows   7 years  2015-2026
-Sick New World                       143 rows   2 years  2023-2024
-                                   239 rows dropped as other editions: Mexico 109, Australia 44, Japan 41, Brazil 24, Germany 6, Chile 5, Italy 4, Knotfest Roadshow USA 2, Los Angeles 2, Argentina 2
-Knotfest                             233 rows   7 years  2015-2024
-Rolling Loud                         665 rows   7 years  2018-2026
-Psycho Las Vegas                     124 rows   4 years  2019-2026
-Furnace Fest                         449 rows   5 years  2021-2025
-                                   271 rows dropped as other editions: Spain 104, France 97, Australia 54, Japan 9, Germany 7
-Download Festival                   1144 rows  11 years  2015-2026
-Glastonbury Festival                1061 rows  10 years  2015-2025
-Reading and Leeds Festivals         1460 rows  11 years  2015-2026
-Wacken Open Air                     1799 rows  10 years  2015-2026
-Hellfest                            2078 rows  11 years  2015-2026
-Rock am Ring and Rock im Park        937 rows  10 years  2015-2026
-Rock in Rio                          259 rows   7 years  2015-2026
-Roskilde Festival                   1437 rows  10 years  2015-2026
-Primavera Sound                     1509 rows   9 years  2015-2025
-Fuji Rock Festival                   436 rows  11 years  2015-2026
-Sziget Festival                     1842 rows  10 years  2015-2026
-Rock Werchter                       1242 rows  10 years  2015-2026
-Roadburn Festival                   1207 rows  10 years  2015-2026
-Electric Daisy Carnival             1388 rows  10 years  2015-2025
-Ultra Music Festival                 802 rows  10 years  2015-2026
-Tomorrowland                        4658 rows  10 years  2015-2026
-Electric Zoo                         201 rows  10 years  2015-2026
-Electric Forest Festival            1089 rows   8 years  2015-2024
-HARD Summer                            0 rows   0 years  none
-Lost Lands Music Festival            704 rows   5 years  2022-2026
-CRSSD Festival                     failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Okeechobee Music & Arts Festival   failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Creamfields                         1052 rows   6 years  2015-2020
-Defqon.1 Festival                  failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Suwannee Hulaween                    375 rows   9 years  2015-2024
-
-37601 appearance rows written to /Users/sandra/PennState/festimize/data/corpus/appearances.jsonl
-33056 of them (88%) carry a Wikipedia link, which resolves to a MusicBrainz id
-490 rows are announced lineups for editions that were cancelled
-15534 distinct artist names
-
-08:20  extract finished; 3 festivals still blocked by the quota
-08:20  sleeping 45 minutes before trying those again
-Louder Than Life                     969 rows  10 years  2015-2026
-Aftershock Festival                  804 rows  11 years  2015-2026
-Welcome to Rockville                 757 rows  10 years  2015-2025
-Sonic Temple Art & Music Festival    473 rows   5 years  2019-2026
-Riot Fest                           1037 rows  10 years  2015-2026
-                                   1813 rows dropped as other editions: Lollapalooza Argentina 416, Lollapalooza Chile 291, Lollapalooza Berlin 242, Lollapalooza Paris 182, Lollapalooza Stockholm 165, Lollapalooza Brazil 148, Lollapalooza Brasil 78, Lollapalooza Brazil (Canceled) 64, Lollapalooza India 64, Lollapalooza Stockholm (Canceled) 49, Lollapalooza Argentina (Canceled) 47, Lollapalooza Berlin (Canceled) 42, Lollapalooza Paris (Canceled) 25
-Lollapalooza                        1371 rows  10 years  2015-2026
-Bonnaroo Music Festival              726 rows   5 years  2015-2019
-Coachella                           2419 rows  11 years  2015-2026
-Vans Warped Tour                     751 rows   7 years  2015-2026
-Sick New World                       143 rows   2 years  2023-2024
-                                   239 rows dropped as other editions: Mexico 109, Australia 44, Japan 41, Brazil 24, Germany 6, Chile 5, Italy 4, Knotfest Roadshow USA 2, Los Angeles 2, Argentina 2
-Knotfest                             233 rows   7 years  2015-2024
-Rolling Loud                         665 rows   7 years  2018-2026
-Psycho Las Vegas                     124 rows   4 years  2019-2026
-Furnace Fest                         449 rows   5 years  2021-2025
-                                   271 rows dropped as other editions: Spain 104, France 97, Australia 54, Japan 9, Germany 7
-Download Festival                   1144 rows  11 years  2015-2026
-Glastonbury Festival                1061 rows  10 years  2015-2025
-Reading and Leeds Festivals         1460 rows  11 years  2015-2026
-Wacken Open Air                     1799 rows  10 years  2015-2026
-Hellfest                            2078 rows  11 years  2015-2026
-Rock am Ring and Rock im Park        937 rows  10 years  2015-2026
-Rock in Rio                          259 rows   7 years  2015-2026
-Roskilde Festival                   1437 rows  10 years  2015-2026
-Primavera Sound                     1509 rows   9 years  2015-2025
-Fuji Rock Festival                   436 rows  11 years  2015-2026
-Sziget Festival                     1842 rows  10 years  2015-2026
-Rock Werchter                       1242 rows  10 years  2015-2026
-Roadburn Festival                   1207 rows  10 years  2015-2026
-Electric Daisy Carnival             1388 rows  10 years  2015-2025
-Ultra Music Festival                 802 rows  10 years  2015-2026
-Tomorrowland                        4658 rows  10 years  2015-2026
-Electric Zoo                         201 rows  10 years  2015-2026
-Electric Forest Festival            1089 rows   8 years  2015-2024
-HARD Summer                            0 rows   0 years  none
-Lost Lands Music Festival            704 rows   5 years  2022-2026
-CRSSD Festival                     failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Okeechobee Music & Arts Festival   failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Creamfields                         1052 rows   6 years  2015-2020
-Defqon.1 Festival                  failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Suwannee Hulaween                    375 rows   9 years  2015-2024
-
-37601 appearance rows written to /Users/sandra/PennState/festimize/data/corpus/appearances.jsonl
-33056 of them (88%) carry a Wikipedia link, which resolves to a MusicBrainz id
-490 rows are announced lineups for editions that were cancelled
-15534 distinct artist names
-
-09:05  extract finished; 3 festivals still blocked by the quota
-09:05  sleeping 45 minutes before trying those again
-Louder Than Life                     969 rows  10 years  2015-2026
-Aftershock Festival                  804 rows  11 years  2015-2026
-Welcome to Rockville                 757 rows  10 years  2015-2025
-Sonic Temple Art & Music Festival    473 rows   5 years  2019-2026
-Riot Fest                           1037 rows  10 years  2015-2026
-                                   1813 rows dropped as other editions: Lollapalooza Argentina 416, Lollapalooza Chile 291, Lollapalooza Berlin 242, Lollapalooza Paris 182, Lollapalooza Stockholm 165, Lollapalooza Brazil 148, Lollapalooza Brasil 78, Lollapalooza Brazil (Canceled) 64, Lollapalooza India 64, Lollapalooza Stockholm (Canceled) 49, Lollapalooza Argentina (Canceled) 47, Lollapalooza Berlin (Canceled) 42, Lollapalooza Paris (Canceled) 25
-Lollapalooza                        1371 rows  10 years  2015-2026
-Bonnaroo Music Festival              726 rows   5 years  2015-2019
-Coachella                           2419 rows  11 years  2015-2026
-Vans Warped Tour                     751 rows   7 years  2015-2026
-Sick New World                       143 rows   2 years  2023-2024
-                                   239 rows dropped as other editions: Mexico 109, Australia 44, Japan 41, Brazil 24, Germany 6, Chile 5, Italy 4, Knotfest Roadshow USA 2, Los Angeles 2, Argentina 2
-Knotfest                             233 rows   7 years  2015-2024
-Rolling Loud                         665 rows   7 years  2018-2026
-Psycho Las Vegas                     124 rows   4 years  2019-2026
-Furnace Fest                         449 rows   5 years  2021-2025
-                                   271 rows dropped as other editions: Spain 104, France 97, Australia 54, Japan 9, Germany 7
-Download Festival                   1144 rows  11 years  2015-2026
-Glastonbury Festival                1061 rows  10 years  2015-2025
-Reading and Leeds Festivals         1460 rows  11 years  2015-2026
-Wacken Open Air                     1799 rows  10 years  2015-2026
-Hellfest                            2078 rows  11 years  2015-2026
-Rock am Ring and Rock im Park        937 rows  10 years  2015-2026
-Rock in Rio                          259 rows   7 years  2015-2026
-Roskilde Festival                   1437 rows  10 years  2015-2026
-Primavera Sound                     1509 rows   9 years  2015-2025
-Fuji Rock Festival                   436 rows  11 years  2015-2026
-Sziget Festival                     1842 rows  10 years  2015-2026
-Rock Werchter                       1242 rows  10 years  2015-2026
-Roadburn Festival                   1207 rows  10 years  2015-2026
-Electric Daisy Carnival             1388 rows  10 years  2015-2025
-Ultra Music Festival                 802 rows  10 years  2015-2026
-Tomorrowland                        4658 rows  10 years  2015-2026
-Electric Zoo                         201 rows  10 years  2015-2026
-Electric Forest Festival            1089 rows   8 years  2015-2024
-HARD Summer                            0 rows   0 years  none
-Lost Lands Music Festival            704 rows   5 years  2022-2026
-CRSSD Festival                     failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Okeechobee Music & Arts Festival   failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Creamfields                         1052 rows   6 years  2015-2020
-Defqon.1 Festival                  failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Suwannee Hulaween                    375 rows   9 years  2015-2024
-
-37601 appearance rows written to /Users/sandra/PennState/festimize/data/corpus/appearances.jsonl
-33056 of them (88%) carry a Wikipedia link, which resolves to a MusicBrainz id
-490 rows are announced lineups for editions that were cancelled
-15534 distinct artist names
-
-09:51  extract finished; 3 festivals still blocked by the quota
-09:51  sleeping 45 minutes before trying those again
-Louder Than Life                     969 rows  10 years  2015-2026
-Aftershock Festival                  804 rows  11 years  2015-2026
-Welcome to Rockville                 757 rows  10 years  2015-2025
-Sonic Temple Art & Music Festival    473 rows   5 years  2019-2026
-Riot Fest                           1037 rows  10 years  2015-2026
-                                   1813 rows dropped as other editions: Lollapalooza Argentina 416, Lollapalooza Chile 291, Lollapalooza Berlin 242, Lollapalooza Paris 182, Lollapalooza Stockholm 165, Lollapalooza Brazil 148, Lollapalooza Brasil 78, Lollapalooza Brazil (Canceled) 64, Lollapalooza India 64, Lollapalooza Stockholm (Canceled) 49, Lollapalooza Argentina (Canceled) 47, Lollapalooza Berlin (Canceled) 42, Lollapalooza Paris (Canceled) 25
-Lollapalooza                        1371 rows  10 years  2015-2026
-Bonnaroo Music Festival              726 rows   5 years  2015-2019
-Coachella                           2419 rows  11 years  2015-2026
-Vans Warped Tour                     751 rows   7 years  2015-2026
-Sick New World                       143 rows   2 years  2023-2024
-                                   239 rows dropped as other editions: Mexico 109, Australia 44, Japan 41, Brazil 24, Germany 6, Chile 5, Italy 4, Knotfest Roadshow USA 2, Los Angeles 2, Argentina 2
-Knotfest                             233 rows   7 years  2015-2024
-Rolling Loud                         665 rows   7 years  2018-2026
-Psycho Las Vegas                     124 rows   4 years  2019-2026
-Furnace Fest                         449 rows   5 years  2021-2025
-                                   271 rows dropped as other editions: Spain 104, France 97, Australia 54, Japan 9, Germany 7
-Download Festival                   1144 rows  11 years  2015-2026
-Glastonbury Festival                1061 rows  10 years  2015-2025
-Reading and Leeds Festivals         1460 rows  11 years  2015-2026
-Wacken Open Air                     1799 rows  10 years  2015-2026
-Hellfest                            2078 rows  11 years  2015-2026
-Rock am Ring and Rock im Park        937 rows  10 years  2015-2026
-Rock in Rio                          259 rows   7 years  2015-2026
-Roskilde Festival                   1437 rows  10 years  2015-2026
-Primavera Sound                     1509 rows   9 years  2015-2025
-Fuji Rock Festival                   436 rows  11 years  2015-2026
-Sziget Festival                     1842 rows  10 years  2015-2026
-Rock Werchter                       1242 rows  10 years  2015-2026
-Roadburn Festival                   1207 rows  10 years  2015-2026
-Electric Daisy Carnival             1388 rows  10 years  2015-2025
-Ultra Music Festival                 802 rows  10 years  2015-2026
-Tomorrowland                        4658 rows  10 years  2015-2026
-Electric Zoo                         201 rows  10 years  2015-2026
-Electric Forest Festival            1089 rows   8 years  2015-2024
-HARD Summer                            0 rows   0 years  none
-Lost Lands Music Festival            704 rows   5 years  2022-2026
-CRSSD Festival                     failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Okeechobee Music & Arts Festival   failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Creamfields                         1052 rows   6 years  2015-2020
-Defqon.1 Festival                  failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Suwannee Hulaween                    375 rows   9 years  2015-2024
-
-37601 appearance rows written to /Users/sandra/PennState/festimize/data/corpus/appearances.jsonl
-33056 of them (88%) carry a Wikipedia link, which resolves to a MusicBrainz id
-490 rows are announced lineups for editions that were cancelled
-15534 distinct artist names
-
-10:36  extract finished; 3 festivals still blocked by the quota
-10:36  sleeping 45 minutes before trying those again
-Louder Than Life                     969 rows  10 years  2015-2026
-Aftershock Festival                  804 rows  11 years  2015-2026
-Welcome to Rockville                 757 rows  10 years  2015-2025
-Sonic Temple Art & Music Festival    473 rows   5 years  2019-2026
-Riot Fest                           1037 rows  10 years  2015-2026
-                                   1813 rows dropped as other editions: Lollapalooza Argentina 416, Lollapalooza Chile 291, Lollapalooza Berlin 242, Lollapalooza Paris 182, Lollapalooza Stockholm 165, Lollapalooza Brazil 148, Lollapalooza Brasil 78, Lollapalooza Brazil (Canceled) 64, Lollapalooza India 64, Lollapalooza Stockholm (Canceled) 49, Lollapalooza Argentina (Canceled) 47, Lollapalooza Berlin (Canceled) 42, Lollapalooza Paris (Canceled) 25
-Lollapalooza                        1371 rows  10 years  2015-2026
-Bonnaroo Music Festival              726 rows   5 years  2015-2019
-Coachella                           2419 rows  11 years  2015-2026
-Vans Warped Tour                     751 rows   7 years  2015-2026
-Sick New World                       143 rows   2 years  2023-2024
-                                   239 rows dropped as other editions: Mexico 109, Australia 44, Japan 41, Brazil 24, Germany 6, Chile 5, Italy 4, Knotfest Roadshow USA 2, Los Angeles 2, Argentina 2
-Knotfest                             233 rows   7 years  2015-2024
-Rolling Loud                         665 rows   7 years  2018-2026
-Psycho Las Vegas                     124 rows   4 years  2019-2026
-Furnace Fest                         449 rows   5 years  2021-2025
-                                   271 rows dropped as other editions: Spain 104, France 97, Australia 54, Japan 9, Germany 7
-Download Festival                   1144 rows  11 years  2015-2026
-Glastonbury Festival                1061 rows  10 years  2015-2025
-Reading and Leeds Festivals         1460 rows  11 years  2015-2026
-Wacken Open Air                     1799 rows  10 years  2015-2026
-Hellfest                            2078 rows  11 years  2015-2026
-Rock am Ring and Rock im Park        937 rows  10 years  2015-2026
-Rock in Rio                          259 rows   7 years  2015-2026
-Roskilde Festival                   1437 rows  10 years  2015-2026
-Primavera Sound                     1509 rows   9 years  2015-2025
-Fuji Rock Festival                   436 rows  11 years  2015-2026
-Sziget Festival                     1842 rows  10 years  2015-2026
-Rock Werchter                       1242 rows  10 years  2015-2026
-Roadburn Festival                   1207 rows  10 years  2015-2026
-Electric Daisy Carnival             1388 rows  10 years  2015-2025
-Ultra Music Festival                 802 rows  10 years  2015-2026
-Tomorrowland                        4658 rows  10 years  2015-2026
-Electric Zoo                         201 rows  10 years  2015-2026
-Electric Forest Festival            1089 rows   8 years  2015-2024
-HARD Summer                            0 rows   0 years  none
-Lost Lands Music Festival            704 rows   5 years  2022-2026
-CRSSD Festival                     failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Okeechobee Music & Arts Festival   failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Creamfields                         1052 rows   6 years  2015-2020
-Defqon.1 Festival                  failed: setlist.fm daily quota is exhausted; this festival needs a later run
-Suwannee Hulaween                    375 rows   9 years  2015-2024
-
-37601 appearance rows written to /Users/sandra/PennState/festimize/data/corpus/appearances.jsonl
-33056 of them (88%) carry a Wikipedia link, which resolves to a MusicBrainz id
-490 rows are announced lineups for editions that were cancelled
-15534 distinct artist names
-
-11:21  extract finished; 3 festivals still blocked by the quota
+22:02  identity: not reported
 # Corpus quality
 
-37601 appearances, 15997 distinct artists, 35 festivals, 2015-2026.
+39517 appearances, 16446 distinct artists, 36 festivals, 2015-2026.
 
 ## Structure
 
@@ -1018,8 +167,8 @@ Suwannee Hulaween                    375 rows   9 years  2015-2024
 
 ## Identity
 
-- rows resolvable to a MusicBrainz id: **33056 (88%)**
-- artists appearing once only: **9613 of 15997 (60%)**
+- rows resolvable to a MusicBrainz id: **34972 (88%)**
+- artists appearing once only: **9800 of 16446 (60%)**
 
 ## Per festival
 
@@ -1035,31 +184,32 @@ Suwannee Hulaween                    375 rows   9 years  2015-2024
 | Roskilde Festival | 1437 | 10 | 2015-2026 | 144 | setlistfm | no |
 | Electric Daisy Carnival | 1388 | 10 | 2015-2025 | 139 | setlistfm | no |
 | Lollapalooza | 1371 | 10 | 2015-2026 | 137 | wikipedia | yes |
+| Bonnaroo Music Festival | 1369 | 10 | 2015-2026 | 137 | wikipedia | yes |
+| Electric Forest Festival | 1314 | 10 | 2015-2026 | 131 | wikipedia | yes |
 | Rock Werchter | 1242 | 10 | 2015-2026 | 124 | setlistfm | no |
 | Roadburn Festival | 1207 | 10 | 2015-2026 | 121 | setlistfm | no |
 | Download Festival | 1144 | 11 | 2015-2026 | 104 | wikipedia | yes |
-| Electric Forest Festival | 1089 | 8 | 2015-2024 | 136 | wikipedia | yes |
 | Glastonbury Festival | 1061 | 10 | 2015-2025 | 106 | wikipedia | yes |
 | Creamfields | 1052 | 6 | 2015-2020 | 175 | wikipedia | yes |
-| Riot Fest | 1037 | 10 | 2015-2026 | 104 | setlistfm | no |
+| Riot Fest | 1017 | 10 | 2015-2026 | 102 | setlistfm | no |
 | Louder Than Life | 969 | 10 | 2015-2026 | 97 | wikipedia | yes |
 | Rock am Ring and Rock im Park | 937 | 10 | 2015-2026 | 94 | setlistfm | no |
 | Aftershock Festival | 804 | 11 | 2015-2026 | 73 | wikipedia | yes |
 | Ultra Music Festival | 802 | 10 | 2015-2026 | 80 | setlistfm | no |
 | Welcome to Rockville | 757 | 10 | 2015-2025 | 76 | wikipedia | yes |
 | Vans Warped Tour | 751 | 7 | 2015-2026 | 107 | wikipedia | yes |
-| Bonnaroo Music Festival | 726 | 5 | 2015-2019 | 145 | wikipedia | yes |
 | Lost Lands Music Festival | 704 | 5 | 2022-2026 | 141 | setlistfm | no |
 | Rolling Loud | 665 | 7 | 2018-2026 | 95 | setlistfm | no |
+| Okeechobee Music & Arts Festival | 613 | 7 | 2016-2026 | 88 | setlistfm | no |
+| CRSSD Festival | 542 | 12 | 2015-2026 | 45 | setlistfm | no |
 | Sonic Temple Art & Music Festival | 473 | 5 | 2019-2026 | 95 | wikipedia | yes |
 | Furnace Fest | 449 | 5 | 2021-2025 | 90 | wikipedia | yes |
 | Fuji Rock Festival | 436 | 11 | 2015-2026 | 40 | wikipedia | yes |
-| Suwannee Hulaween | 375 | 9 | 2015-2024 | 42 | wikipedia | yes |
+| Suwannee Hulaween | 412 | 10 | 2015-2025 | 41 | wikipedia | yes |
 | Rock in Rio | 259 | 7 | 2015-2026 | 37 | wikipedia | yes |
 | Knotfest | 233 | 7 | 2015-2024 | 33 | wikipedia | yes |
 | Electric Zoo | 201 | 10 | 2015-2026 | 20 | setlistfm | no |
 | Sick New World | 143 | 2 | 2023-2024 | 72 | setlistfm | no |
-| Psycho Las Vegas | 124 | 4 | 2019-2026 | 31 | setlistfm | no |
 
 ## Volume
 
@@ -1070,42 +220,50 @@ Suwannee Hulaween                    375 rows   9 years  2015-2024
 
 ## Coverage
 
+What this column does not ask is whether the rows are any good. A festival
+with two complete bills in it cannot show its own trend, and still adds two
+real points to the career of every artist on those bills — which is what the
+rising-artist score is measured over. Sick New World is kept on exactly that
+reasoning; Defqon.1 was cut on the opposite one, because six acts out of a
+hundred is a fragment of a bill rather than a short history.
+
 | festival | years | usable | median | smallest | largest | enough for a trend |
 |---|---|---|---|---|---|---|
+| CRSSD Festival | 12 | 12 | 49 | 13 | 74 | yes |
 | Fuji Rock Festival | 11 | 11 | 39 | 35 | 47 | yes |
 | Aftershock Festival | 11 | 11 | 59 | 29 | 138 | yes |
 | Download Festival | 11 | 11 | 108 | 40 | 125 | yes |
 | Reading and Leeds Festivals | 11 | 11 | 165 | 50 | 202 | yes |
 | Coachella | 11 | 11 | 225 | 171 | 263 | yes |
+| Suwannee Hulaween | 10 | 10 | 36 | 24 | 81 | yes |
 | Welcome to Rockville | 10 | 10 | 57 | 40 | 151 | yes |
 | Louder Than Life | 10 | 10 | 89 | 35 | 192 | yes |
 | Rock am Ring and Rock im Park | 10 | 10 | 92 | 80 | 125 | yes |
-| Riot Fest | 10 | 10 | 98 | 88 | 137 | yes |
+| Riot Fest | 10 | 10 | 97 | 88 | 137 | yes |
 | Glastonbury Festival | 10 | 10 | 112 | 46 | 126 | yes |
+| Electric Forest Festival | 10 | 10 | 114 | 63 | 215 | yes |
 | Roadburn Festival | 10 | 10 | 117 | 107 | 139 | yes |
 | Rock Werchter | 10 | 10 | 121 | 83 | 182 | yes |
 | Electric Daisy Carnival | 10 | 10 | 138 | 41 | 205 | yes |
+| Bonnaroo Music Festival | 10 | 10 | 142 | 51 | 192 | yes |
 | Roskilde Festival | 10 | 10 | 142 | 122 | 179 | yes |
 | Lollapalooza | 10 | 10 | 145 | 41 | 173 | yes |
 | Hellfest | 11 | 10 | 184 | 20 | 384 | yes |
 | Wacken Open Air | 10 | 10 | 185 | 129 | 228 | yes |
 | Sziget Festival | 10 | 10 | 188 | 124 | 206 | yes |
 | Tomorrowland | 10 | 10 | 517 | 288 | 586 | yes |
-| Suwannee Hulaween | 9 | 9 | 36 | 24 | 81 | yes |
 | Ultra Music Festival | 10 | 9 | 46 | 10 | 179 | yes |
 | Primavera Sound | 9 | 9 | 160 | 130 | 283 | yes |
-| Electric Forest Festival | 8 | 8 | 115 | 63 | 215 | yes |
 | Electric Zoo | 10 | 7 | 12 | 5 | 83 | yes |
 | Rock in Rio | 7 | 7 | 38 | 16 | 75 | yes |
 | Knotfest | 7 | 7 | 39 | 12 | 66 | yes |
+| Okeechobee Music & Arts Festival | 7 | 7 | 93 | 53 | 117 | yes |
 | Vans Warped Tour | 7 | 6 | 105 | 6 | 205 | yes |
 | Rolling Loud | 7 | 6 | 114 | 12 | 129 | yes |
 | Creamfields | 6 | 6 | 194 | 61 | 226 | yes |
 | Furnace Fest | 5 | 5 | 86 | 84 | 99 | yes |
 | Sonic Temple Art & Music Festival | 5 | 5 | 106 | 47 | 141 | yes |
-| Bonnaroo Music Festival | 5 | 5 | 122 | 112 | 192 | yes |
 | Lost Lands Music Festival | 5 | 5 | 152 | 104 | 178 | yes |
-| Psycho Las Vegas | 4 | 2 | 25 | 5 | 68 | **no** |
 | Sick New World | 2 | 2 | 71 | 71 | 72 | **no** |
 
 ## Known-answer checks
@@ -1130,24 +288,26 @@ Suwannee Hulaween                    375 rows   9 years  2015-2024
 - PASS Max Amini at Psycho Las Vegas 2026 — a comedian; a city search picked up a club show
 - PASS Celeste at Glastonbury Festival 2020 — announced for an edition that was cancelled
 - PASS Andrew Dice Clay at Sonic Temple Art & Music Festival 2019 — a comedian in the spoken-word tent
+- PASS Gogol Bordello at CRSSD Festival 2015 — Gasparilla Music Festival in Tampa; a venue search for Waterfront Park matched any park with a shared word, in any city
+- PASS Davido at Riot Fest 2023 — an Afrobeats festival at Doug Jennings Park on the Gold Coast, matched by a search for Chicago's Douglass Park
 
 **0 blocking problems**, 30 names queued for review (0.08% of rows).
 
 written to /Users/sandra/PennState/festimize/docs/evaluation/corpus-quality.md
 
-11:21  validation passed
+22:02  validation passed
 # Corpus fidelity
 
 Does the source say what the row claims? Asked of every row that can be
 traced back to cached source text. This does not ask whether the source
 is right — see corpus-audit.md for that.
 
-- rows checked: **37601 of 37601**
+- rows checked: **39517 of 39517**
 - of those, **751** are checked for the name only, not the year: Vans Warped Tour list bands against years in one table, so the article cannot say which column a name sat in
 - rows the source does not support: **0 (0.00%)**
 
-35 of 35 checkable festivals have every row supported by their source.
+36 of 36 checkable festivals have every row supported by their source.
 
 written to /Users/sandra/PennState/festimize/docs/evaluation/corpus-fidelity.md
 
-11:22  fidelity: rows the source does not support: **0 (0.00%)**
+22:02  fidelity: rows the source does not support: **0 (0.00%)**

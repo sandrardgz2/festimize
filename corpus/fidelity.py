@@ -30,7 +30,7 @@ import unicodedata
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from corpus.coverage import article_for, wanted           # noqa: E402
-from corpus.setlistfm import _pages, _terms               # noqa: E402
+from corpus.setlistfm import _in_city, _pages, _terms               # noqa: E402
 from corpus.wikipedia import page_wikitext, year_blocks    # noqa: E402
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -91,14 +91,26 @@ def wikipedia_sources(rows):
 
 
 def setlistfm_sources(rows):
-    """(artist, date) pairs per festival, read from the cached searches."""
+    """
+    (artist, date) pairs per festival, read from the cached searches.
+
+    Both searches count: `setlistfm:` when the whole festival comes from there,
+    and `fill:` when only the years the article does not reach do.
+    """
     found = collections.defaultdict(set)
     for name, first, last, how in wanted():
-        if 'setlistfm' not in how:
+        searches = [how[key] for key in ('setlistfm', 'fill') if key in how]
+        if not searches:
             continue
         try:
-            for part in how['setlistfm'].split('+'):
-                for entry in _pages(_terms(part), first, last):
+            for part in (p for whole in searches for p in whole.split('+')):
+                search = _terms(part)
+                for entry in _pages(search, first, last):
+                    # The same narrowing the extractor applies, so this check
+                    # asks about the city the row actually claims.
+                    if ('cityName' in search and 'venueName' in search
+                            and not _in_city(entry, search['cityName'])):
+                        continue
                     artist = (entry.get('artist') or {}).get('name')
                     date = entry.get('eventDate', '')
                     if artist and date:

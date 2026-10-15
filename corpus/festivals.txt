@@ -9,8 +9,20 @@
 #   setlistfm: city=Wacken         read from setlist.fm instead of Wikipedia,
 #                                  for festivals whose article names only
 #                                  the headliners. Two searches can be joined
-#                                  with + when a venue has been renamed.
+#                                  with + when a venue has been renamed, and a
+#                                  city and venue with & when the venue name is
+#                                  a common one: "city=San Diego & venue=
+#                                  Waterfront Park", or the search also finds
+#                                  the Waterfront Parks in Louisville, Portland
+#                                  and Burlington.
 #   pattern: {year} Bonnaroo ...   when each year has its own article
+#   fill: city=Live Oak            for a festival whose article stops before
+#                                  the festival did: the article is still read,
+#                                  and setlist.fm is used ONLY for the years it
+#                                  does not reach. Without this, an artist who
+#                                  plays Bonnaroo every year looks like they
+#                                  retired in 2019, which is when Wikipedia's
+#                                  per-year articles stop. Needs months: too.
 #   matrix: yes                    when one table lists bands against years
 #   cancelled: 2020,2021           editions that were announced but never
 #                                  happened; the rows are kept and flagged,
@@ -43,18 +55,17 @@ Louder Than Life | cancelled: 2018,2020 | 2015-2026
 Aftershock Festival | cancelled: 2020 | 2015-2026
 Welcome to Rockville | cancelled: 2020 | 2015-2026
 Sonic Temple Art & Music Festival | cancelled: 2020,2021,2022 | 2015-2026
-Riot Fest | cancelled: 2020 | setlistfm: venue=Douglas Park + venue=Douglass Park | months: 9 | 2015-2026
+Riot Fest | cancelled: 2020 | setlistfm: city=Chicago & venue=Douglas Park + city=Chicago & venue=Douglass Park | months: 9 | 2015-2026
 Lollapalooza | cancelled: 2020 | 2015-2026
-Bonnaroo Music Festival | cancelled: 2020,2021 | pattern: {year} Bonnaroo Music Festival | 2015-2026
+Bonnaroo Music Festival | cancelled: 2020,2021 | pattern: {year} Bonnaroo Music Festival | fill: city=Manchester & venue=Great Stage Park | months: 6 | 2015-2026
 Coachella | cancelled: 2020,2021 | article: Coachella Festival line-ups | 2015-2026
 Vans Warped Tour | article: List of Warped Tour lineups by year | matrix: yes | 2015-2026
 # The Las Vegas Festival Grounds hold several festivals in the spring: the 75
 # rows this read for 2022 were Lovers & Friends — 112, Akon, Ciara — and Sick
 # New World's first edition was 2023.
 Sick New World | setlistfm: venue=Las Vegas Festival Grounds | months: 4,5 | 2023-2026
-Knotfest | cancelled: 2020 | 2015-2026
+Knotfest | cancelled: 2020 | fill: city=San Bernardino & venue=Glen Helen Regional Park | months: 10,11 | 2015-2026
 Rolling Loud | setlistfm: venue=Hard Rock Stadium | 2015-2026
-Psycho Las Vegas | setlistfm: venue=Mandalay Bay | months: 6,8 | 2015-2026
 Furnace Fest | 2015-2026
 
 # --- famous international ---
@@ -77,16 +88,14 @@ Electric Daisy Carnival | cancelled: 2020 | setlistfm: venue=Las Vegas Motor Spe
 Ultra Music Festival | setlistfm: venue=Bayfront Park | months: 3 | 2015-2026
 Tomorrowland | cancelled: 2020,2021 | setlistfm: city=Boom | months: 7 | 2015-2026
 Electric Zoo | setlistfm: venue=Randalls Island | months: 8,9 | 2015-2026
-Electric Forest Festival | 2015-2026
-HARD Summer | 2015-2026
+Electric Forest Festival | fill: city=Rothbury | months: 6 | 2015-2026
 Lost Lands Music Festival | setlistfm: venue=Legend Valley | months: 9 | per_day: 30 | days: 3 | 2017-2026
-CRSSD Festival | setlistfm: venue=Waterfront Park | months: 3,9 | 2015-2026
+CRSSD Festival | setlistfm: city=San Diego & venue=Waterfront Park | months: 3,9 | 2015-2026
 Okeechobee Music & Arts Festival | setlistfm: city=Okeechobee | months: 3 | 2015-2026
-Creamfields | cancelled: 2020 | 2015-2026
-Defqon.1 Festival | cancelled: 2020,2021 | setlistfm: city=Biddinghuizen | months: 6 | 2015-2026
+Creamfields | cancelled: 2020 | fill: city=Daresbury | months: 8 | 2015-2026
 
 # --- added 13 October 2026 ---
-Suwannee Hulaween | cancelled: 2020 | 2015-2026
+Suwannee Hulaween | cancelled: 2020 | fill: city=Live Oak | months: 10 | 2015-2026
 #
 # The other three were asked for and checked, and neither source has them:
 #
@@ -105,6 +114,17 @@ Suwannee Hulaween | cancelled: 2020 | 2015-2026
 # them means reading the festivals' own sites, which is product work rather
 # than coursework and belongs in IST440W/internship/.
 
+# --- cut 14 October 2026: the source cannot see the festival, so what it
+#     returns is a fragment of a bill rather than a short one ---
+# Defqon.1 Festival            6 acts in 2024 and 10 in 2025, of a bill well over a hundred;
+#                              setlist.fm barely covers hardstyle, because those sets are not
+#                              logged as setlists. The names are real and the lineup is not.
+# HARD Summer                  0 rows; no readable lineup in the article and no venue search
+#                              that separates it from everything else at its grounds
+# Psycho Las Vegas             68 acts in 2019 and 45 in 2021, then 5 and 6 after the hiatus;
+#                              the later years are what a venue search finds when there is no
+#                              festival to find, which is how a comedian got in
+#
 # --- cut 13 October 2026: too few years inside 2015-2026 to show whether an
 #     artist is rising, which is what the corpus is for ---
 # Maryland Deathfest                 only 2015-2016 have lineup sections; 2 years cannot show a trend
