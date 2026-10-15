@@ -13,20 +13,41 @@
 
     <p class="demo-note">
         <strong>Demonstration data.</strong> These artists are real, but the 2027 lineup and set times are
-        illustrative and were entered by hand — they are not the festival's announced lineup. Historical
-        lineup data arrives in the next phase.
+        illustrative and were entered by hand — they are not the festival's announced lineup. The rising
+        labels, however, are measured against the real historical lineups of 36 festivals, 2015–2026.
     </p>
 
+    <p class="muted" th:if="${measured != null and measured and risingCount > 0}">
+        <span th:text="${risingCount}">0</span> artists on this bill are booked at a growing share of
+        festivals. The label is only shown where there is enough history to measure one — for most of a
+        lineup there is not, and nothing is claimed.
+    </p>
+
+    <!-- A list of links was fine for three demonstration festivals and absurd
+         for 334 real editions, which is what loading the corpus turned it
+         into: a wall of badges and a 112KB page. A select handles any number
+         of them and keeps the planning editions at the top, since those are
+         the ones with set times and therefore the ones you can plan. -->
     <section class="panel" th:if="${#lists.size(editions) > 1}">
         <h2>Festival</h2>
         <p class="muted">Your artists stay on your account — switching only rebuilds the lineup.</p>
-        <p>
-            <a th:each="e : ${editions}"
-               th:href="@{/lineup(editionId=${e.editionId})}"
-               th:text="${e.festival.name} + ' ' + ${e.year}"
-               th:classappend="${chosen != null and e.editionId == chosen.editionId} ? 'badge badge-match' : 'badge'"
-               class="badge">Festival</a>
-        </p>
+        <form method="get" th:action="@{/lineup}">
+            <select name="editionId" onchange="this.form.submit()">
+                <optgroup label="Plan a festival (with set times)">
+                    <option th:each="e : ${plannable}"
+                            th:value="${e.editionId}"
+                            th:selected="${chosen != null and e.editionId == chosen.editionId}"
+                            th:text="${e.festival.name} + ' ' + ${e.year}">Festival</option>
+                </optgroup>
+                <optgroup label="Historical lineups (no set times)">
+                    <option th:each="e : ${historical}"
+                            th:value="${e.editionId}"
+                            th:selected="${chosen != null and e.editionId == chosen.editionId}"
+                            th:text="${e.festival.name} + ' ' + ${e.year}">Festival</option>
+                </optgroup>
+            </select>
+            <noscript><button type="submit" class="button-quiet">Show</button></noscript>
+        </form>
     </section>
 
     <p class="muted" th:if="${analyticsUp != null and !analyticsUp}">
@@ -41,22 +62,31 @@
         No performances found for this festival edition.
     </p>
 
+    <p class="muted" th:if="${timed != null and !timed and !#lists.isEmpty(rows)}">
+        A historical lineup: who played, read from the festival's own records. No set
+        times were published for it, so this edition can be browsed but not scheduled.
+    </p>
+
     <div class="grid grid-2">
         <article class="card" th:each="row : ${rows}">
             <div class="name">
-                <span th:text="${row.artist}">Artist</span>
-                <span class="badge badge-rising" th:if="${row.headliner}">Headliner</span>
+                <a th:href="@{/artist/{id}(id=${row.artistId})}" th:text="${row.artist}"
+                   class="artist-link">Artist</a>
+                <span class="badge badge-headliner" th:if="${row.headliner}">Headliner</span>
             </div>
             <div class="tags" th:text="${row.tags}">tags</div>
             <p>
                 <span class="badge badge-pick" th:if="${row.myPick}">Your pick</span>
                 <span class="badge badge-match" th:if="${row.matchPercent != null}"
                       th:text="${row.matchPercent} + '% match'">0% match</span>
+                <span class="badge badge-rising" th:if="${row.rising}">Rising</span>
             </p>
-            <div class="tags">
-                <span th:text="${row.day}">Sat</span> ·
-                <span th:text="${row.time}">16:30</span> ·
-                <span th:text="${row.stage}">Stage</span>
+            <div class="tags" th:if="${timed or staged}">
+                <span th:if="${timed}" th:text="${row.day}">Sat</span>
+                <span th:if="${timed}">·</span>
+                <span th:if="${timed}" th:text="${row.time}">16:30</span>
+                <span th:if="${timed and staged}">·</span>
+                <span th:if="${staged}" th:text="${row.stage}">Stage</span>
             </div>
         </article>
     </div>

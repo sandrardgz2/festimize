@@ -345,3 +345,37 @@ footer.site {
 
 /* Why this set won its slot. Quiet: it is an explanation, not a headline. */
 .tradeoff { color: #6B7480; font-size: 0.82rem; margin-top: 0.15rem; font-style: italic; }
+
+/* ---------------------------------------------------------- rising artists */
+/* The headliner marker used to borrow .badge-rising, which now means
+   something specific and measured, so it has its own class. */
+.badge-headliner {
+    color: var(--orange);
+    border: 1px solid var(--orange);
+}
+
+/* An artist returning to the circuit after decades, or already at the top of
+   it. Quieter than a rising badge on purpose: it is context, not a find. */
+.badge-returning {
+    color: #8A93A0;
+    border: 1px solid #2A2F36;
+    font-weight: 500;
+}
+
+.artist-link {
+    color: inherit;
+    text-decoration: none;
+    border-bottom: 1px solid #2A2F36;
+}
+
+.artist-link:hover {
+    border-bottom-color: var(--orange);
+}
+
+/* The year down the left of an artist's festival history. */
+.year {
+    display: inline-block;
+    min-width: 3.5rem;
+    font-variant-numeric: tabular-nums;
+    color: #8A93A0;
+}

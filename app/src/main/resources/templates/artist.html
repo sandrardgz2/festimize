@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head(${artist.name})}"></head>
+<body>
+<header th:replace="~{layout :: topbar}"></header>
+
+<main class="wrap">
+    <h1 class="page-title" th:text="${artist.name}">Artist</h1>
+    <p class="page-sub">
+        <span th:if="${artist.disambiguation != null}"
+              th:text="${artist.disambiguation}">US rock band</span>
+        <span th:if="${artist.disambiguation != null and artist.country != null}"> · </span>
+        <span th:if="${artist.country != null}" th:text="${artist.country}">US</span>
+        <span th:if="${artist.formedYear != null}"
+              th:text="' · since ' + ${artist.formedYear}"> · since 1994</span>
+    </p>
+
+    <p class="tags" th:if="${tags != null and !#strings.isEmpty(tags)}"
+       th:text="${tags}">doom metal · sludge</p>
+
+    <!-- The badge where the measure earned one, and the counts either way.
+         Every other label this page used to carry has gone: they claimed
+         things about artists that only held for this dataset. -->
+    <section class="panel" th:if="${momentum != null}">
+        <h2 th:if="${label != null}">
+            <span th:text="${label}">Rising</span>
+        </h2>
+        <p th:if="${explains != null}" th:text="${explains}">
+            Booked at a growing share of the festivals in this dataset.
+        </p>
+        <p class="muted">
+            <span th:text="${momentum.appearances}">0</span> appearances ·
+            <span th:text="${momentum.festivals}">0</span> festivals ·
+            <span th:text="${momentum.firstYear} + '–' + ${momentum.lastYear}">2015–2026</span>
+            <span th:if="${label == null}">
+                in this dataset, which covers 36 festivals from 2015 onwards.
+            </span>
+        </p>
+    </section>
+
+    <section class="panel">
+        <h2>Festival history</h2>
+        <p class="muted" th:if="${#lists.isEmpty(seasons)}">
+            No festival appearances in the dataset.
+        </p>
+        <ul class="timeline" th:unless="${#lists.isEmpty(seasons)}">
+            <li th:each="season : ${seasons}" class="slot">
+                <span class="year" th:text="${season.year}">2025</span>
+                <span>
+                    <span th:text="${season.names}">Download Festival</span>
+                    <span class="badge" th:unless="${season.happened}">Cancelled edition</span>
+                </span>
+            </li>
+        </ul>
+        <p class="muted">
+            Cancelled editions are shown because the booking was real even though the
+            festival did not take place. They are not counted in the measure above.
+        </p>
+    </section>
+</main>
+</body>
+</html>

@@ -2,11 +2,13 @@ package com.festimize.web;
 
 import com.festimize.analytics.ScoringClient;
 import com.festimize.domain.AppUser;
+import com.festimize.domain.ArtistMomentum;
 import com.festimize.domain.ArtistScore;
 import com.festimize.domain.ArtistTag;
 import com.festimize.domain.FestivalEdition;
 import com.festimize.domain.Performance;
 import com.festimize.repo.AppUserRepository;
+import com.festimize.repo.ArtistMomentumRepository;
 import com.festimize.repo.ArtistScoreRepository;
 import com.festimize.repo.ArtistTagRepository;
 import com.festimize.repo.UserArtistRepository;
@@ -39,6 +41,7 @@ public class LineupController {
     private final ArtistScoreRepository scores;
     private final ScoringClient scoring;
     private final UserArtistRepository saved;
+    private final ArtistMomentumRepository momentum;
 
     public LineupController(FestivalEditionRepository editions,
                             PerformanceRepository performances,
@@ -46,7 +49,8 @@ public class LineupController {
                             AppUserRepository users,
                             ArtistScoreRepository scores,
                             ScoringClient scoring,
-                            UserArtistRepository saved) {
+                            UserArtistRepository saved,
+                            ArtistMomentumRepository momentum) {
         this.editions = editions;
         this.performances = performances;
         this.tags = tags;
@@ -54,11 +58,20 @@ public class LineupController {
         this.scores = scores;
         this.scoring = scoring;
         this.saved = saved;
+        this.momentum = momentum;
     }
 
-    /** One row on the page: who is playing, when, where, and what they sound like. */
-    public record LineupRow(String artist, String tags, String day, String time, String stage,
-                            boolean headliner, Integer matchPercent, boolean myPick) {}
+    /**
+     * One row on the page: who is playing, when, where, what they sound like,
+     * and whether they are on the way up.
+     *
+     * `rising` is the only thing the measure says out loud. An artist without
+     * a measured climb gets no label, because the labels that used to fill
+     * that space claimed things about artists that only held for this dataset.
+     */
+    public record LineupRow(Long artistId, String artist, String tags, String day, String time,
+                            String stage, boolean headliner, Integer matchPercent,
+                            boolean myPick, boolean rising) {}
 
     @GetMapping("/lineup")
     public String lineup(@RequestParam(required = false) Long editionId, Principal principal, Model model) {
@@ -70,6 +83,9 @@ public class LineupController {
             return "lineup";
         }
 
+        java.util.Set<Long> plannable = editions.findPlannable().stream()
+                .map(FestivalEdition::getEditionId)
+                .collect(java.util.stream.Collectors.toSet());
         FestivalEdition chosen = all.stream()
                 .filter(e -> editionId == null || e.getEditionId().equals(editionId))
                 .findFirst()
@@ -90,17 +106,25 @@ public class LineupController {
 
         // One query for every artist's tags, rather than one per row.
         Map<Long, String> tagsByArtist = new LinkedHashMap<>();
+        Map<Long, ArtistMomentum> climbByArtist = new LinkedHashMap<>();
         if (!sets.isEmpty()) {
             List<Long> artistIds = sets.stream().map(p -> p.getArtist().getArtistId()).distinct().toList();
             for (ArtistTag t : tags.findForArtists(artistIds)) {
                 tagsByArtist.merge(t.getArtist().getArtistId(), t.getTag(), (a, b) -> a + " · " + b);
+            }
+            // The rising measure for this bill, in one query for the same
+            // reason the tags are: a lineup page is a read, not 120 of them.
+            for (ArtistMomentum m : momentum.findForArtists(artistIds)) {
+                climbByArtist.put(m.getArtist().getArtistId(), m);
             }
         }
 
         List<LineupRow> rows = new ArrayList<>();
         for (Performance p : sets) {
             OffsetDateTime start = p.getStartsAt();
+            ArtistMomentum climb = climbByArtist.get(p.getArtist().getArtistId());
             rows.add(new LineupRow(
+                    p.getArtist().getArtistId(),
                     p.getArtist().getName(),
                     tagsByArtist.getOrDefault(p.getArtist().getArtistId(), ""),
                     start == null ? "—" : start.format(DAY),
@@ -109,11 +133,19 @@ public class LineupController {
                     p.isHeadliner(),
                     myPicks.contains(p.getArtist().getArtistId())
                             ? null : matchByArtist.get(p.getArtist().getArtistId()),
-                    myPicks.contains(p.getArtist().getArtistId())));
+                    myPicks.contains(p.getArtist().getArtistId()),
+                    climb != null && climb.isRising()));
         }
 
         model.addAttribute("activeNav", "lineup");
         model.addAttribute("editions", all);
+        // An edition with set times is one you can plan; the historical ones
+        // are reference. The switcher keeps them apart because there are three
+        // of the first and three hundred of the second.
+        model.addAttribute("plannable", all.stream()
+                .filter(e -> plannable.contains(e.getEditionId())).toList());
+        model.addAttribute("historical", all.stream()
+                .filter(e -> !plannable.contains(e.getEditionId())).toList());
         model.addAttribute("chosen", chosen);
         model.addAttribute("festivalName", chosen.getFestival().getName() + " " + chosen.getYear());
         model.addAttribute("location", chosen.getFestival().getCity());
@@ -131,6 +163,13 @@ public class LineupController {
         model.addAttribute("scored", !matchByArtist.isEmpty());
         model.addAttribute("rows", rows);
         model.addAttribute("artistCount", rows.stream().map(LineupRow::artist).distinct().count());
+        model.addAttribute("risingCount", rows.stream().filter(LineupRow::rising).count());
+        // A historical lineup read from an article has no set times and often no
+        // stages either: 5,582 of those rows have neither. Three columns of
+        // em-dashes is not information, so the page leaves them out instead.
+        model.addAttribute("timed", sets.stream().anyMatch(p -> p.getStartsAt() != null));
+        model.addAttribute("staged", sets.stream().anyMatch(p -> p.getStage() != null));
+        model.addAttribute("measured", !climbByArtist.isEmpty());
         return "lineup";
     }
 }

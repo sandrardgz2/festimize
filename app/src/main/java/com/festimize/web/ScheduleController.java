@@ -59,7 +59,9 @@ public class ScheduleController {
     public String schedule(@RequestParam(required = false) Long editionId,
                            @RequestParam(required = false) String error,
                            Principal principal, Model model) {
-        List<FestivalEdition> all = editions.findAllWithFestival();
+        // Only editions with set times: a schedule cannot be built without them,
+        // and after the corpus load there are 334 editions that have none.
+        List<FestivalEdition> all = editions.findPlannable();
         if (all.isEmpty()) {
             model.addAttribute("activeNav", "schedule");
             return "schedule";

@@ -36,6 +36,18 @@ public class FestivalEdition {
     @Column(name = "end_date")
     private LocalDate endDate;
 
+    /**
+     * Whether this edition actually took place.
+     *
+     * A lineup that was announced and then called off is kept rather than
+     * deleted: it is a real fact about who was booked, and it is not an
+     * appearance. Counting one would show an artist's career carrying on
+     * through a year nobody played, so the rising measure filters on this and
+     * the artist page marks those bookings as cancelled.
+     */
+    @Column(name = "happened", nullable = false)
+    private boolean happened = true;
+
     public Long getEditionId() {
         return editionId;
     }
@@ -74,5 +86,13 @@ public class FestivalEdition {
 
     public void setEndDate(LocalDate endDate) {
         this.endDate = endDate;
+    }
+
+    public boolean isHappened() {
+        return happened;
+    }
+
+    public void setHappened(boolean happened) {
+        this.happened = happened;
     }
 }

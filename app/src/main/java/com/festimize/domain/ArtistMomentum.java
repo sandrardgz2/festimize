@@ -38,6 +38,25 @@ public class ArtistMomentum {
     @Column(name = "last_year")
     private Short lastYear;
 
+    /**
+     * How many different festivals, which is not the same as how many
+     * appearances: two Belgian festivals every year is a residency, and three
+     * is the least a rising badge will accept.
+     */
+    @Column(name = "festivals")
+    private Short festivals;
+
+    /**
+     * Which case produced the score, because the three mean different things
+     * on a page: {@code trajectory} is a measured climb over three or more
+     * years, {@code returning} is the same climb by an artist who has been
+     * going for decades, {@code new} is too little history to say anything —
+     * and the page shows the facts instead — and {@code arrived} is an artist
+     * already at the top of the circuit, who is excluded on purpose.
+     */
+    @Column(name = "basis", nullable = false)
+    private String basis;
+
     @CreationTimestamp
     @Column(name = "computed_at", nullable = false)
     private OffsetDateTime computedAt;
@@ -80,6 +99,30 @@ public class ArtistMomentum {
 
     public void setFirstYear(Short firstYear) {
         this.firstYear = firstYear;
+    }
+
+    public Short getFestivals() {
+        return festivals;
+    }
+
+    public void setFestivals(Short festivals) {
+        this.festivals = festivals;
+    }
+
+    public String getBasis() {
+        return basis;
+    }
+
+    public void setBasis(String basis) {
+        this.basis = basis;
+    }
+
+    /** Whether this artist has earned a rising badge, by the one rule. */
+    public boolean isRising() {
+        return "trajectory".equals(basis)
+                && festivals != null && festivals >= 3
+                && momentumScore != null
+                && momentumScore.compareTo(new BigDecimal("0.75")) >= 0;
     }
 
     public Short getLastYear() {
