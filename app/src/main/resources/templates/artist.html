@@ -52,7 +52,7 @@
                 </span>
             </li>
         </ul>
-        <p class="muted">
+        <p class="muted" th:if="${seasons.?[!happened].size() > 0}">
             Cancelled editions are shown because the booking was real even though the
             festival did not take place. They are not counted in the measure above.
         </p>
