@@ -64,9 +64,17 @@ def flatten(name):
 
 
 def _get(url, headers=None):
-    """One GET, retried twice, returning parsed JSON."""
+    """
+    One GET, retried patiently, returning parsed JSON.
+
+    MusicBrainz answers 503 when it wants you to slow down rather than when
+    anything is wrong, so a 503 is waited out for a good while instead of
+    being treated as a failure. Three quick retries was not enough: the first
+    unattended run of this script gave up on one name and lost the other
+    sixteen thousand with it.
+    """
     last = None
-    for attempt in range(3):
+    for attempt in range(6):
         try:
             request = urllib.request.Request(url, headers=dict(
                 {'User-Agent': AGENT, 'Accept': 'application/json'}, **(headers or {})))
@@ -76,7 +84,7 @@ def _get(url, headers=None):
             last = error
             if error.code == 404:
                 return {}
-            time.sleep(2.0 * (attempt + 1))
+            time.sleep((8.0 if error.code in (429, 503) else 2.0) * (attempt + 1))
         except Exception as error:                              # noqa: BLE001
             last = error
             time.sleep(2.0 * (attempt + 1))
@@ -200,7 +208,13 @@ def search_musicbrainz(name):
         time.sleep(MB_PAUSE)
         return _get(url)
 
-    answer = _cached(tag, fetch)
+    try:
+        answer = _cached(tag, fetch)
+    except Exception as error:                                  # noqa: BLE001
+        # A name nobody can look up stays unresolved, which is a known state
+        # the loader handles. Stopping here would throw away the whole run.
+        print('  could not search for %r: %s' % (name, error))
+        return None
     wanted = flatten(name)
     for found in answer.get('artists') or []:
         if flatten(found.get('name') or '') == wanted:
@@ -216,31 +230,57 @@ def describe(mbids):
     {id: {name, disambiguation, country, began}} straight from MusicBrainz.
 
     Asked in batches through the search index, which accepts `arid:` — the
-    read endpoint takes one id at a time and this corpus has twelve thousand.
+    read endpoint takes one id at a time and this corpus has fifteen thousand.
+    Each answer is then cached per id rather than per batch. Caching the batch
+    was the first version and it was useless: the batches are slices of a
+    sorted list, so one new artist shifts every boundary after it and a re-run
+    re-fetched all fifteen thousand. An hour of somebody's evening.
     """
-    out = {}
-    mbids = sorted(set(m for m in mbids if m))
-    for start in range(0, len(mbids), ARIDS_PER_CALL):
-        batch = mbids[start:start + ARIDS_PER_CALL]
-        tag = 'mb-artists-%s.json' % _digest(batch)
+    out, wanted = {}, []
+    for mbid in sorted(set(m for m in mbids if m)):
+        path = os.path.join(CACHE, 'mb-artist-%s.json' % mbid)
+        if os.path.exists(path):
+            try:
+                out[mbid] = json.load(open(path, encoding='utf-8'))
+                continue
+            except ValueError:
+                pass
+        wanted.append(mbid)
+    print('  %d of %d artists already described' % (len(out), len(out) + len(wanted)))
 
-        def fetch(batch=batch):
-            query = ' OR '.join('arid:%s' % m for m in batch)
-            url = MUSICBRAINZ + '?' + urllib.parse.urlencode({
-                'query': query, 'fmt': 'json', 'limit': len(batch)})
-            time.sleep(MB_PAUSE)
-            return _get(url)
+    def keep(mbid, about):
+        os.makedirs(CACHE, exist_ok=True)
+        path = os.path.join(CACHE, 'mb-artist-%s.json' % mbid)
+        json.dump(about, open(path + '.partial', 'w', encoding='utf-8'), ensure_ascii=False)
+        os.replace(path + '.partial', path)
+        out[mbid] = about
 
-        for found in (_cached(tag, fetch).get('artists') or []):
-            out[found['id']] = {
-                'name': found.get('name'),
-                'disambiguation': found.get('disambiguation') or None,
-                'country': found.get('country'),
-                'began': (found.get('life-span') or {}).get('begin'),
-                'type': found.get('type'),
+    for start in range(0, len(wanted), ARIDS_PER_CALL):
+        batch = wanted[start:start + ARIDS_PER_CALL]
+        query = ' OR '.join('arid:%s' % m for m in batch)
+        url = MUSICBRAINZ + '?' + urllib.parse.urlencode({
+            'query': query, 'fmt': 'json', 'limit': len(batch)})
+        time.sleep(MB_PAUSE)
+        try:
+            answer = _get(url)
+        except Exception as error:                              # noqa: BLE001
+            print('  could not describe a batch: %s' % error)
+            continue
+        found = {}
+        for artist in (answer.get('artists') or []):
+            found[artist['id']] = {
+                'name': artist.get('name'),
+                'disambiguation': artist.get('disambiguation') or None,
+                'country': artist.get('country'),
+                'began': (artist.get('life-span') or {}).get('begin'),
+                'type': artist.get('type'),
             }
-        print('  musicbrainz %5d/%d ids' % (min(start + ARIDS_PER_CALL, len(mbids)),
-                                            len(mbids)))
+        for mbid in batch:
+            # An id the search index does not return is cached as unknown, so a
+            # re-run does not ask again for something that has no answer.
+            keep(mbid, found.get(mbid, {}))
+        print('  musicbrainz %5d/%d new ids' % (min(start + ARIDS_PER_CALL, len(wanted)),
+                                                len(wanted)))
     return out
 
 
