@@ -196,4 +196,26 @@ WHERE a.name_normalized = 'the prodigy' AND f.name = 'Sick New World' AND e.fest
   AND e.year = 2027 AND s.festival_id = f.festival_id AND s.name = 'Neon Stage'
 ON CONFLICT DO NOTHING;
 
+-- Two artists the rising measure flags, added so the badge can be seen where
+-- taste matching happens. Before this the bill was 21 established acts and one
+-- newcomer, so 4.5's whole point — discovering someone on the way up while you
+-- plan — could only be demonstrated on Bloodstock. Both are real acts with a
+-- measured climb (see artist_momentum), placed in the early and small-stage
+-- slots a rising act actually gets. The set times remain fabricated, as every
+-- time on this edition is.
+INSERT INTO fact_performance (artist_id, edition_id, stage_id, date_id, starts_at, ends_at, billing_rank, is_headliner, source, confidence)
+SELECT a.artist_id, e.edition_id, s.stage_id, 20270424,
+       TIMESTAMPTZ '2027-04-24 11:45:00+00:00', TIMESTAMPTZ '2027-04-24 12:20:00+00:00', 9, false, 'manual', 1.0
+FROM dim_artist a, dim_festival_edition e, dim_festival f, dim_stage s
+WHERE a.name_normalized = 'jesus piece' AND f.name = 'Sick New World' AND e.festival_id = f.festival_id
+  AND e.year = 2027 AND s.festival_id = f.festival_id AND s.name = 'Desert Stage'
+ON CONFLICT DO NOTHING;
+INSERT INTO fact_performance (artist_id, edition_id, stage_id, date_id, starts_at, ends_at, billing_rank, is_headliner, source, confidence)
+SELECT a.artist_id, e.edition_id, s.stage_id, 20270424,
+       TIMESTAMPTZ '2027-04-24 20:25:00+00:00', TIMESTAMPTZ '2027-04-24 20:55:00+00:00', 8, false, 'manual', 1.0
+FROM dim_artist a, dim_festival_edition e, dim_festival f, dim_stage s
+WHERE a.name_normalized = 'currents' AND f.name = 'Sick New World' AND e.festival_id = f.festival_id
+  AND e.year = 2027 AND s.festival_id = f.festival_id AND s.name = 'Neon Stage'
+ON CONFLICT DO NOTHING;
+
 COMMIT;
