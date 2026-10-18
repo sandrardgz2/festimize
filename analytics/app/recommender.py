@@ -14,10 +14,12 @@ Pipeline:
   1. Build a sparse artist x tag matrix, where each cell holds the tag's
      weight (Last.fm counts carry real signal; MusicBrainz genres are 1.0).
   2. Apply TF-IDF so rare tags dominate and the rows are unit length.
-  3. Cluster the saved artists into one to three taste profiles. A single
-     average fails anyone with range: four doom picks and four thrash picks
-     average into a point that is neither, so the artists that should score
-     highest score middling instead. Clustering keeps the sides separate.
+  3. Build one to three cluster centroids from the saved artists, and take
+     each saved artist as a profile in its own right. A single average fails
+     anyone with range: four doom picks and four thrash picks average into a
+     point that is neither. Clustering fixes most of that and not all of it —
+     a corner of a taste held by only two artists never gets its own cluster —
+     so the individual artists are kept alongside the centroids.
   4. Score every artist against each profile and keep its best score. An
      artist has to match one side of someone's taste well, not all of it.
 
@@ -60,10 +62,16 @@ def build_matrix(rows: Sequence[Tuple[int, str, float]]):
 
 def profile_count(saved: int) -> int:
     """
-    How many taste profiles to build for someone with this many saved artists.
+    How many cluster centroids to build for someone with this many saved artists.
 
-    Capped deliberately: with enough clusters every pick becomes its own
-    profile, and then one odd choice scores a whole genre highly.
+    The cap was meant to stop one odd pick scoring a whole genre highly. It
+    does not: k-means gives an outlier a cluster of its own, and the maximum
+    over clusters then picks it up exactly as a single-artist profile would.
+    Measured on the demo profile, adding one unrepresentative saved artist
+    moved the nearest unsaved artist by +5.4 points under clustering and +5.4
+    under the per-artist profiles it was supposed to protect against. The cap
+    stays because fewer, broader centroids are still the right shape for the
+    themes in a taste; it is simply not a defence.
     """
     if saved <= 3:
         return 1
@@ -73,7 +81,21 @@ def profile_count(saved: int) -> int:
 
 
 def _profiles(tfidf, saved_rows: List[int], clustered: bool):
-    """Unit-length taste profiles: one centroid per cluster of saved artists."""
+    """
+    Unit-length taste profiles: a centroid per cluster, plus each saved artist.
+
+    Two ideas of what a profile is, kept together because they fail in
+    opposite directions. A centroid captures a theme that no single saved
+    artist represents — it is what keeps Sevendust at 68% rather than 59%. A
+    single artist captures a corner of a taste too small to form a cluster:
+    three clusters built from a dozen artists cannot isolate a hardcore side
+    represented by two of them, which is why Jesus Piece scored 22% against
+    the centroids and 43% against Knocked Loose alone.
+
+    Each artist keeps its best score across all of them, so adding the
+    per-artist profiles can only raise a score, never lower one. Nothing the
+    clustered version already matched gets worse.
+    """
     dense = tfidf[saved_rows].toarray()
     k = profile_count(len(saved_rows)) if clustered else 1
     k = min(k, len(saved_rows))
@@ -83,6 +105,9 @@ def _profiles(tfidf, saved_rows: List[int], clustered: bool):
     else:
         labels = KMeans(n_clusters=k, n_init=10, random_state=42).fit_predict(dense)
         centroids = [dense[labels == c].mean(axis=0) for c in range(k) if (labels == c).any()]
+
+    if clustered:
+        centroids = list(centroids) + [dense[i] for i in range(len(saved_rows))]
 
     out = []
     for v in centroids:
