@@ -194,6 +194,11 @@ def build_day(candidates: Sequence[Candidate],
 
     # Choose the best possible set of performances. See choose_best: greedy
     # used to do this and needed a repair pass to patch the holes it left.
+    # The advertised times, kept before the late-arrival handling below rewrites
+    # them. The counterfactual at the end of this function has to reason about
+    # the day as published, not as walked.
+    advertised = {id(c): (c.starts_at, c.ends_at) for c in candidates}
+
     picked = choose_best(candidates, changeover_minutes=changeover_minutes)
 
     # Some sets are joined late, having walked from somewhere else. Record how
@@ -397,6 +402,44 @@ def build_day(candidates: Sequence[Candidate],
     def displaced(c: Candidate) -> Optional[Candidate]:
         return blamed.get(id(c))
 
+    def instead(winner: Candidate, rival: Candidate) -> Optional[str]:
+        """
+        What the day costs if the rival is taken in the winner's place.
+
+        Answered by solving the day again without the winner rather than by
+        reasoning about the clash, because the scheduler never decides a clash
+        on its own terms: it compares the best possible day containing each.
+        Two of someone's own picks are worth the same, so the real answer to
+        "why this one" is always something about the rest of the day.
+
+        Usually the answer is smaller than it looks. The first version of this
+        only reported whole sets lost and stayed silent otherwise, which hid
+        the common case: you can join a set late, so the cost of the swap is
+        often a few minutes of music rather than a band.
+        """
+        import dataclasses
+        pristine = []
+        for c in candidates:
+            if c is winner:
+                continue
+            start, end = advertised[id(c)]
+            pristine.append(dataclasses.replace(c, starts_at=start, ends_at=end))
+        other = {c.artist: arrive for c, arrive
+                 in choose_best(pristine, changeover_minutes=changeover_minutes)}
+        if rival.artist not in other:
+            return None                    # the rival still does not get in
+        lost = [c.artist for c in chosen if c is not winner and c.artist not in other]
+        if lost:
+            return "taking %s instead would cost you %s" % (
+                rival.artist,
+                lost[0] if len(lost) == 1 else ", ".join(lost[:-1]) + " and " + lost[-1])
+        advertised_start = advertised[id(rival)][0]
+        late = int((other[rival.artist] - advertised_start).total_seconds() // 60)
+        if late > 0:
+            return ("%s would fit just as well, but you would join it %d minutes late"
+                    % (rival.artist, late))
+        return None                        # genuinely interchangeable; say nothing
+
     def describe(c: Candidate) -> str:
         if c.is_pick:
             return "your pick"
@@ -420,6 +463,12 @@ def build_day(candidates: Sequence[Candidate],
                            else "%d%%" % round(rival.score * 100))
             reason += " · chosen over %s (%s, %d min against %d)" % (
                 rival.artist, rival_label, minutes, mine)
+            # Between two of their own picks the numbers are identical, so the
+            # only honest reason is what else the day can then hold.
+            if rival.is_pick and c.is_pick:
+                why = instead(c, rival)
+                if why:
+                    reason += " — " + why
         if id(c) in missed:
             reason += " · joined %d min late, walking from the last set" % missed[id(c)]
         slots.append(Slot("SET", c.starts_at, c.ends_at, c.performance_id, c.artist, c.stage, reason))
