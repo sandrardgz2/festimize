@@ -32,16 +32,20 @@ public class ScheduleController {
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
 
     private final FestivalEditionRepository editions;
+    private final com.festimize.repo.ArtistMomentumRepository momentum;
     private final AppUserRepository users;
     private final PlanRepository plans;
     private final PlanItemRepository items;
     private final PlanningClient planning;
     private final UserArtistRepository saved;
 
-    public ScheduleController(FestivalEditionRepository editions, AppUserRepository users,
+    public ScheduleController(FestivalEditionRepository editions,
+                              com.festimize.repo.ArtistMomentumRepository momentum,
+                              AppUserRepository users,
                               PlanRepository plans, PlanItemRepository items, PlanningClient planning,
                               UserArtistRepository saved) {
         this.editions = editions;
+        this.momentum = momentum;
         this.users = users;
         this.plans = plans;
         this.items = items;
@@ -49,8 +53,8 @@ public class ScheduleController {
         this.saved = saved;
     }
 
-    public record Slot(String kind, String time, String artist, String stage, String reason,
-                       String tradeoff, int minutes) {
+    public record Slot(String kind, String time, String artist, Long artistId, String stage,
+                       String reason, String tradeoff, int minutes, boolean rising) {
         /** A plain changeover, as opposed to a break the scheduler chose. */
         public boolean gap() { return reason != null && reason.startsWith("gap"); }
     }
@@ -72,6 +76,15 @@ public class ScheduleController {
         AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
 
         Optional<Plan> plan = plans.findByUser_UserIdAndEdition_EditionId(me.getUserId(), chosen.getEditionId());
+        // The rising measure for everyone on this plan, in one query. A day you
+        // are about to walk is exactly where "this one is on the way up" is
+        // worth knowing, and the badge was on the lineup and the artist page
+        // but not here, which is the page you actually read on the day.
+        java.util.Set<Long> climbing = new java.util.HashSet<>();
+        for (com.festimize.domain.ArtistMomentum m : momentum.findRising()) {
+            climbing.add(m.getArtist().getArtistId());
+        }
+
         Map<String, List<Slot>> byDay = new LinkedHashMap<>();
         int sets = 0, rests = 0, picks = 0, minutes = 0;
 
@@ -87,13 +100,17 @@ public class ScheduleController {
                 } else {
                     rests++;
                 }
+                Long who = isSet && item.getPerformance() != null
+                        ? item.getPerformance().getArtist().getArtistId() : null;
                 byDay.computeIfAbsent(day, d -> new ArrayList<>()).add(new Slot(
                         item.getItemType(),
                         item.getStartsAt().format(TIME) + " – " + item.getEndsAt().format(TIME),
                         isSet && item.getPerformance() != null ? item.getPerformance().getArtist().getName() : null,
+                        who,
                         isSet && item.getPerformance() != null && item.getPerformance().getStage() != null
                                 ? item.getPerformance().getStage().getName() : null,
-                        reasonOf(item), tradeoffOf(item), mins));
+                        reasonOf(item), tradeoffOf(item), mins,
+                        who != null && climbing.contains(who)));
             }
         }
 

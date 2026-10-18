@@ -49,14 +49,19 @@ public class SetupController {
         Set<Long> mine = new HashSet<>();
         saved.findSavedArtists(me.getUserId()).forEach(a -> mine.add(a.getArtistId()));
 
-        List<Artist> all = artists.findAll().stream()
-                .sorted(Comparator.comparing(Artist::getName, String.CASE_INSENSITIVE_ORDER))
-                .toList();
-
+        // Only artists the recommender can actually score. Taste matching runs
+        // on tags, so ticking an artist with none is a no-op the page would be
+        // inviting you to make: loading the corpus took this list from 139 to
+        // 15,799, of which 15,660 have no tags, and rendered every one of them
+        // as a checkbox on a four-megabyte page.
         Map<Long, String> tagsByArtist = new LinkedHashMap<>();
-        for (ArtistTag t : tags.findForArtists(all.stream().map(Artist::getArtistId).toList())) {
+        for (ArtistTag t : tags.findAll()) {
             tagsByArtist.merge(t.getArtist().getArtistId(), t.getTag(), (a, b) -> a + " · " + b);
         }
+        List<Artist> all = artists.findAll().stream()
+                .filter(a -> tagsByArtist.containsKey(a.getArtistId()) || mine.contains(a.getArtistId()))
+                .sorted(Comparator.comparing(Artist::getName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
 
         List<Choice> choices = new ArrayList<>();
         for (Artist a : all) {

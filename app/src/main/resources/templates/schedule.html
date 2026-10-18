@@ -51,7 +51,11 @@
                  th:classappend="${slot.gap} ? 'slot slot-gap' : (${slot.kind == 'REST'} ? 'slot slot-rest' : 'slot slot-set')" class="slot">
                 <div class="slot-time" th:text="${slot.time}">12:00 – 13:00</div>
                 <div class="slot-body">
-                    <div class="name" th:if="${slot.kind == 'SET'}" th:text="${slot.artist}">Artist</div>
+                    <div class="name" th:if="${slot.kind == 'SET'}">
+                        <a th:href="@{/artist/{id}(id=${slot.artistId})}" th:text="${slot.artist}"
+                           class="artist-link">Artist</a>
+                        <span class="badge badge-rising" th:if="${slot.rising}">Rising</span>
+                    </div>
                     <div class="name" th:if="${slot.kind == 'REST' and !slot.gap}">Break — <span th:text="${slot.minutes} + ' min'">40 min</span></div>
                     <div class="gap-label" th:if="${slot.gap}" th:text="${slot.minutes} + ' min changeover'">30 min changeover</div>
                     <div class="tags">

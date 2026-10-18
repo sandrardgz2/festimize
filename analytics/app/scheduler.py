@@ -366,13 +366,36 @@ def build_day(candidates: Sequence[Candidate],
 
     # What each choice cost. A schedule that simply appears is hard to trust;
     # one that says what it turned down can be argued with, which is better.
+    def _clash_minutes(a: Candidate, b: Candidate) -> float:
+        """Minutes two sets genuinely overlap, ignoring the walk between them."""
+        start, end = max(a.starts_at, b.starts_at), min(a.ends_at, b.ends_at)
+        return max(0.0, (end - start).total_seconds() / 60)
+
+    # Each set that missed out belongs to one choice, not to every choice it
+    # brushes against. Without this a single casualty is reported by several
+    # slots at once, and the worst of those readings is actively false: a pick
+    # that genuinely lost to another pick was also printed against an unrelated
+    # set it merely finished five minutes before, which read as "this 84% match
+    # beat an artist you chose". The schedule was right; the sentence was not.
+    blamed: dict = {}
+    for other in candidates:
+        if other in chosen:
+            continue
+        conflicts = [c for c in chosen
+                     if _overlaps(c.starts_at, c.ends_at,
+                                  other.starts_at - timedelta(minutes=changeover_minutes),
+                                  other.ends_at + timedelta(minutes=changeover_minutes))]
+        if not conflicts:
+            continue
+        # The one that actually takes its place: the biggest true overlap, and
+        # only failing that the neighbour whose changeover made it unreachable.
+        against = max(conflicts, key=lambda c: (_clash_minutes(c, other), c.score))
+        kept = blamed.get(id(against))
+        if kept is None or other.score > kept.score:
+            blamed[id(against)] = other
+
     def displaced(c: Candidate) -> Optional[Candidate]:
-        rivals = [o for o in candidates
-                  if o not in chosen
-                  and _overlaps(c.starts_at, c.ends_at,
-                                o.starts_at - timedelta(minutes=changeover_minutes),
-                                o.ends_at + timedelta(minutes=changeover_minutes))]
-        return max(rivals, key=lambda o: o.score) if rivals else None
+        return blamed.get(id(c))
 
     def describe(c: Candidate) -> str:
         if c.is_pick:
@@ -389,8 +412,12 @@ def build_day(candidates: Sequence[Candidate],
         if rival is not None and (rival.score > 0.05 or rival.is_pick):
             minutes = int((rival.ends_at - rival.starts_at).total_seconds() // 60)
             mine = int((c.ends_at - c.starts_at).total_seconds() // 60)
-            rival_label = ("also your pick, %d%%" % round(rival.score * 100)
-                           if rival.is_pick else "%d%%" % round(rival.score * 100))
+            # No percentage on a pick. Every saved artist is now one of the
+            # profiles taste is scored against, so it matches itself perfectly
+            # and reads "100%" — a tautology dressed as a measurement. That it
+            # was chosen is the entire reason it was in contention.
+            rival_label = ("also your pick" if rival.is_pick
+                           else "%d%%" % round(rival.score * 100))
             reason += " · chosen over %s (%s, %d min against %d)" % (
                 rival.artist, rival_label, minutes, mine)
         if id(c) in missed:
