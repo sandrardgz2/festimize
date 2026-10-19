@@ -11,7 +11,7 @@
         <span th:text="${artistCount}">0</span> artists
     </p>
 
-    <p class="demo-note">
+    <p class="demo-note" th:if="${timed}">
         <strong>Demonstration data.</strong> These artists are real, but the 2027 lineup and set times are
         illustrative and were entered by hand — they are not the festival's announced lineup. The rising
         labels, however, are measured against the real historical lineups of 36 festivals, 2015–2026.
