@@ -81,6 +81,12 @@ FORBIDDEN = [
     ('Gogol Bordello', 'CRSSD Festival', 2015,
      'Gasparilla Music Festival in Tampa; a venue search for Waterfront Park '
      'matched any park with a shared word, in any city'),
+    ('Cancellations', 'Aftershock Festival', 2024,
+     'a sub-heading inside the bill, read as an artist and billed as a headliner'),
+    ('Marilyn Manson', 'Aftershock Festival', 2024,
+     'listed under that heading as having cancelled, recorded as having played'),
+    ('My Chemical Romance', 'Aftershock Festival', 2022,
+     'same block, same festival, a different year'),
     ('Davido', 'Riot Fest', 2023,
      'an Afrobeats festival at Doug Jennings Park on the Gold Coast, '
      'matched by a search for Chicago\'s Douglass Park'),

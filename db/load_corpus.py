@@ -9,8 +9,9 @@ MusicBrainz identities resolved from it — and fills the star schema the
 analytics side reads: dim_artist, dim_festival, dim_festival_edition,
 dim_stage, dim_date and fact_performance.
 
-Run db/migrations/001_corpus.sql first. Safe to run repeatedly: everything is
-an upsert keyed on something stable, so a second run changes nothing.
+Run db/migrations/001_corpus.sql first. Safe to run repeatedly: the dimension
+tables are upserts keyed on something stable, and the historical performances
+are deleted and rewritten, so a second run leaves the same database behind.
 
 Three things about this load are worth knowing before reading the code.
 
@@ -291,6 +292,17 @@ def main():
               % (len(want), len(rows),
                  '' if not skipped else ', skipped ' + ', '.join(
                      '%d %s' % (n, why) for why, n in skipped.most_common())))
+
+        # The historical rows are replaced wholesale rather than merged. COPY
+        # cannot skip a conflict, and the unique index added for these rows
+        # means a second run otherwise dies on the first duplicate — which it
+        # did, the first time this was run twice. Deleting by "has no set time"
+        # is exactly the corpus: every hand-entered demonstration row has one,
+        # so the demo lineups and any plan built on them are untouched. It also
+        # clears rows a re-read no longer supports, which a merge would leave
+        # behind for ever.
+        cur.execute('DELETE FROM fact_performance WHERE starts_at IS NULL')
+        print('performances: %d historical rows cleared before the load' % cur.rowcount)
 
         with cur.copy("""COPY fact_performance
                              (artist_id, edition_id, stage_id, date_id, is_headliner,

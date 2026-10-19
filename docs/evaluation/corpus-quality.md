@@ -1,6 +1,6 @@
 # Corpus quality
 
-39517 appearances, 16446 distinct artists, 36 festivals, 2015-2026.
+39688 appearances, 16457 distinct artists, 36 festivals, 2015-2026.
 
 ## Structure
 
@@ -18,8 +18,8 @@
 
 ## Identity
 
-- rows resolvable to a MusicBrainz id: **34972 (88%)**
-- artists appearing once only: **9800 of 16446 (60%)**
+- rows resolvable to a MusicBrainz id: **35147 (89%)**
+- artists appearing once only: **9805 of 16457 (60%)**
 
 ## Per festival
 
@@ -38,15 +38,15 @@
 | Bonnaroo Music Festival | 1369 | 10 | 2015-2026 | 137 | wikipedia | yes |
 | Electric Forest Festival | 1314 | 10 | 2015-2026 | 131 | wikipedia | yes |
 | Rock Werchter | 1242 | 10 | 2015-2026 | 124 | setlistfm | no |
+| Creamfields | 1236 | 12 | 2015-2026 | 103 | wikipedia | yes |
 | Roadburn Festival | 1207 | 10 | 2015-2026 | 121 | setlistfm | no |
 | Download Festival | 1144 | 11 | 2015-2026 | 104 | wikipedia | yes |
 | Glastonbury Festival | 1061 | 10 | 2015-2025 | 106 | wikipedia | yes |
-| Creamfields | 1052 | 6 | 2015-2020 | 175 | wikipedia | yes |
 | Riot Fest | 1017 | 10 | 2015-2026 | 102 | setlistfm | no |
 | Louder Than Life | 969 | 10 | 2015-2026 | 97 | wikipedia | yes |
 | Rock am Ring and Rock im Park | 937 | 10 | 2015-2026 | 94 | setlistfm | no |
-| Aftershock Festival | 804 | 11 | 2015-2026 | 73 | wikipedia | yes |
 | Ultra Music Festival | 802 | 10 | 2015-2026 | 80 | setlistfm | no |
+| Aftershock Festival | 791 | 11 | 2015-2026 | 72 | wikipedia | yes |
 | Welcome to Rockville | 757 | 10 | 2015-2025 | 76 | wikipedia | yes |
 | Vans Warped Tour | 751 | 7 | 2015-2026 | 107 | wikipedia | yes |
 | Lost Lands Music Festival | 704 | 5 | 2022-2026 | 141 | setlistfm | no |
@@ -65,7 +65,7 @@
 ## Volume
 
 - festival-years with three acts or fewer: **0**
-- festival-years more than three times that festival's usual size: **4** — Electric Zoo 2016 (usual 12), Ultra Music Festival 2015 (usual 46), Ultra Music Festival 2016 (usual 46), Ultra Music Festival 2017 (usual 46)
+- festival-years more than three times that festival's usual size: **8** — Creamfields 2015 (usual 59), Creamfields 2016 (usual 59), Creamfields 2017 (usual 59), Creamfields 2018 (usual 59), Electric Zoo 2016 (usual 12), Ultra Music Festival 2015 (usual 46), Ultra Music Festival 2016 (usual 46), Ultra Music Festival 2017 (usual 46)
 - festival-years above a thousand acts, which no festival books: **0**
 - largest festival-years: Tomorrowland 2026 (586 acts), Tomorrowland 2025 (577 acts), Tomorrowland 2022 (574 acts)
 
@@ -82,7 +82,8 @@ hundred is a fragment of a bill rather than a short history.
 |---|---|---|---|---|---|---|
 | CRSSD Festival | 12 | 12 | 49 | 13 | 74 | yes |
 | Fuji Rock Festival | 11 | 11 | 39 | 35 | 47 | yes |
-| Aftershock Festival | 11 | 11 | 59 | 29 | 138 | yes |
+| Aftershock Festival | 11 | 11 | 55 | 29 | 134 | yes |
+| Creamfields | 12 | 11 | 59 | 5 | 226 | yes |
 | Download Festival | 11 | 11 | 108 | 40 | 125 | yes |
 | Reading and Leeds Festivals | 11 | 11 | 165 | 50 | 202 | yes |
 | Coachella | 11 | 11 | 225 | 171 | 263 | yes |
@@ -111,7 +112,6 @@ hundred is a fragment of a bill rather than a short history.
 | Okeechobee Music & Arts Festival | 7 | 7 | 93 | 53 | 117 | yes |
 | Vans Warped Tour | 7 | 6 | 105 | 6 | 205 | yes |
 | Rolling Loud | 7 | 6 | 114 | 12 | 129 | yes |
-| Creamfields | 6 | 6 | 194 | 61 | 226 | yes |
 | Furnace Fest | 5 | 5 | 86 | 84 | 99 | yes |
 | Sonic Temple Art & Music Festival | 5 | 5 | 106 | 47 | 141 | yes |
 | Lost Lands Music Festival | 5 | 5 | 152 | 104 | 178 | yes |
@@ -140,6 +140,9 @@ hundred is a fragment of a bill rather than a short history.
 - PASS Celeste at Glastonbury Festival 2020 — announced for an edition that was cancelled
 - PASS Andrew Dice Clay at Sonic Temple Art & Music Festival 2019 — a comedian in the spoken-word tent
 - PASS Gogol Bordello at CRSSD Festival 2015 — Gasparilla Music Festival in Tampa; a venue search for Waterfront Park matched any park with a shared word, in any city
+- PASS Cancellations at Aftershock Festival 2024 — a sub-heading inside the bill, read as an artist and billed as a headliner
+- PASS Marilyn Manson at Aftershock Festival 2024 — listed under that heading as having cancelled, recorded as having played
+- PASS My Chemical Romance at Aftershock Festival 2022 — same block, same festival, a different year
 - PASS Davido at Riot Fest 2023 — an Afrobeats festival at Doug Jennings Park on the Gold Coast, matched by a search for Chicago's Douglass Park
 
 **0 blocking problems**, 30 names queued for review (0.08% of rows).

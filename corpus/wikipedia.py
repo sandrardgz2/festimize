@@ -100,6 +100,18 @@ EDITION = re.compile(
     # read "Lollapalooza Berlin (Canceled)", and requiring the place to be the
     # very last word filed five cancelled overseas bills as the Chicago one
     r'(?:\s*\([^)]*\))?\s*$')
+# A bare line inside a bill that introduces the acts who did not play. It is
+# not a heading, not a stage and not a name: Aftershock writes "Cancellations"
+# between two bullet lists, so the word itself became an artist — billed as a
+# headliner — and Marilyn Manson, My Chemical Romance, Limp Bizkit and twenty
+# others were recorded as having played festivals they pulled out of. The
+# prose reader has refused withdrawal sentences since Download 2015; this is
+# the same fact written as a list, which that rule never saw.
+CANCELLED_BLOCK = re.compile(
+    r'^\s*[\'*;:]*\s*(cancellations?|cancelled(?: acts?| artists?| bands?)?|'
+    r'no[- ]?shows?|withdrew|withdrawals?|dropped out|did not (?:play|appear))'
+    r"(?:\s+and\s+no[- ]?shows?)?[\s':*;]*$", re.I)
+
 STAGE_LINE = re.compile(r"(?:'''|\|\s*)?\s*\[?\[?([^|\]']{2,60}?)\]?\]?\s*(?:'''\s*)?(?:stage|tent|arena)\b", re.I)
 
 
@@ -282,6 +294,7 @@ def _runs(text: str):
     stage = None
     edition = None
     edition_depth = [None]          # which heading level the editions sit at
+    skipping = False                # inside a list of acts who did not play
     buffer: List[tuple] = []
 
     def flush():
@@ -292,6 +305,17 @@ def _runs(text: str):
 
     for line in _strip(text).splitlines():
         line = line.rstrip()
+        if CANCELLED_BLOCK.match(line):
+            # Everything until the list ends is a bill that did not happen.
+            run = flush()
+            if run:
+                yield run
+            skipping = True
+            continue
+        if skipping:
+            if line.strip().startswith(('*', '#')):
+                continue           # another act who pulled out
+            skipping = False       # the list ended; carry on reading
         heading = re.match(r'^={3,}\s*(.+?)\s*={3,}$', line)
         if heading:
             run = flush()
