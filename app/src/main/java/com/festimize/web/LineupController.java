@@ -104,6 +104,12 @@ public class LineupController {
                 .orElseGet(() -> editionChoice.choose(
                         all.stream().filter(e -> plannable.contains(e.getEditionId())).toList(),
                         null, me.getUserId()));
+        // Switching festival here has to be remembered, or the next page in
+        // the header -- which carries no edition in its link -- quietly puts
+        // you back on whichever one the defaulting rule prefers.
+        if (plannable.contains(chosen.getEditionId())) {
+            editionChoice.remember(chosen);
+        }
 
         List<Performance> sets = performances.findForEditionOrderedByStart(chosen.getEditionId());
 
