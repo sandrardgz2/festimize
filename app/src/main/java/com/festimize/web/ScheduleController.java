@@ -225,6 +225,14 @@ public class ScheduleController {
         // displaces — a clamped set displaces nothing — but that it pushes
         // the day past the hours this person said they wanted.
         int ceiling = me.musicCapMinutes();
+        // Which sets in this plan the person added themselves. The cap only
+        // budgets what the scheduler chose, so anything over the line is
+        // theirs — and telling them to drop one of the scheduler's sets is
+        // advice that cannot work: the solver refills the space.
+        java.util.Set<Long> askedFor = new java.util.HashSet<>();
+        for (String row : declined.pinnedPerformances(me.getUserId(), chosen.getEditionId())) {
+            askedFor.add(Long.valueOf(row.split("\\|")[0]));
+        }
         java.util.Set<String> myPicks = new java.util.HashSet<>();
         saved.findSavedArtists(me.getUserId()).forEach(a -> myPicks.add(a.getName()));
         Map<Long, Integer> byArtist = new LinkedHashMap<>();
@@ -288,7 +296,7 @@ public class ScheduleController {
                     // a mistake, and does not need telling to undo it.
                     over > OVERAGE_WORTH_ACTING_ON,
                     over > OVERAGE_WORTH_ACTING_ON
-                            ? weakestSetOf(byDay.get(e.getKey()), byArtist) : null));
+                            ? blameFor(byDay.get(e.getKey()), askedFor, byArtist) : null));
         }
 
         // The pace panel says what this day was actually built to, rather
@@ -338,6 +346,8 @@ public class ScheduleController {
                             (partial ? "Catching part of " : "Asked for ") + name, perf)));
         }
         model.addAttribute("changes", changes);
+        model.addAttribute("fitInside",
+                Boolean.TRUE.equals(plans.fitInside(me.getUserId(), chosen.getEditionId())));
         model.addAttribute("mealChosen", !plans.chosenMeals(me.getUserId(),
                 chosen.getEditionId()).isEmpty());
         model.addAttribute("declinedCount", declined.countFor(me.getUserId(), chosen.getEditionId())
@@ -378,6 +388,11 @@ public class ScheduleController {
     public String decline(@RequestParam Long editionId, @RequestParam Long performanceId,
                           Principal principal) {
         AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
+        // Turning a set down cancels having asked for it. Adding already
+        // cleared a decline; without the mirror image the change list showed
+        // "Dropped Drain" and "Asked for Drain" at the same time, one of
+        // which did nothing.
+        declined.unpinOne(me.getUserId(), editionId, performanceId);
         declined.decline(me.getUserId(), editionId, performanceId);
         planning.buildPlan(me.getUserId(), editionId);
         return "redirect:/schedule?editionId=" + editionId + "&swapped";
@@ -488,6 +503,23 @@ public class ScheduleController {
         return "redirect:/schedule?editionId=" + editionId + "&swapped";
     }
 
+    /**
+     * Keep what you asked for and let the scheduler give up one of its own.
+     *
+     * Without this the only way back inside the limit was to undo the set
+     * you had deliberately added, which is the wrong thing to give up. The
+     * limit now covers the whole day and the scheduler fits its choices
+     * around yours. Off by default: nothing is trimmed unless asked.
+     */
+    @PostMapping("/schedule/fit")
+    public String fit(@RequestParam Long editionId, @RequestParam boolean on,
+                      Principal principal) {
+        AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
+        plans.setFitInside(me.getUserId(), editionId, on);
+        planning.buildPlan(me.getUserId(), editionId);
+        return "redirect:/schedule?editionId=" + editionId + "&swapped";
+    }
+
     /** Put everything back, for someone who has declined their way into a corner. */
     @PostMapping("/schedule/restore")
     public String restore(@RequestParam Long editionId, Principal principal) {
@@ -574,6 +606,30 @@ public class ScheduleController {
      * that way. Null when every set in the day is a pick, and the advice
      * then stays general.
      */
+    /**
+     * What to undo when the day runs long.
+     *
+     * The budget applies to the sets the scheduler chose, so those can never
+     * be the reason a day is over — drop one and the solver fills the space
+     * again. Whatever is past the line was added by hand, so that is what
+     * gets named. Only if nothing was added does the weakest set become the
+     * answer, which is the case where the person's own picks alone exceed
+     * what they said they could manage.
+     */
+    private static String blameFor(List<Slot> day, java.util.Set<Long> askedFor,
+                                   Map<Long, Integer> byArtist) {
+        String longest = null;
+        long most = 0;
+        for (Slot slot : day) {
+            if ("SET".equals(slot.kind()) && slot.performanceId() != null
+                    && askedFor.contains(slot.performanceId()) && slot.minutes() > most) {
+                most = slot.minutes();
+                longest = slot.artist();
+            }
+        }
+        return longest != null ? longest + "|added" : weakestSetOf(day, byArtist);
+    }
+
     private static String weakestSetOf(List<Slot> day, Map<Long, Integer> byArtist) {
         String weakest = null;
         int lowest = Integer.MAX_VALUE;

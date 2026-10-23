@@ -181,7 +181,8 @@ def build_day(candidates: Sequence[Candidate],
               meal_by: Optional[object] = None,
               pinned: Optional[Sequence[int]] = None,
               tight: Optional[Sequence[int]] = None,
-              meal_at: Optional[datetime] = None) -> List[Slot]:
+              meal_at: Optional[datetime] = None,
+              fit_inside: bool = False) -> List[Slot]:
     """
     Fill a day with music, then carve breaks out of it.
 
@@ -321,7 +322,8 @@ def build_day(candidates: Sequence[Candidate],
     def _carve(sets: List[Candidate], after: datetime, minutes: int, label: str,
                taken: Optional[List[Slot]] = None, may_drop_a_pick: bool = False,
                shortest_acceptable: Optional[int] = None, may_drop: bool = True,
-               prefer_latest_before: Optional[datetime] = None):
+               prefer_latest_before: Optional[datetime] = None,
+               prefer_latest: bool = False):
         """
         Place one break of `minutes` as soon as possible after `after`.
 
@@ -380,7 +382,11 @@ def build_day(candidates: Sequence[Candidate],
                 # minutes at 17:20 is a meal, forty-five at 20:15 is a late
                 # dinner nobody asked for.
                 before = [o for o in usable if o[0] <= prefer_latest_before]
-                pick = min(before or usable, key=lambda o: o[0])
+                if before:
+                    pick = (max(before, key=lambda o: o[0]) if prefer_latest
+                            else min(before, key=lambda o: o[0]))
+                else:
+                    pick = min(usable, key=lambda o: o[0])
             opens, closes = pick
             return Slot("REST", opens, min(closes, opens + need), reason=label), None
 
@@ -421,11 +427,19 @@ def build_day(candidates: Sequence[Candidate],
 
     requested = [c for c in chosen if id(c) in asked]
     automatic = [c for c in chosen if id(c) not in asked]
-    if sum(_minutes(c) for c in automatic) > music_cap_minutes:
+    # Normally the budget covers only what this function chose, so a set the
+    # person asked for runs the day over and the page says so. When they ask
+    # for the day to be fitted inside the limit instead, the budget covers
+    # everything and what they asked for is taken off the top: they keep the
+    # band they chose, and the scheduler gives up one of its own.
+    budget = music_cap_minutes
+    if fit_inside:
+        budget = max(0, music_cap_minutes - int(sum(_minutes(c) for c in requested)))
+    if sum(_minutes(c) for c in automatic) > budget:
         capped: List[Candidate] = []
         for c in sorted(automatic, key=lambda c: (c.is_pick, c.score), reverse=True):
-            if sum(_minutes(x) for x in capped) + _minutes(c) <= music_cap_minutes \
-                    or c.is_pick:
+            if sum(_minutes(x) for x in capped) + _minutes(c) <= budget \
+                    or (c.is_pick and not fit_inside):
                 capped.append(c)
         chosen = sorted(requested + capped, key=lambda c: c.starts_at)
 
@@ -463,6 +477,22 @@ def build_day(candidates: Sequence[Candidate],
         meal, dropped = _carve(chosen, meal_window, meal_minutes, "meal break", rests,
                                may_drop_a_pick=True, shortest_acceptable=30,
                                prefer_latest_before=dinner_by)
+        # The window keeps lunch from landing at half past one. It is a
+        # preference; "eat by six" is an instruction, and the preference was
+        # overruling it. On an 11-hour day the window falls at 16:39, and
+        # where the only gap after that is at 20:55 somebody who asked to
+        # have eaten by 18:00 was being fed at nine. If nothing lands before
+        # the deadline, the window is dropped and the latest gap that does
+        # is taken instead — as late as their day allows, which is the point
+        # the window was making.
+        if meal is not None and dinner_by is not None and meal.starts_at > dinner_by:
+            earlier, dropped_earlier = _carve(chosen, day_start, meal_minutes, "meal break",
+                                              rests, may_drop_a_pick=True,
+                                              shortest_acceptable=30,
+                                              prefer_latest_before=dinner_by,
+                                              prefer_latest=True)
+            if earlier is not None and earlier.starts_at <= dinner_by:
+                meal, dropped = earlier, dropped_earlier
     if meal:
         rests.append(meal)
         if dropped:
@@ -712,4 +742,62 @@ def build_day(candidates: Sequence[Candidate],
                               alternative_id=suggestion))
 
     slots.sort(key=lambda s: s.starts_at)
-    return slots
+
+    # One stretch of nothing, reported once. A break is carved at a fixed
+    # length — thirty minutes for a breather, forty-five for a meal — and
+    # whatever the hole has left over was then emitted as a separate gap, so
+    # a fifty-minute hole read as "30 min breather" followed by "20 min gap".
+    # They are the same fifty minutes and the person is doing the same thing
+    # for all of them. The carved break keeps its name and takes the time.
+    merged: List[Slot] = []
+    for slot in slots:
+        last = merged[-1] if merged else None
+        if (last is not None and last.kind == "REST" and slot.kind == "REST"
+                and last.ends_at == slot.starts_at):
+            named = last if not last.reason.startswith("gap") else slot
+            merged[-1] = Slot("REST", last.starts_at, slot.ends_at,
+                              reason=named.reason,
+                              alternative_id=last.alternative_id or slot.alternative_id)
+            continue
+        merged.append(slot)
+
+    # A break the scheduler placed is as much an opportunity as a hole it
+    # left over. Suggestions were only ever attached to leftover gaps, so
+    # carving a thirty-minute breather out of a fifty-minute hole hid the
+    # band playing across it — the stretch is the same length either way,
+    # and standing in it is the same activity.
+    after_set = sorted(chosen, key=lambda c: c.starts_at)
+    for at, slot in enumerate(merged):
+        if slot.kind != "REST" or slot.alternative_id is not None:
+            continue
+        length = (slot.ends_at - slot.starts_at).total_seconds() / 60
+        if length < 40:
+            continue
+        later = next((c for c in after_set if c.starts_at >= slot.ends_at), None)
+        catchable = []
+        for o in candidates:
+            if o in chosen or o.score <= 0.05:
+                continue
+            caught = (min(slot.ends_at, o.ends_at)
+                      - max(slot.starts_at, o.starts_at)).total_seconds() / 60
+            if caught >= 20:
+                catchable.append((caught, o))
+        if not catchable:
+            continue
+        best_value = max(t[0] * t[1].score for t in catchable)
+        handy = [t for t in catchable
+                 if later is not None and later.stage and t[1].stage == later.stage
+                 and t[0] * t[1].score >= 0.75 * best_value]
+        caught, other = max(handy or catchable, key=lambda t: (t[0] * t[1].score, t[0]))
+        whole = (other.ends_at - other.starts_at).total_seconds() / 60
+        how = "your pick" if other.is_pick else "%d%%" % round(other.score * 100)
+        reason = slot.reason + " · %s plays %s–%s (%s) if you would rather" % (
+            other.artist, other.starts_at.strftime("%H:%M"),
+            other.ends_at.strftime("%H:%M"), how)
+        if caught < whole - 1:
+            reason += " — %d of its %d minutes fall here" % (round(caught), round(whole))
+        if later is not None and later.stage and other.stage == later.stage:
+            reason += " · same stage as your next set, so you can stay put"
+        merged[at] = Slot("REST", slot.starts_at, slot.ends_at, reason=reason,
+                          alternative_id=other.performance_id)
+    return merged

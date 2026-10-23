@@ -219,11 +219,37 @@
                      three times. -->
                 <p class="demo-note" th:if="${dayStat.overBy > 0}" style="margin-top:12px">
                     <strong th:text="${dayStat.overBy} + ' min over your limit.'">25 min over.</strong>
-                    <span th:if="${dayStat.worthActingOn and dayStat.dropInstead != null}"
-                          th:text="'Drop a set to make room — ' + ${dayStat.dropInstead}
-                                   + ' is the slightest thing in your day.'">Drop a set.</span>
+                    <span th:if="${dayStat.worthActingOn and dayStat.dropInstead != null
+                                   and #strings.endsWith(dayStat.dropInstead, '|added')}"
+                          th:text="${#strings.replace(dayStat.dropInstead, '|added', '')}
+                                   + ' is what you added. Keep it, and the scheduler can give up one of its own instead.'">You added it.</span>
+                    <span th:if="${dayStat.worthActingOn and dayStat.dropInstead != null
+                                   and !#strings.endsWith(dayStat.dropInstead, '|added')}"
+                          th:text="'Your own picks alone run past it — ' + ${dayStat.dropInstead}
+                                   + ' is the slightest of them.'">Drop a set.</span>
                     <span th:if="${dayStat.worthActingOn and dayStat.dropInstead == null}">Every set here is one of your own picks.</span>
+                    <form method="post" th:action="@{/schedule/fit}" style="margin-top:8px"
+                          th:if="${dayStat.worthActingOn and !fitInside}">
+                        <input type="hidden" name="editionId"
+                               th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                        <input type="hidden" name="on" value="true"/>
+                        <button type="submit" class="button-quiet">Fit my day inside the limit</button>
+                    </form>
                 </p>
+            </section>
+
+            <section class="panel" th:if="${fitInside}" style="margin-top:16px">
+                <h2 class="section-title">Fitted to your limit</h2>
+                <p class="section-note">
+                    The scheduler is giving up its own choices to make room for the sets
+                    you asked for, rather than running your day long.
+                </p>
+                <form method="post" th:action="@{/schedule/fit}">
+                    <input type="hidden" name="editionId"
+                           th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                    <input type="hidden" name="on" value="false"/>
+                    <button type="submit" class="button-quiet">Let the day run long instead</button>
+                </form>
             </section>
 
             <section class="panel" th:if="${!#lists.isEmpty(tradeoffs)}" style="margin-top:16px">

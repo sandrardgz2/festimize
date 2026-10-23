@@ -94,7 +94,7 @@ class _Bill:
     """
 
     def __init__(self, by_day, pinned, cap, meal_by, max_run_minutes, joined_late=None,
-                 windows=None, meals=None, leaves_early=None):
+                 windows=None, meals=None, leaves_early=None, fit_inside=False):
         self.by_day = by_day
         self.pinned = pinned
         self.cap = cap
@@ -108,6 +108,8 @@ class _Bill:
         self.meals = meals or {}
         # performance_id -> (minutes cut from the end, when it really finishes)
         self.leaves_early = leaves_early or {}
+        # Should the limit cover the whole day, including what was asked for?
+        self.fit_inside = fit_inside
 
     def offered(self) -> Dict[int, Candidate]:
         return {c.performance_id: c for day in self.by_day.values() for c in day}
@@ -173,6 +175,11 @@ def _load(db: Session, user_id: int, edition_id: int, max_run_minutes: int) -> _
     # The person's own pacing, set on the profile page. These were constants
     # in the scheduler until that page existed; the caller may still override
     # max_run_minutes, which is what the existing query parameter does.
+    fit_inside = bool(db.execute(
+        text("""select fit_inside_limit from plan
+                 where user_id = :uid and edition_id = :eid"""),
+        {"uid": user_id, "eid": edition_id}).scalar())
+
     pace = db.execute(
         text("""select stamina, max_run_minutes, meal_by, earliest_start, latest_end
                    from app_user where user_id = :uid"""),
@@ -220,7 +227,8 @@ def _load(db: Session, user_id: int, edition_id: int, max_run_minutes: int) -> _
 
     return _Bill(by_day, pinned, cap, meal_by=pace.meal_by if pace else None,
                  max_run_minutes=max_run_minutes, joined_late=joined_late,
-                 windows=windows, meals=meals, leaves_early=leaves_early)
+                 windows=windows, meals=meals, leaves_early=leaves_early,
+                 fit_inside=fit_inside)
 
 
 def _solve(bill: _Bill, discovery_quota: float, also_pin: Sequence[int] = ()) -> list:
@@ -251,7 +259,8 @@ def _solve(bill: _Bill, discovery_quota: float, also_pin: Sequence[int] = ()) ->
                           meal_by=bill.meal_by,
                           pinned=pinned,
                           tight=list(bill.joined_late) + list(bill.windows),
-                          meal_at=bill.meals.get(day))
+                          meal_at=bill.meals.get(day),
+                          fit_inside=bill.fit_inside)
         slots.extend(built)
         finished = max((s.ends_at for s in built if s.kind == 'SET'), default=None)
         not_before = finished + timedelta(hours=SLEEP_FLOOR_HOURS) if finished else None

@@ -76,4 +76,22 @@ public interface PlanRepository extends JpaRepository<Plan, Long> {
     java.util.List<String> chosenMeals(
             @org.springframework.data.repository.query.Param("userId") Long userId,
             @org.springframework.data.repository.query.Param("editionId") Long editionId);
+
+    /** Whether the daily limit should cover the whole day, additions included. */
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Query(value = """
+            update plan set fit_inside_limit = :fit
+             where user_id = :userId and edition_id = :editionId
+            """, nativeQuery = true)
+    void setFitInside(@org.springframework.data.repository.query.Param("userId") Long userId,
+                      @org.springframework.data.repository.query.Param("editionId") Long editionId,
+                      @org.springframework.data.repository.query.Param("fit") boolean fit);
+
+    @org.springframework.data.jpa.repository.Query(value = """
+            select fit_inside_limit from plan
+             where user_id = :userId and edition_id = :editionId
+            """, nativeQuery = true)
+    Boolean fitInside(@org.springframework.data.repository.query.Param("userId") Long userId,
+                      @org.springframework.data.repository.query.Param("editionId") Long editionId);
 }
