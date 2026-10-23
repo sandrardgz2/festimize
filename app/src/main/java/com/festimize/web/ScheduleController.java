@@ -45,8 +45,20 @@ public class ScheduleController {
     /** Minutes allowed for walking between stages; mirrors the scheduler. */
     private static final int CHANGEOVER = 10;
 
-    /** The shortest piece of a set worth going to see. */
+    /** The shortest piece of a set worth crossing the site for. */
     private static final int WORTH_CATCHING = 20;
+
+    /**
+     * The shortest piece worth it when you are going to that stage anyway.
+     *
+     * The twenty-minute floor exists to justify a walk. When the set is on
+     * the stage your next one is on, there is no walk to justify — you were
+     * going to stand there regardless, so ten minutes of a band is ten
+     * minutes you would otherwise spend waiting. Slipknot finishing at 21:15
+     * on the stage System of a Down opens at 21:45 is exactly that case, and
+     * the flat floor was refusing it.
+     */
+    private static final int WORTH_STAYING_FOR = 10;
 
     /**
      * The shortest stretch without music that counts as a break rather than
@@ -628,8 +640,8 @@ public class ScheduleController {
             if (to.isAfter(doneBy)) {
                 to = doneBy;
             }
-            if (!to.isAfter(from)
-                    || Duration.between(from, to).toMinutes() < WORTH_CATCHING) {
+            int floor = sameStage ? WORTH_STAYING_FOR : WORTH_CATCHING;
+            if (!to.isAfter(from) || Duration.between(from, to).toMinutes() < floor) {
                 return null;
             }
             return new String[]{from.toString(), to.toString(),
