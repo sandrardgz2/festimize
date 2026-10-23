@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head('Insights')}"></head>
+<body>
+<header th:replace="~{layout :: topbar}"></header>
+
+<main class="wrap">
+    <h1 class="page-title" th:text="${festivalName} ?: 'Insights'">Insights</h1>
+
+    <p class="muted" th:if="${#lists.isEmpty(editions)}">
+        No festival can be planned yet, so there is nothing to report on.
+    </p>
+
+    <div th:unless="${#lists.isEmpty(editions)}">
+        <form method="get" th:action="@{/insights}" th:if="${#lists.size(editions) > 1}">
+            <select name="editionId" onchange="this.form.submit()">
+                <option th:each="e : ${editions}" th:value="${e.editionId}"
+                        th:selected="${chosen != null and e.editionId == chosen.editionId}"
+                        th:text="${e.festival.name} + ' ' + ${e.year}">Festival</option>
+            </select>
+        </form>
+
+        <p class="muted" th:if="${sets == 0}">
+            No schedule built for this festival yet — build one on the
+            <a th:href="@{/schedule}">schedule page</a> and these numbers will fill in.
+        </p>
+
+        <div class="grid grid-2" th:if="${sets > 0}">
+            <article class="card stat">
+                <div class="stat-figure" th:text="${discoveryPercent} + '%'">0%</div>
+                <div class="name">Discovery</div>
+                <div class="tags">of your plan is artists you did not name —
+                    <span th:text="${sets}">0</span> sets in all</div>
+            </article>
+            <article class="card stat">
+                <div class="stat-figure" th:text="${coveragePercent} + '%'">0%</div>
+                <div class="name">Lineup coverage</div>
+                <div class="tags">of the <span th:text="${onBill}">0</span> artists on this bill
+                    carry tags, so the rest cannot be scored at all</div>
+            </article>
+        </div>
+
+        <!-- Effort against the ceiling the person set on their profile, rather
+             than against a number this page invented. -->
+        <section class="panel" th:if="${!#lists.isEmpty(days)}">
+            <h2>Effort across days</h2>
+            <p class="muted">Against your <span th:text="${ceilingHours}">7.5</span>-hour ceiling,
+                which you set on the <a th:href="@{/profile}">profile page</a>.</p>
+            <div th:each="d : ${days}" style="margin:0 0 10px">
+                <div class="tags">
+                    <span th:text="${d.label}">Fri 13</span> ·
+                    <span th:text="${#numbers.formatDecimal(d.minutes / 60.0, 1, 1)} + ' h'">5.5 h</span>
+                    <span class="badge badge-rising" th:if="${d.over}">over your ceiling</span>
+                </div>
+                <div class="meter"><span th:style="'width:' + ${d.percentOfCeiling} + '%'"></span></div>
+            </div>
+        </section>
+
+        <section class="panel" th:if="${!#lists.isEmpty(tags)}">
+            <h2>Your taste against this lineup</h2>
+            <p class="muted">Share of your saved artists carrying each tag, against the share of
+                this bill that carries it. A tall grey bar with no green beside it is a corner of
+                the festival your profile says nothing about.</p>
+            <div th:each="t : ${tags}" style="margin:0 0 9px">
+                <div class="tags" th:text="${t.name}">doom</div>
+                <div class="meter meter-you">
+                    <span th:style="'width:' + ${T(java.lang.Math).round(t.you / tagPeak * 100)} + '%'"></span>
+                </div>
+                <div class="meter meter-lineup">
+                    <span th:style="'width:' + ${T(java.lang.Math).round(t.lineup / tagPeak * 100)} + '%'"></span>
+                </div>
+            </div>
+            <p class="tags"><span class="key key-you"></span> you
+                &nbsp; <span class="key key-lineup"></span> this lineup</p>
+        </section>
+
+        <section class="panel" th:if="${!#lists.isEmpty(rising)}">
+            <h2>Rising artists you have not added</h2>
+            <p class="muted">On this bill, climbing by the measure, and not in your list.</p>
+            <div class="grid grid-2">
+                <article class="card" th:each="r : ${rising}">
+                    <div class="name">
+                        <a th:href="@{/artist/{id}(id=${r.artistId})}" th:text="${r.name}"
+                           class="artist-link">Artist</a>
+                        <span class="badge badge-rising">Rising</span>
+                    </div>
+                    <p>
+                        <span class="badge badge-match" th:if="${r.match > 0}"
+                              th:text="${r.match} + '% match'">0% match</span>
+                    </p>
+                    <div class="tags">
+                        <span th:text="${r.slot}">Sat 14:00</span>
+                        <span th:if="${!#strings.isEmpty(r.stage)}" th:text="' · ' + ${r.stage}"></span>
+                    </div>
+                </article>
+            </div>
+        </section>
+    </div>
+</main>
+</body>
+</html>

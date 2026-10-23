@@ -2,6 +2,7 @@ package com.festimize.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import java.time.LocalTime;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -27,6 +28,57 @@ public class AppUser {
 
     @Column(name = "display_name")
     private String displayName;
+
+    /**
+     * How this person wants their days paced.
+     *
+     * Each of these drives something the scheduler already does, so the
+     * settings page changes the plan rather than describing an intention.
+     * The defaults are the constants that were hard-coded before the page
+     * existed, which is why an account that never opens it is unaffected.
+     */
+    @Column(name = "stamina", nullable = false)
+    private String stamina = "moderate";
+
+    @Column(name = "max_run_minutes", nullable = false)
+    private Short maxRunMinutes = 180;
+
+    @Column(name = "meal_by", nullable = false)
+    private LocalTime mealBy = LocalTime.of(18, 0);
+
+    @Column(name = "earliest_start")
+    private LocalTime earliestStart;
+
+    @Column(name = "latest_end")
+    private LocalTime latestEnd;
+
+    /** Minutes of music a day may hold, which is what stamina means in practice. */
+    public int musicCapMinutes() {
+        if ("light".equals(stamina)) {
+            return 300;
+        }
+        return "hard".equals(stamina) ? 600 : 450;
+    }
+
+    public String getStamina() { return stamina; }
+
+    public void setStamina(String stamina) { this.stamina = stamina; }
+
+    public Short getMaxRunMinutes() { return maxRunMinutes; }
+
+    public void setMaxRunMinutes(Short maxRunMinutes) { this.maxRunMinutes = maxRunMinutes; }
+
+    public LocalTime getMealBy() { return mealBy; }
+
+    public void setMealBy(LocalTime mealBy) { this.mealBy = mealBy; }
+
+    public LocalTime getEarliestStart() { return earliestStart; }
+
+    public void setEarliestStart(LocalTime earliestStart) { this.earliestStart = earliestStart; }
+
+    public LocalTime getLatestEnd() { return latestEnd; }
+
+    public void setLatestEnd(LocalTime latestEnd) { this.latestEnd = latestEnd; }
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

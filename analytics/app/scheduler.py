@@ -168,7 +168,10 @@ def build_day(candidates: Sequence[Candidate],
               max_breathers: int = 2,
               max_run_minutes: int = 180,
               changeover_minutes: int = 10,
-              swap_tolerance: float = 0.10) -> List[Slot]:
+              swap_tolerance: float = 0.10,
+              not_before: Optional[datetime] = None,
+              music_cap_minutes: int = 450,
+              meal_by: Optional[object] = None) -> List[Slot]:
     """
     Fill a day with music, then carve breaks out of it.
 
@@ -176,6 +179,18 @@ def build_day(candidates: Sequence[Candidate],
     did not name. max_run_minutes is how long someone goes without a break
     before one is worth taking — three hours on site, which on an eleven-hour
     day means a meal break and two or three breathers.
+
+    not_before is the earliest this day may start: the sleep floor, passed in
+    by the caller, which knows when the previous day ended. music_cap_minutes
+    is how much music one day may hold before the rest stops being a festival
+    and starts being an endurance event — seven and a half hours, which on a
+    nine-hour site day already means standing through five sixths of it.
+
+    Neither rule fires on the demonstration festivals. They are programmed
+    sanely: the days end at 20:15 and the next begins at 10:30, and no day
+    offers more music than the cap allows. They exist because a real lineup
+    does not promise that, and they are covered by tests rather than by the
+    demo.
 
     swap_tolerance is how much match quality may be given up to remove dead
     time: a set scoring within ten points of the one it replaces may take its
@@ -188,6 +203,14 @@ def build_day(candidates: Sequence[Candidate],
     """
     if not candidates:
         return []
+
+    # The sleep floor. Dropping the sets rather than warning about them is the
+    # point: a schedule that lists a 09:00 set after a 02:00 finish is not
+    # advice, it is a timetable with the hard part left to the reader.
+    if not_before is not None:
+        rested = [c for c in candidates if c.starts_at >= not_before]
+        if rested:
+            candidates = rested
 
     ranked = sorted(candidates, key=lambda c: (not c.is_pick, -c.score, c.starts_at))
     best_score = max((c.score for c in candidates if not c.is_pick), default=0.0)
@@ -311,6 +334,19 @@ def build_day(candidates: Sequence[Candidate],
                          reason="%s — %s skipped" % (label, victim.artist)), victim)
         return None, None
 
+    # The day's music cap. Cut from the weakest end, and never from the user's
+    # own picks: someone who came for one band gets to stand through the day
+    # for it, and being told they are tired by software is not help.
+    total = sum((c.ends_at - c.starts_at).total_seconds() / 60 for c in chosen)
+    capped: List[Candidate] = []
+    if total > music_cap_minutes:
+        for c in sorted(chosen, key=lambda c: (c.is_pick, c.score), reverse=True):
+            minutes = (c.ends_at - c.starts_at).total_seconds() / 60
+            if sum((x.ends_at - x.starts_at).total_seconds() / 60
+                   for x in capped) + minutes <= music_cap_minutes or c.is_pick:
+                capped.append(c)
+        chosen = sorted(capped, key=lambda c: c.starts_at)
+
     rests: List[Slot] = []
     day_start = chosen[0].starts_at
     day_end = chosen[-1].ends_at
@@ -320,7 +356,11 @@ def build_day(candidates: Sequence[Candidate],
     # and then giving up a set at five to eat — the worst of both. Forty per
     # cent in is mid-afternoon on a festival day.
     meal_window = day_start + (day_end - day_start) * 0.4
+    # Six in the evening unless this person said otherwise on their profile.
     dinner_by = day_start.replace(hour=18, minute=0, second=0, microsecond=0)
+    if meal_by is not None:
+        dinner_by = day_start.replace(hour=meal_by.hour, minute=meal_by.minute,
+                                      second=0, microsecond=0)
     meal, dropped = _carve(chosen, meal_window, meal_minutes, "meal break", rests,
                            may_drop_a_pick=True, shortest_acceptable=30,
                            prefer_latest_before=dinner_by)

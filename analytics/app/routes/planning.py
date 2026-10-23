@@ -10,7 +10,7 @@ candidates, call the scheduler once per festival day, write the result back.
 
 Targets Python 3.9 syntax.
 """
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -20,6 +20,11 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.scheduler import Candidate, build_day
+
+# Hours between the last set of one day and the first of the next. Nine is a
+# night in a tent rather than a night in a bed: enough to be upright, not
+# enough to be rested, which is what a festival actually offers.
+SLEEP_FLOOR_HOURS = 9
 
 router = APIRouter(tags=["planning"])
 
@@ -73,6 +78,30 @@ def build_plan(
         {"uid": user_id, "eid": edition_id},
     ).fetchall()
 
+    # Sets this person has already turned down on this plan. Filtered out
+    # before the scheduler sees them, so the solver optimises the day that is
+    # actually on offer rather than choosing a set and having it removed
+    # afterwards — which would leave the hole it was filling.
+    declined = {r.performance_id for r in db.execute(
+        text("""select d.performance_id from plan_declined d
+                   join plan pl on pl.plan_id = d.plan_id
+                  where pl.user_id = :uid and pl.edition_id = :eid"""),
+        {"uid": user_id, "eid": edition_id}).fetchall()}
+    if declined:
+        rows = [r for r in rows if r.performance_id not in declined]
+
+    # The person's own pacing, set on the profile page. These were constants
+    # in the scheduler until that page existed; the caller may still override
+    # max_run_minutes, which is what the existing query parameter does.
+    pace = db.execute(
+        text("""select stamina, max_run_minutes, meal_by, earliest_start, latest_end
+                   from app_user where user_id = :uid"""),
+        {"uid": user_id},
+    ).first()
+    cap = {"light": 300, "hard": 600}.get(pace.stamina if pace else "", 450)
+    if pace and pace.max_run_minutes and max_run_minutes == 180:
+        max_run_minutes = int(pace.max_run_minutes)
+
     if not rows:
         raise HTTPException(status_code=404, detail="No performances with set times for that edition.")
 
@@ -83,11 +112,32 @@ def build_plan(
                       r.starts_at, r.ends_at, float(r.score), bool(r.is_pick))
         )
 
+    # Days are solved in order rather than independently, because one of the
+    # pacing rules spans them: how late you were out last night decides how
+    # early you can be out this morning. Each day is told the earliest it may
+    # begin, which the previous day's finish and the sleep floor determine.
+    # Sets outside the hours this person will attend are not offered at all,
+    # rather than offered and then dropped: the schedule should not argue with
+    # someone about when their day starts.
+    if pace and (pace.earliest_start or pace.latest_end):
+        for day, found in list(by_day.items()):
+            kept = [c for c in found
+                    if (not pace.earliest_start or c.starts_at.time() >= pace.earliest_start)
+                    and (not pace.latest_end or c.ends_at.time() <= pace.latest_end)]
+            by_day[day] = kept or found        # never leave a day with nothing
+
     slots = []
+    not_before = None
     for day in sorted(by_day):
-        slots.extend(build_day(by_day[day],
-                               discovery_quota=discovery_quota,
-                               max_run_minutes=max_run_minutes))
+        built = build_day(by_day[day],
+                          discovery_quota=discovery_quota,
+                          max_run_minutes=max_run_minutes,
+                          not_before=not_before,
+                          music_cap_minutes=cap,
+                          meal_by=pace.meal_by if pace else None)
+        slots.extend(built)
+        finished = max((s.ends_at for s in built if s.kind == 'SET'), default=None)
+        not_before = finished + timedelta(hours=SLEEP_FLOOR_HOURS) if finished else None
 
     # One plan per user per edition; rewrite it wholesale rather than diffing.
     plan_id = db.execute(

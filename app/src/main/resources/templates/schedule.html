@@ -29,6 +29,20 @@
         </span>
     </form>
 
+    <p class="notice" th:if="${param.swapped != null}">
+        Set turned down and the day rebuilt around it. This changes only this plan —
+        your saved artists are untouched.
+    </p>
+    <p class="notice" th:if="${param.restored != null}">Everything is back.</p>
+    <form method="post" th:action="@{/schedule/restore}"
+          th:if="${declinedCount != null and declinedCount > 0}">
+        <input type="hidden" name="editionId" th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+        <p class="muted">
+            <span th:text="${declinedCount}">0</span> set(s) turned down on this plan.
+            <button type="submit" class="button-quiet">Put them all back</button>
+        </p>
+    </form>
+
     <p class="muted" th:if="${buildFailed}">
         The schedule could not be built — the analytics service did not respond. Start it with
         <code>cd analytics &amp;&amp; .venv/bin/python -m uvicorn app.main:app --port 8000</code> and try again.
@@ -63,6 +77,19 @@
                         <span th:text="${slot.reason}">reason</span>
                     </div>
                     <div class="tradeoff" th:if="${slot.tradeoff}" th:text="${slot.tradeoff}">chosen over …</div>
+                    <!-- Turning a set down changes this plan, not your taste. The
+                         day is solved again afterwards, so whatever this set beat
+                         can take the slot it leaves behind. -->
+                    <form method="post" th:action="@{/schedule/decline}" class="slot-actions"
+                          th:if="${slot.kind == 'SET' and slot.performanceId != null}">
+                        <input type="hidden" name="editionId"
+                               th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                        <input type="hidden" name="performanceId" th:value="${slot.performanceId}"/>
+                        <button type="submit" class="button-quiet"
+                                th:text="${slot.tradeoff} != null
+                                         ? 'Not this one — rebuild the day'
+                                         : 'Not this one'">Not this one</button>
+                    </form>
                 </div>
             </div>
         </div>

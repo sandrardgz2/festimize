@@ -379,3 +379,43 @@ footer.site {
     font-variant-numeric: tabular-nums;
     color: #8A93A0;
 }
+
+/* ------------------------------------------------------------- insights */
+/* Bars rather than a chart library: three numbers and a width is the whole
+   requirement, and a dependency for that would be the larger mistake. */
+.stat-figure { font-size: 2.1rem; font-weight: 700; color: var(--green); line-height: 1.1; }
+
+.meter {
+    height: 9px;
+    background: #1A1D23;
+    border-radius: 5px;
+    overflow: hidden;
+    margin: 3px 0;
+}
+
+.meter span {
+    display: block;
+    height: 100%;
+    background: var(--green);
+    border-radius: 5px;
+}
+
+.meter-you span { background: var(--green); }
+.meter-lineup span { background: #5A6472; }
+
+.key {
+    display: inline-block;
+    width: 11px;
+    height: 9px;
+    border-radius: 3px;
+    vertical-align: middle;
+}
+
+.key-you { background: var(--green); }
+.key-lineup { background: #5A6472; }
+
+/* A set can be turned down from the schedule. Quiet by default — the plan is
+   advice and the controls should not shout over it. */
+.slot-actions { margin: 6px 0 0; }
+.slot-actions .button-quiet { font-size: 12px; padding: 3px 10px; opacity: 0.55; }
+.slot:hover .slot-actions .button-quiet { opacity: 1; }

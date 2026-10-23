@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -33,6 +34,7 @@ public class ScheduleController {
 
     private final FestivalEditionRepository editions;
     private final com.festimize.repo.ArtistMomentumRepository momentum;
+    private final com.festimize.repo.DeclinedRepository declined;
     private final AppUserRepository users;
     private final PlanRepository plans;
     private final PlanItemRepository items;
@@ -41,11 +43,13 @@ public class ScheduleController {
 
     public ScheduleController(FestivalEditionRepository editions,
                               com.festimize.repo.ArtistMomentumRepository momentum,
+                              com.festimize.repo.DeclinedRepository declined,
                               AppUserRepository users,
                               PlanRepository plans, PlanItemRepository items, PlanningClient planning,
                               UserArtistRepository saved) {
         this.editions = editions;
         this.momentum = momentum;
+        this.declined = declined;
         this.users = users;
         this.plans = plans;
         this.items = items;
@@ -53,7 +57,8 @@ public class ScheduleController {
         this.saved = saved;
     }
 
-    public record Slot(String kind, String time, String artist, Long artistId, String stage,
+    public record Slot(String kind, String time, String artist, Long artistId,
+                       Long performanceId, String stage,
                        String reason, String tradeoff, int minutes, boolean rising) {
         /** A plain changeover, as opposed to a break the scheduler chose. */
         public boolean gap() { return reason != null && reason.startsWith("gap"); }
@@ -107,6 +112,8 @@ public class ScheduleController {
                         item.getStartsAt().format(TIME) + " – " + item.getEndsAt().format(TIME),
                         isSet && item.getPerformance() != null ? item.getPerformance().getArtist().getName() : null,
                         who,
+                        isSet && item.getPerformance() != null
+                                ? item.getPerformance().getPerformanceId() : null,
                         isSet && item.getPerformance() != null && item.getPerformance().getStage() != null
                                 ? item.getPerformance().getStage().getName() : null,
                         reasonOf(item), tradeoffOf(item), mins,
@@ -123,6 +130,7 @@ public class ScheduleController {
         model.addAttribute("rests", rests);
         model.addAttribute("picks", picks);
         model.addAttribute("discoveries", sets - picks);
+        model.addAttribute("declinedCount", declined.countFor(me.getUserId(), chosen.getEditionId()));
         model.addAttribute("hours", String.format("%dh %02dm", minutes / 60, minutes % 60));
         model.addAttribute("hasPlan", !byDay.isEmpty());
         model.addAttribute("hasPicks", !saved.findSavedArtists(me.getUserId()).isEmpty());
@@ -135,6 +143,42 @@ public class ScheduleController {
         AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
         boolean built = planning.buildPlan(me.getUserId(), editionId);
         return "redirect:/schedule?editionId=" + editionId + (built ? "" : "&error=analytics");
+    }
+
+    /**
+     * Turn down one set and rebuild the day around the hole it leaves.
+     *
+     * The decline is recorded against the plan rather than the person. "Not
+     * this one, this weekend" is a different statement from "this artist is
+     * not to my taste", and only the second belongs in the profile that
+     * scores every other artist — putting it there would also hand the set a
+     * pick's bonus in the scheduler, which is the opposite of what was asked.
+     *
+     * Rebuilding rather than deleting the row is the point: the slot the set
+     * occupied is now free, and whatever it beat can have it.
+     *
+     * Not transactional here on purpose. The rebuild is an HTTP call to the
+     * analytics service, which reads the database in a transaction of its
+     * own; wrapping the write and the call together meant the planner could
+     * not see the decline that had just been made, and the set came straight
+     * back. The write commits in the repository, then the rebuild runs.
+     */
+    @PostMapping("/schedule/decline")
+    public String decline(@RequestParam Long editionId, @RequestParam Long performanceId,
+                          Principal principal) {
+        AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
+        declined.decline(me.getUserId(), editionId, performanceId);
+        planning.buildPlan(me.getUserId(), editionId);
+        return "redirect:/schedule?editionId=" + editionId + "&swapped";
+    }
+
+    /** Put everything back, for someone who has declined their way into a corner. */
+    @PostMapping("/schedule/restore")
+    public String restore(@RequestParam Long editionId, Principal principal) {
+        AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
+        declined.restoreAll(me.getUserId(), editionId);
+        planning.buildPlan(me.getUserId(), editionId);
+        return "redirect:/schedule?editionId=" + editionId + "&restored";
     }
 
     /** The match or pick label, without the explanation of what it beat. */

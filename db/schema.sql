@@ -110,6 +110,16 @@ CREATE TABLE app_user (
     email         text NOT NULL UNIQUE,
     password_hash text NOT NULL,
     display_name  text,
+    -- How this person wants their days paced. Every one of these drives
+    -- something the scheduler does; a settings page whose controls change
+    -- nothing is worse than no settings page. Defaults are the constants used
+    -- before anyone could change them, so an untouched account is unaffected.
+    stamina         text NOT NULL DEFAULT 'moderate'
+                    CHECK (stamina IN ('light', 'moderate', 'hard')),
+    max_run_minutes smallint NOT NULL DEFAULT 180,   -- before a break is due
+    meal_by         time NOT NULL DEFAULT '18:00',   -- latest a meal may land
+    earliest_start  time,                            -- null = whenever it opens
+    latest_end      time,                            -- null = until it closes
     created_at    timestamptz NOT NULL DEFAULT now()
 );
 
@@ -142,6 +152,19 @@ CREATE TABLE plan_item (
     CHECK ((item_type = 'SET') = (performance_id IS NOT NULL))
 );
 CREATE INDEX idx_plan_item_plan ON plan_item (plan_id, starts_at);
+
+-- Sets turned down on this plan. A plan-level fact, deliberately not a
+-- taste-level one: "not this one, this weekend" is a different statement from
+-- "this artist is not to my taste", and only the second belongs in the
+-- profile that scores everything else. Declines survive a rebuild, because
+-- the plan is regenerated from scratch and the rejected set would otherwise
+-- come straight back.
+CREATE TABLE plan_declined (
+    plan_id        bigint NOT NULL REFERENCES plan ON DELETE CASCADE,
+    performance_id bigint NOT NULL REFERENCES fact_performance ON DELETE CASCADE,
+    declined_at    timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (plan_id, performance_id)
+);
 
 -- Cached taste scores, so a lineup page is a read and not 120 model calls.
 CREATE TABLE artist_score (

@@ -19,6 +19,8 @@
         <a th:href="@{/setup}" th:classappend="${activeNav == 'setup'} ? 'active'">Setup</a>
         <a th:href="@{/lineup}" th:classappend="${activeNav == 'lineup'} ? 'active'">Lineup</a>
         <a th:href="@{/schedule}" th:classappend="${activeNav == 'schedule'} ? 'active'">Schedule</a>
+        <a th:href="@{/insights}" th:classappend="${activeNav == 'insights'} ? 'active'">Insights</a>
+        <a th:href="@{/profile}" th:classappend="${activeNav == 'profile'} ? 'active'">Profile</a>
     </nav>
     <span class="session" sec:authorize="isAuthenticated()">
         <span sec:authentication="name">someone@example.com</span>

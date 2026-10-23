@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head('Profile')}"></head>
+<body>
+<header th:replace="~{layout :: topbar}"></header>
+
+<main class="wrap">
+    <h1 class="page-title">Profile &amp; settings</h1>
+    <p class="page-sub" th:text="${me.email}">you@example.com</p>
+
+    <p class="notice" th:if="${param.saved != null}">Saved. Rebuild a schedule to see the change.</p>
+
+    <section class="panel">
+        <h2>Artists you love</h2>
+        <p class="muted">
+            Used to score every artist on a lineup.
+            <span th:text="${#lists.size(artists)}">0</span> saved ·
+            <span th:text="${planCount}">0</span> schedules built.
+        </p>
+        <p>
+            <span class="chip" th:each="a : ${artists}">
+                <a th:href="@{/artist/{id}(id=${a.artistId})}" th:text="${a.name}"
+                   class="artist-link">Artist</a>
+            </span>
+        </p>
+        <p class="muted" th:if="${#lists.isEmpty(artists)}">
+            None yet — pick some on the <a th:href="@{/setup}">setup page</a>.
+        </p>
+        <p><a th:href="@{/setup}" class="button-quiet">Change my artists</a></p>
+    </section>
+
+    <!-- Every control here changes what the scheduler does. The numbers were
+         constants in the code until this page existed, and the person going
+         to the festival is the one who knows whether they are right. -->
+    <form method="post" th:action="@{/profile}">
+        <section class="panel">
+            <h2>Your pace</h2>
+            <p class="muted">Rules the scheduler must respect. They take effect next time a
+                schedule is built.</p>
+
+            <p>
+                <label for="stamina"><strong>Stamina</strong></label><br>
+                <select name="stamina" id="stamina">
+                    <option value="light" th:selected="${me.stamina == 'light'}">
+                        Light — up to 5 hours of music a day</option>
+                    <option value="moderate" th:selected="${me.stamina == 'moderate'}">
+                        Moderate — up to 7.5 hours a day</option>
+                    <option value="hard" th:selected="${me.stamina == 'hard'}">
+                        Hard — up to 10 hours a day</option>
+                </select>
+                <span class="muted" th:text="'currently ' + ${musicCapHours} + ' hours'">7.5</span>
+            </p>
+
+            <p>
+                <label for="maxRunHours"><strong>Longest stretch without a break</strong></label><br>
+                <input type="number" id="maxRunHours" name="maxRunHours" min="1" max="8"
+                       th:value="${me.maxRunMinutes / 60}"> hours
+            </p>
+
+            <p>
+                <label for="mealBy"><strong>Eat by</strong></label><br>
+                <input type="time" id="mealBy" name="mealBy" th:value="${me.mealBy}">
+                <span class="muted">the latest a meal break may land</span>
+            </p>
+
+            <p>
+                <label for="earliestStart"><strong>Earliest start / latest end</strong></label><br>
+                <input type="time" id="earliestStart" name="earliestStart"
+                       th:value="${me.earliestStart}">
+                <input type="time" id="latestEnd" name="latestEnd" th:value="${me.latestEnd}">
+                <span class="muted">leave empty for whenever the festival opens and closes</span>
+            </p>
+
+            <p>
+                <label for="displayName"><strong>Display name</strong></label><br>
+                <input type="text" id="displayName" name="displayName"
+                       th:value="${me.displayName}">
+            </p>
+
+            <p><button type="submit" class="button">Save changes</button></p>
+        </section>
+    </form>
+</main>
+</body>
+</html>
