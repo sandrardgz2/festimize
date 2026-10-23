@@ -396,21 +396,31 @@ def build_day(candidates: Sequence[Candidate],
                          reason="%s — %s skipped" % (label, victim.artist)), victim)
         return None, None
 
-    # The day's music cap. Cut from the weakest end, and never from the user's
-    # own picks or the sets they asked for by name: someone who came for one
-    # band gets to stand through the day for it, and being told they are tired
-    # by software is not help.
-    total = sum((c.ends_at - c.starts_at).total_seconds() / 60 for c in chosen)
-    capped: List[Candidate] = []
-    if total > music_cap_minutes:
-        for c in sorted(chosen, key=lambda c: (c.is_pick or id(c) in asked, c.score),
-                        reverse=True):
-            minutes = (c.ends_at - c.starts_at).total_seconds() / 60
-            if sum((x.ends_at - x.starts_at).total_seconds() / 60
-                   for x in capped) + minutes <= music_cap_minutes \
-                    or c.is_pick or id(c) in asked:
+    # The day's music cap, which is a budget for the choices this function
+    # makes and not a ceiling on the person's own.
+    #
+    # It used to apply to the whole day, which meant asking for one more band
+    # quietly removed another — and the one it removed could be playing hours
+    # away, since it drops the weakest set it is allowed to drop rather than
+    # anything nearby. That is the software deciding which band you lose. A
+    # person who adds a set has made a decision; the honest response is to
+    # honour it, let the day run long, and say so, which the summary now
+    # does.
+    #
+    # So the budget is measured against the sets nobody asked for. Sets the
+    # person named are kept whatever they cost, and sit on top of it.
+    def _minutes(c):
+        return (c.ends_at - c.starts_at).total_seconds() / 60
+
+    requested = [c for c in chosen if id(c) in asked]
+    automatic = [c for c in chosen if id(c) not in asked]
+    if sum(_minutes(c) for c in automatic) > music_cap_minutes:
+        capped: List[Candidate] = []
+        for c in sorted(automatic, key=lambda c: (c.is_pick, c.score), reverse=True):
+            if sum(_minutes(x) for x in capped) + _minutes(c) <= music_cap_minutes \
+                    or c.is_pick:
                 capped.append(c)
-        chosen = sorted(capped, key=lambda c: c.starts_at)
+        chosen = sorted(requested + capped, key=lambda c: c.starts_at)
 
     rests: List[Slot] = []
     day_start = chosen[0].starts_at

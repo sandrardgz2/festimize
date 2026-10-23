@@ -422,39 +422,42 @@ public class ScheduleController {
         if (cost == null || !cost.available()) {
             return null;
         }
-        // A clash and a budget eviction are different facts and were being
-        // reported as one. Adding Scowl at 13:30 "cost Code Orange" at
-        // 16:30, which reads as nonsense: they do not overlap. The day was
-        // 430 minutes against a 450 cap, Scowl is 40, and the cap dropped
-        // the weakest set it was allowed to drop — hours away. True, and
-        // not what "costs" means to a reader.
+        // Say the whole change, not half of it. Three different things can
+        // happen and they were all being reported as "costs X":
         //
-        // Names of their own picks are marked either way: giving one up is
-        // not a casual aside.
+        //   a clash   — the set genuinely overlaps something you are keeping
+        //   a drop    — the solver re-optimises and something falls out
+        //   a gain    — something else fits that did not before
+        //
+        // Adding Drain drops Vended and brings in Scowl, which is nine sets
+        // becoming ten. Reporting only the loss made a net improvement read
+        // as a penalty. Names of the person's own picks are marked, because
+        // giving one of those up is not a casual aside.
         List<String> clash = new ArrayList<>();
-        List<String> freed = new ArrayList<>();
+        List<String> dropped = new ArrayList<>();
         for (String name : cost.costs()) {
             String shown = myPicks.contains(name) ? name + " (your pick)" : name;
-            (cost.clashes().contains(name) ? clash : freed).add(shown);
+            (cost.clashes().contains(name) ? clash : dropped).add(shown);
         }
-        if (clash.isEmpty() && freed.isEmpty()) {
-            return "nothing else changes";
-        }
-        StringBuilder what = new StringBuilder();
+        List<String> parts = new ArrayList<>();
         if (!clash.isEmpty()) {
-            what.append("clashes with ").append(String.join(" and ", clash));
+            parts.add("clashes with " + String.join(" and ", clash));
         }
-        if (!freed.isEmpty()) {
-            what.append(what.length() == 0 ? "no clash, but drops " : ", and drops ")
-                .append(String.join(" and ", freed))
-                .append(String.format(" to stay inside your %dh %02dm",
-                        ceiling / 60, ceiling % 60));
+        if (!dropped.isEmpty()) {
+            parts.add("drops " + String.join(" and ", dropped));
         }
+        if (!cost.gains().isEmpty()) {
+            parts.add("brings in " + String.join(" and ", cost.gains()));
+        }
+        if (parts.isEmpty()) {
+            parts.add("nothing else changes");
+        }
+        String what = String.join(", ", parts);
         int over = cost.day_minutes_after() - ceiling;
         if (over > 0) {
-            what.append(String.format(" · %d min over your limit", over));
+            what += String.format(" · %d min over your limit", over);
         }
-        return what.toString();
+        return what;
     }
 
     /**
