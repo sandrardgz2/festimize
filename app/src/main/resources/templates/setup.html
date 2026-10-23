@@ -11,7 +11,25 @@
         for every festival, not just this one.
     </p>
 
+    <!-- Searching the whole corpus, not just the artists already tagged. An
+         artist nobody has tagged gets them fetched from MusicBrainz when they
+         are saved, which is what makes offering all 15,799 honest. -->
+    <form method="get" th:action="@{/setup}" class="form-narrow">
+        <p>
+            <input type="search" name="q" th:value="${q}" placeholder="Search every artist…"
+                   style="min-width:18rem">
+            <button type="submit" class="button-quiet">Search</button>
+            <a th:href="@{/setup}" class="button-quiet" th:if="${searching}">Clear</a>
+        </p>
+    </form>
+
+    <p class="muted" th:if="${searching}">
+        Showing matches from all 15,799 artists in the dataset. One with no tags yet will have
+        them fetched when you save, so it can be scored like the rest.
+    </p>
+
     <form method="post" th:action="@{/setup}">
+        <input type="hidden" name="artistIds" th:each="id : ${keep}" th:value="${id}"/>
         <p>
             <button type="submit" class="btn">Save my artists</button>
             <span class="muted">Currently saved: <span th:text="${chosenCount}">0</span></span>
@@ -21,6 +39,8 @@
             <label class="card" th:each="c : ${choices}">
                 <div class="name">
                     <input type="checkbox" name="artistIds" th:value="${c.artistId}" th:checked="${c.chosen}"/>
+                    <span class="badge badge-returning"
+                          th:if="${#strings.isEmpty(c.tags)}">tags on save</span>
                     <span th:text="${c.name}">Artist</span>
                 </div>
                 <div class="tags" th:text="${c.tags}">tags</div>

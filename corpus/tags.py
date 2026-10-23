@@ -33,34 +33,12 @@ AGENT = 'Festimize/1.0 (IST 440W capstone; neku113@gmail.com)'
 PAUSE = 1.1
 OUT = os.path.join(DATA, 'artist-tags.jsonl')
 
-# A tag has to be about the music. MusicBrainz lets anyone write anything, so
-# the lists carry nationalities, moods and opinions alongside genres, and a
-# taste profile built on "french" or "heavy" matches on the wrong thing.
-NOT_A_GENRE = {
-    'seen live', 'favourites', 'favorites', 'awesome', 'good', 'bad', 'heavy',
-    'groovy', 'catchy', 'cool', 'love', 'male vocalists', 'female vocalists',
-    'female vocalist', 'male vocalist', 'band', 'artist', 'composer', 'duo',
-    'trio', 'quartet', 'solo', 'live', 'radio', 'spotify', 'youtube', 'seen',
-    # "modern" is on 33 of the 139 hand-seeded artists and separates none of
-    # them from each other. Moods that do separate taste — aggressive, melodic,
-    # atmospheric — are deliberately kept: a beatdown fan and a melodic
-    # metalcore fan differ on exactly those.
-    'modern', 'contemporary', 'new',
-}
-PLACES = {
-    'american', 'british', 'english', 'french', 'german', 'swedish', 'finnish',
-    'norwegian', 'danish', 'dutch', 'belgian', 'canadian', 'australian',
-    'japanese', 'brazilian', 'spanish', 'italian', 'polish', 'russian', 'irish',
-    'scottish', 'welsh', 'usa', 'uk', 'us', 'europe', 'european',
-}
-
-
-def wanted(tag):
-    """Whether a tag says something about the music rather than the artist."""
-    tag = tag.strip().lower()
-    if len(tag) < 3 or len(tag) > 40:
-        return False
-    return tag not in NOT_A_GENRE and tag not in PLACES
+# The vocabulary and the filter live in the analytics service, which is the
+# one that ships in a container and needs them at request time. Imported
+# rather than copied: two lists of what is not a genre would drift, and the
+# whole point of the filter is that both sides strip the same words.
+sys.path.insert(0, os.path.join(ROOT, 'analytics'))
+from app.tags import NOT_A_GENRE, PLACES, wanted        # noqa: E402,F401
 
 
 def fetch(mbid):
