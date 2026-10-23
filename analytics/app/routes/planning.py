@@ -123,7 +123,8 @@ def _load(db: Session, user_id: int, edition_id: int, max_run_minutes: int) -> _
                    coalesce(s.name, 'TBA') as stage,
                    p.starts_at, p.ends_at,
                    coalesce(sc.match_score, 0) as score,
-                   (ua.artist_id is not null) as is_pick
+                   (ua.artist_id is not null) as is_pick,
+                   coalesce(ua.must_see, false) as must_see
             from fact_performance p
             join dim_artist a on a.artist_id = p.artist_id
             left join dim_stage s on s.stage_id = p.stage_id
@@ -212,7 +213,8 @@ def _load(db: Session, user_id: int, edition_id: int, max_run_minutes: int) -> _
                 leaves_early[r.performance_id] = (early, r.ends_at)
         by_day.setdefault(starts.date(), []).append(
             Candidate(r.performance_id, r.artist_id, r.name, r.stage,
-                      starts, ends, float(r.score), bool(r.is_pick))
+                      starts, ends, float(r.score), bool(r.is_pick),
+                      bool(r.must_see))
         )
 
     # Sets outside the hours this person will attend are not offered at all,

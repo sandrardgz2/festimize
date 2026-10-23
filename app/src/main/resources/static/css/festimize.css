@@ -656,6 +656,13 @@ a.avatar:hover {
 
 .chip-removable button:hover { color: var(--orange); }
 
+/* The star sits before the name and is the only coloured thing in the chip,
+   so a glance at the row tells you which two or three you came for. */
+.chip-removable { padding-left: 6px; }
+.chip-removable .star { font-size: 14px; }
+.chip-removable.starred { border-color: var(--orange); }
+.chip-removable.starred .star { color: var(--orange); }
+
 .counter {
     color: var(--muted);
     font-variant-numeric: tabular-nums;

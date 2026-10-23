@@ -113,6 +113,7 @@ public class SetupController {
         // of the page, rather than as ticks scattered down a list you have to
         // scroll to find. The list is small and the page is about it.
         model.addAttribute("mine", savedArtists);
+        model.addAttribute("mustSee", new java.util.HashSet<>(saved.mustSeeArtistIds(me.getUserId())));
         model.addAttribute("target", SUGGESTED);
         return "setup";
     }
@@ -135,12 +136,17 @@ public class SetupController {
         }
 
         // Replace the whole list: simplest correct behaviour, and the list is small.
+        // The must-see stars have to be carried across it by hand — they are
+        // the one thing on these rows the form does not post, so a plain
+        // delete-and-reinsert would silently unstar everybody on any save.
+        java.util.Set<Long> stars = new java.util.HashSet<>(saved.mustSeeArtistIds(me.getUserId()));
         saved.deleteAll(saved.findByUser_UserIdOrderByAddedAtAsc(me.getUserId()));
         for (Long id : wanted) {
             artists.findById(id).ifPresent(artist -> {
                 UserArtist ua = new UserArtist();
                 ua.setUser(me);
                 ua.setArtist(artist);
+                ua.setMustSee(stars.contains(id));
                 saved.save(ua);
             });
         }
@@ -163,6 +169,23 @@ public class SetupController {
                 .filter(ua -> ua.getArtist().getArtistId().equals(artistId))
                 .findFirst()
                 .ifPresent(saved::delete);
+        return "redirect:/setup";
+    }
+
+    /**
+     * Star or unstar one artist.
+     *
+     * Its own gesture, like removing one: it says something about that artist
+     * and nothing about the other nine, so it does not go through the
+     * whole-list save.
+     */
+    @PostMapping("/setup/must-see")
+    @Transactional
+    public String mustSee(@RequestParam Long artistId,
+                          @RequestParam(defaultValue = "true") boolean on,
+                          Principal principal) {
+        AppUser me = currentUser(principal);
+        saved.setMustSee(me.getUserId(), artistId, on);
         return "redirect:/setup";
     }
 

@@ -42,7 +42,20 @@
     <!-- What is already chosen, before anything else. -->
     <section th:if="${!#lists.isEmpty(mine)}">
         <div class="chip-row">
-            <span class="chip-removable" th:each="a : ${mine}">
+            <span class="chip-removable" th:each="a : ${mine}"
+                  th:classappend="${mustSee.contains(a.artistId)} ? 'starred' : ''">
+                <!-- One click, one meaning: this is a band I came for. The
+                     form posts the opposite of the current state, so the
+                     button is its own toggle. -->
+                <form method="post" th:action="@{/setup/must-see}" style="display:inline">
+                    <input type="hidden" name="artistId" th:value="${a.artistId}"/>
+                    <input type="hidden" name="on" th:value="${!mustSee.contains(a.artistId)}"/>
+                    <button type="submit" class="star"
+                            th:title="${mustSee.contains(a.artistId)}
+                                      ? 'Must-see. Click to make it an ordinary pick.'
+                                      : 'Mark must-see'"
+                            th:text="${mustSee.contains(a.artistId)} ? '★' : '☆'">☆</button>
+                </form>
                 <a th:href="@{'/artist/' + ${a.artistId}}" th:text="${a.name}">Artist</a>
                 <form method="post" th:action="@{/setup/remove}" style="display:inline">
                     <input type="hidden" name="artistId" th:value="${a.artistId}"/>
@@ -50,6 +63,7 @@
                 </form>
             </span>
         </div>
+        <p class="muted">★ must-see — never dropped, and wins any clash. Everything else can be traded for a better day.</p>
         <p class="counter">
             <span th:text="${chosenCount}">6</span> of <span th:text="${target}">10</span> added<span
                 th:if="${chosenCount >= target}"> — plenty to work with</span>.

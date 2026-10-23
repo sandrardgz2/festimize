@@ -47,6 +47,7 @@ class Candidate:
     ends_at: datetime
     score: float          # 0..1 taste match
     is_pick: bool         # the user named this artist themselves
+    must_see: bool = False  # ...and said this is one they came for
 
 
 @dataclass
@@ -94,6 +95,7 @@ def choose_greedy(candidates: Sequence[Candidate],
 def choose_best(candidates: Sequence[Candidate],
                 changeover_minutes: int = 10,
                 pick_bonus: float = 10.0,
+                must_see_bonus: float = 100.0,
                 minute_value: float = 0.0005,
                 least_worth_catching: int = 25,
                 least_fraction: float = 0.6,
@@ -137,8 +139,24 @@ def choose_best(candidates: Sequence[Candidate],
 
     def value(i: int, arrive) -> float:
         minutes = (sets[i].ends_at - arrive).total_seconds() / 60
-        return (sets[i].score * (minutes / 60) + minute_value * minutes
-                + (pick_bonus if sets[i].is_pick else 0.0))
+        extra = pick_bonus if sets[i].is_pick else 0.0
+        if sets[i].must_see:
+            # A tier above an ordinary pick, and the reason the tier exists:
+            # every saved artist used to carry the same bonus, so when two of
+            # them clashed the tie was broken on match score — the software
+            # choosing which band you lose.
+            #
+            # Scaled by the share of the set actually caught, not flat. Flat,
+            # the solver would happily walk you in twenty minutes late to the
+            # band you came for in order to fit one more in beside it: the
+            # bonus was already banked, and twenty minutes of a 0.8 match
+            # costs a quarter of a point. Against a hundred, losing a third
+            # of the set costs thirty-three, so it stays whole unless the
+            # alternative is losing it altogether — which still leaves the
+            # five minutes of walking from another stage worth it.
+            full = (sets[i].ends_at - sets[i].starts_at).total_seconds() / 60
+            extra += must_see_bonus * (minutes / full if full else 1.0)
+        return (sets[i].score * (minutes / 60) + minute_value * minutes + extra)
 
     # best[i] = best achievable value considering the first i sets, and the
     # choice that produced it. O(n^2), which at festival size is nothing.
@@ -249,7 +267,8 @@ def build_day(candidates: Sequence[Candidate],
                         and _overlaps(keep.starts_at, keep.ends_at,
                                       c.starts_at, c.ends_at)]
             if clashing:
-                ousted[id(keep)] = max(clashing, key=lambda c: (c.is_pick, c.score))
+                ousted[id(keep)] = max(clashing,
+                                       key=lambda c: (c.must_see, c.is_pick, c.score))
             dropped_ids = {id(c) for c in clashing}
             candidates = [c for c in candidates if id(c) not in dropped_ids]
 
@@ -437,9 +456,15 @@ def build_day(candidates: Sequence[Candidate],
         budget = max(0, music_cap_minutes - int(sum(_minutes(c) for c in requested)))
     if sum(_minutes(c) for c in automatic) > budget:
         capped: List[Candidate] = []
-        for c in sorted(automatic, key=lambda c: (c.is_pick, c.score), reverse=True):
+        for c in sorted(automatic, key=lambda c: (c.must_see, c.is_pick, c.score),
+                        reverse=True):
+            # A must-see survives the cap unconditionally, even when the
+            # person has asked for the day to be fitted inside the limit.
+            # Those two instructions can conflict, and the one naming a band
+            # is the more specific of them: "keep my day under seven hours"
+            # is a preference about shape, "I came for this band" is not.
             if sum(_minutes(x) for x in capped) + _minutes(c) <= budget \
-                    or (c.is_pick and not fit_inside):
+                    or c.must_see or (c.is_pick and not fit_inside):
                 capped.append(c)
         chosen = sorted(requested + capped, key=lambda c: c.starts_at)
 

@@ -128,6 +128,9 @@ CREATE TABLE user_artist (
     user_id    bigint NOT NULL REFERENCES app_user ON DELETE CASCADE,
     artist_id  bigint NOT NULL REFERENCES dim_artist,
     added_at   timestamptz NOT NULL DEFAULT now(),
+    -- The two or three they came for, as against the dozen they would like to
+    -- catch. A must-see is never dropped and wins any clash with a plain pick.
+    must_see   boolean NOT NULL DEFAULT false,
     PRIMARY KEY (user_id, artist_id)
 );
 
