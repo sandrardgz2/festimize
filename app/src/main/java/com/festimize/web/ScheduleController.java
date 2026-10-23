@@ -31,6 +31,19 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class ScheduleController {
 
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("EEEE d MMMM");
+    /**
+     * The shortest stretch without music that counts as a break rather than
+     * as walking between stages.
+     *
+     * Not a number invented for this summary: it is the scheduler's own
+     * `shortest_acceptable` when it places a breather, so the page and the
+     * solver agree about what a break is. Counting only the breaks the
+     * scheduler deliberately placed said "1" about a day containing an hour
+     * of sitting down; counting every gap said "5" about a day containing
+     * three stage walks.
+     */
+    private static final int BREAK_MINUTES = 20;
+
     /** The short form the wireframe puts on the day tabs: "SAT 14". */
     private static final DateTimeFormatter TAB = DateTimeFormatter.ofPattern("EEE d");
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
@@ -68,7 +81,8 @@ public class ScheduleController {
 
     /** What one day of the plan adds up to, for the summary rail. */
     public record DayStat(String label, String tab, int sets, int breaks,
-                          int discoveries, String active) {}
+                          int discoveries, String active, String breakTime,
+                          String changeover) {}
 
     public record Slot(String kind, String time, String artist, Long artistId,
                        Long performanceId, Long alternativeId, String alternative,
@@ -115,7 +129,7 @@ public class ScheduleController {
             for (PlanItem item : items.findForPlan(plan.get().getPlanId())) {
                 String dayKey = item.getStartsAt().format(DAY);
                 tabOf.putIfAbsent(dayKey, item.getStartsAt().format(TAB).toUpperCase(Locale.UK));
-                int[] tally = perDay.computeIfAbsent(dayKey, d -> new int[4]);
+                int[] tally = perDay.computeIfAbsent(dayKey, d -> new int[6]);
                 int mins = (int) Duration.between(item.getStartsAt(), item.getEndsAt()).toMinutes();
                 boolean isSet = "SET".equals(item.getItemType());
                 if (isSet) {
@@ -130,12 +144,15 @@ public class ScheduleController {
                     }
                 } else {
                     rests++;
-                    // Only breaks the scheduler placed. The slots it calls
-                    // rests also include plain changeovers, and counting a
-                    // walk between stages as a break said "6 breaks" about a
-                    // day that had one.
-                    if (item.getReason() == null || !item.getReason().startsWith("gap")) {
+                    // Long enough to sit down, whoever caused it. A
+                    // sixty-minute hole between two stages is a break even
+                    // though the scheduler did not place it there, and a
+                    // fifteen-minute one is the walk.
+                    if (mins >= BREAK_MINUTES) {
                         tally[1]++;
+                        tally[4] += mins;
+                    } else {
+                        tally[5] += mins;
                     }
                 }
                 Long who = isSet && item.getPerformance() != null
@@ -166,7 +183,7 @@ public class ScheduleController {
         for (Map.Entry<String, int[]> e : perDay.entrySet()) {
             int[] t = e.getValue();
             dayStats.add(new DayStat(e.getKey(), tabOf.get(e.getKey()), t[0], t[1], t[3],
-                    String.format("%dh %02dm", t[2] / 60, t[2] % 60)));
+                    clock(t[2]), clock(t[4]), clock(t[5])));
         }
 
         // The pace panel says what this day was actually built to, rather
@@ -300,6 +317,12 @@ public class ScheduleController {
      * even though alternative_id was sitting right there on the row. Parsing
      * our own prose is a dependency on wording that nobody remembers having.
      */
+    /** Minutes as "6h 20m", or "45m" when there is no hour to show. */
+    private static String clock(int minutes) {
+        return minutes >= 60 ? String.format("%dh %02dm", minutes / 60, minutes % 60)
+                             : String.format("%dm", minutes);
+    }
+
     private String alternativeOf(PlanItem item) {
         if (item.getAlternativeId() == null) {
             return null;

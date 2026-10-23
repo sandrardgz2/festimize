@@ -28,6 +28,19 @@
          into: a wall of badges and a 112KB page. A select handles any number
          of them and keeps the planning editions at the top, since those are
          the ones with set times and therefore the ones you can plan. -->
+    <!-- The one thing left to do, for somebody who has just finished setup. -->
+    <section class="panel" th:if="${hasPicks and !hasPlan and chosen != null}">
+        <h2 class="section-title">Next: build your schedule</h2>
+        <p class="section-note">
+            Your artists are scored against this bill. The scheduler can now work out a day
+            around them — which sets to catch, and when to eat and sit down.
+        </p>
+        <form method="post" th:action="@{/schedule/build}">
+            <input type="hidden" name="editionId" th:value="${chosen.editionId}"/>
+            <button type="submit" class="btn">Build my schedule</button>
+        </form>
+    </section>
+
     <section class="panel" th:if="${#lists.size(editions) > 1}">
         <h2>Festival</h2>
         <p class="muted">Your artists stay on your account — switching only rebuilds the lineup.</p>

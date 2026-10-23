@@ -183,6 +183,12 @@ public class LineupController {
                                     (LineupRow r) -> r.matchPercent() == null ? -1 : r.matchPercent()).reversed()))
                     .collect(Collectors.toList());
         }
+        // Somebody who has just named their artists lands here, and the next
+        // thing to do is on another page. Saying so beats leaving them to
+        // find the Schedule tab; it shows whenever this festival has no plan,
+        // which is the same sentence either way.
+        model.addAttribute("hasPicks", !myPicks.isEmpty());
+        model.addAttribute("hasPlan", !alreadyPlanned.isEmpty());
         model.addAttribute("analyticsUp", analyticsUp);
         model.addAttribute("scored", !matchByArtist.isEmpty());
         model.addAttribute("rows", rows);

@@ -150,7 +150,17 @@
                     <span class="k">Active time</span><span class="v" th:text="${dayStat.active}">6h 20m</span>
                 </div>
                 <div class="rail-stat">
-                    <span class="k">Breaks</span><span class="v" th:text="${dayStat.breaks}">2</span>
+                    <span class="k">Breaks</span>
+                    <span class="v">
+                        <span th:text="${dayStat.breaks}">2</span>
+                        <span class="muted" style="font-weight:400"
+                              th:if="${dayStat.breaks > 0}"
+                              th:text="'· ' + ${dayStat.breakTime}">· 1h 30m</span>
+                    </span>
+                </div>
+                <div class="rail-stat">
+                    <span class="k">Changeover</span>
+                    <span class="v" th:text="${dayStat.changeover}">45m</span>
                 </div>
                 <div class="rail-stat">
                     <span class="k">New artists</span><span class="v" th:text="${dayStat.discoveries}">3</span>
