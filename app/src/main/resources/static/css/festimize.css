@@ -419,3 +419,9 @@ footer.site {
 .slot-actions { margin: 6px 0 0; }
 .slot-actions .button-quiet { font-size: 12px; padding: 3px 10px; opacity: 0.55; }
 .slot:hover .slot-actions .button-quiet { opacity: 1; }
+
+/* The swap sits on the same line as the sentence naming the artist, because
+   that sentence is the reason anyone would want it. */
+.inline-action { display: inline; margin-left: 6px; }
+.inline-action .button-quiet { font-size: 12px; padding: 2px 9px; opacity: 0.6; }
+.slot:hover .inline-action .button-quiet { opacity: 1; }
