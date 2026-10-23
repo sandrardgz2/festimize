@@ -53,6 +53,11 @@ public class ProfileController {
         model.addAttribute("planCount", plans.countByUser_UserId(me.getUserId()));
         model.addAttribute("musicCapHours",
                 String.format("%.1f", me.musicCapMinutes() / 60.0));
+        // Read as text, for the reason given on AppUserRepository.paceTimes.
+        String[] pace = (users.paceTimes(me.getUserId()) + "||").split("\\|", -1);
+        model.addAttribute("mealBy", hhmm(pace[0]));
+        model.addAttribute("earliestStart", hhmm(pace[1]));
+        model.addAttribute("latestEnd", hhmm(pace[2]));
         return "profile";
     }
 
@@ -75,24 +80,34 @@ public class ProfileController {
         if (maxRunHours != null && maxRunHours >= 1 && maxRunHours <= 8) {
             me.setMaxRunMinutes((short) (maxRunHours * 60));
         }
-        me.setMealBy(time(mealBy, me.getMealBy()));
-        // These two are deliberately clearable: an empty box means "whenever
-        // the festival opens", not "keep what was there".
-        me.setEarliestStart(time(earliestStart, null));
-        me.setLatestEnd(time(latestEnd, null));
         users.save(me);
+        // The times are written separately, as text, so that what the person
+        // typed is what the planner reads. These two are deliberately
+        // clearable: an empty box means "whenever the festival opens", not
+        // "keep what was there".
+        String[] was = (users.paceTimes(me.getUserId()) + "||").split("\\|", -1);
+        users.savePaceTimes(me.getUserId(),
+                valid(mealBy) ? mealBy : was[0],
+                valid(earliestStart) ? earliestStart : "",
+                valid(latestEnd) ? latestEnd : "");
         return "redirect:/profile?saved";
     }
 
-    /** A time from the form, or the fallback when the box was left empty. */
-    private static LocalTime time(String value, LocalTime fallback) {
+    /** A time the form can send back: "16:00" from the column's "16:00:00". */
+    private static String hhmm(String columnText) {
+        return columnText == null || columnText.length() < 5 ? "" : columnText.substring(0, 5);
+    }
+
+    /** Something that parses as a time of day, and is therefore safe to cast. */
+    private static boolean valid(String value) {
         if (value == null || value.isBlank()) {
-            return fallback;
+            return false;
         }
         try {
-            return LocalTime.parse(value);
+            LocalTime.parse(value);
+            return true;
         } catch (RuntimeException ignored) {
-            return fallback;
+            return false;
         }
     }
 }

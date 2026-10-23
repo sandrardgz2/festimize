@@ -249,9 +249,13 @@ public class ScheduleController {
         model.addAttribute("paceCap", String.format("%.1f", me.musicCapMinutes() / 60.0));
         model.addAttribute("paceRun", me.getMaxRunMinutes() == null ? null
                 : String.format("%.1f", me.getMaxRunMinutes() / 60.0));
-        model.addAttribute("paceMeal", me.getMealBy());
-        model.addAttribute("paceEarliest", me.getEarliestStart());
-        model.addAttribute("paceLatest", me.getLatestEnd());
+        // As text, straight off the column — see AppUserRepository.paceTimes.
+        // Reading these through the entity showed the person a different
+        // number from the one the planner obeyed.
+        String[] pace = (users.paceTimes(me.getUserId()) + "||").split("\\|", -1);
+        model.addAttribute("paceMeal", pace[0].isEmpty() ? null : pace[0].substring(0, 5));
+        model.addAttribute("paceEarliest", pace[1].isEmpty() ? null : pace[1].substring(0, 5));
+        model.addAttribute("paceLatest", pace[2].isEmpty() ? null : pace[2].substring(0, 5));
 
         model.addAttribute("activeNav", "schedule");
         model.addAttribute("editions", all);

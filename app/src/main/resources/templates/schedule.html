@@ -224,15 +224,15 @@
                 </div>
                 <div class="rail-stat" th:if="${paceMeal != null}">
                     <span class="k">Eat by</span>
-                    <span class="v" th:text="${#temporals.format(paceMeal, 'HH:mm')}">13:00</span>
+                    <span class="v" th:text="${paceMeal}">13:00</span>
                 </div>
                 <div class="rail-stat" th:if="${paceEarliest != null}">
                     <span class="k">Not before</span>
-                    <span class="v" th:text="${#temporals.format(paceEarliest, 'HH:mm')}">12:00</span>
+                    <span class="v" th:text="${paceEarliest}">12:00</span>
                 </div>
                 <div class="rail-stat" th:if="${paceLatest != null}">
                     <span class="k">Not after</span>
-                    <span class="v" th:text="${#temporals.format(paceLatest, 'HH:mm')}">23:30</span>
+                    <span class="v" th:text="${paceLatest}">23:30</span>
                 </div>
                 <p style="margin-top:12px"><a th:href="@{/profile}">Change these →</a></p>
             </section>

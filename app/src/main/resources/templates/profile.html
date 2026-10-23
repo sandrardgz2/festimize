@@ -59,15 +59,15 @@
 
             <p>
                 <label for="mealBy"><strong>Eat by</strong></label><br>
-                <input type="time" id="mealBy" name="mealBy" th:value="${me.mealBy}">
+                <input type="time" id="mealBy" name="mealBy" th:value="${mealBy}">
                 <span class="muted">the latest a meal break may land</span>
             </p>
 
             <p>
                 <label for="earliestStart"><strong>Earliest start / latest end</strong></label><br>
                 <input type="time" id="earliestStart" name="earliestStart"
-                       th:value="${me.earliestStart}">
-                <input type="time" id="latestEnd" name="latestEnd" th:value="${me.latestEnd}">
+                       th:value="${earliestStart}">
+                <input type="time" id="latestEnd" name="latestEnd" th:value="${latestEnd}">
                 <span class="muted">leave empty for whenever the festival opens and closes</span>
             </p>
 
