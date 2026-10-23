@@ -194,6 +194,7 @@ def build_day(candidates: Sequence[Candidate],
               max_run_minutes: int = 180,
               changeover_minutes: int = 10,
               swap_tolerance: float = 0.10,
+              least_before_leaving: int = 25,
               not_before: Optional[datetime] = None,
               music_cap_minutes: int = 450,
               meal_by: Optional[object] = None,
@@ -304,6 +305,72 @@ def build_day(candidates: Sequence[Candidate],
             missed[id(cand)] = int((arrive - cand.starts_at).total_seconds() // 60)
             cand.starts_at = arrive
         chosen.append(cand)
+
+    # Leaving one set early to catch another.
+    #
+    # choose_best can join a set late but never leave one early, so two sets
+    # that overlap were always a choice between them. That is not what people
+    # do at a festival: you duck out of the first to get across the site for
+    # the second. The app already lets somebody ask for exactly that by hand,
+    # one gap at a time — the solver simply never proposed it, and would drop
+    # a band outright rather than offer half of each.
+    #
+    # Deliberately narrow, because it gives up part of something already
+    # chosen:
+    #
+    #   * Only between two artists the person named themselves. Cutting your
+    #     own pick short for a recommendation is not a trade anybody asked
+    #     for.
+    #   * Never out of a must-see. That tier exists to keep those whole.
+    #   * Never out of a set the person pinned. They said where they wanted
+    #     to be; this is not the place to shorten it.
+    #   * The second set is caught whole. Half of one and half of the other
+    #     reads well in a sentence, but the only reason to leave early is to
+    #     be somewhere, and arriving late as well means missing the middle of
+    #     both for no gain.
+    left_early = {}
+
+    def _splittable(later):
+        """Which chosen set could be left early to catch `later` whole."""
+        blocking = [c for c in chosen
+                    if _overlaps(c.starts_at, c.ends_at, later.starts_at, later.ends_at)]
+        if len(blocking) != 1:
+            return None            # nothing in the way, or too much
+        earlier = blocking[0]
+        if (earlier.must_see or not earlier.is_pick
+                or id(earlier) in asked or id(earlier) in left_early):
+            return None
+        if earlier.starts_at >= later.starts_at:
+            return None            # `later` is the one that would be cut short
+        leave_at = later.starts_at - timedelta(minutes=changeover_minutes)
+        stayed = (leave_at - earlier.starts_at).total_seconds() / 60
+        if stayed < least_before_leaving:
+            return None            # too little of the first to be worth going
+        # Never trade down. Without this, twenty-five minutes is simply the
+        # floor, so the pass would happily give up an hour of one band to
+        # catch ten minutes of another and call it a second artist — a net
+        # loss of music dressed up as variety.
+        given_up = (earlier.ends_at - leave_at).total_seconds() / 60
+        if (later.ends_at - later.starts_at).total_seconds() / 60 < given_up:
+            return None
+        # Chosen sets never overlap each other, and nothing but `earlier`
+        # overlaps `later`, so the only thing left to check is the walk out of
+        # the pair into whatever comes next.
+        after = [c.starts_at for c in chosen if c.starts_at >= later.ends_at]
+        if after and min(after) < later.ends_at + timedelta(minutes=changeover_minutes):
+            return None
+        return earlier, leave_at, int(round(stayed))
+
+    for later in [c for c in ranked
+                  if c.is_pick and c not in chosen and id(c) not in asked]:
+        found = _splittable(later)
+        if found is None:
+            continue
+        earlier, leave_at, _ = found
+        left_early[id(earlier)] = (
+            int((earlier.ends_at - leave_at).total_seconds() // 60), later.artist)
+        earlier.ends_at = leave_at
+        chosen.append(later)
 
     # Discovery quota: swap the weakest picks out for the best new artists.
     def discoveries(sets): return sum(1 for c in sets if not c.is_pick)
@@ -676,6 +743,9 @@ def build_day(candidates: Sequence[Candidate],
                     reason += " — " + why
         if id(c) in missed:
             reason += " · joined %d min late, walking from the last set" % missed[id(c)]
+        if id(c) in left_early:
+            lost, catching = left_early[id(c)]
+            reason += " · left %d min early to catch %s" % (lost, catching)
         slots.append(Slot("SET", c.starts_at, c.ends_at, c.performance_id, c.artist, c.stage,
                           reason, rival.performance_id if rival is not None else None))
     slots += rests
