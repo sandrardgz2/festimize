@@ -59,6 +59,12 @@ class AddCost(BaseModel):
     # Sets that are in the schedule now and would not be afterwards. Empty
     # means the addition is free: there is room for it.
     costs: List[str]
+    # Of those, the ones that actually overlap the set being added. The rest
+    # were dropped to stay inside the daily cap and may be playing hours
+    # away, which reads as nonsense unless the page says so: adding Scowl at
+    # 13:30 "cost" Code Orange at 16:30, because a 430-minute day plus 40
+    # minutes exceeds a 450-minute limit and something had to go.
+    clashes: List[str]
     # Sets that are not in the schedule now and would be afterwards, besides
     # the one being added. Moving one set can open a gap that fits another,
     # so an addition is not always a straight trade.
@@ -339,11 +345,16 @@ def add_cost(
             continue
         if r.performance_id not in offered:
             out.append(AddCost(performance_id=r.performance_id, artist=r.name,
-                               costs=[], gains=[], available=False))
+                               costs=[], clashes=[], gains=[], available=False))
             continue
         solved = _solve(bill, discovery_quota, also_pin=[r.performance_id])
         after = {s.performance_id for s in solved if s.kind == "SET"}
-        lost = [offered[p].artist for p in base - after if p in offered]
+        adding = offered[r.performance_id]
+        lost_ids = [p for p in base - after if p in offered]
+        lost = [offered[p].artist for p in lost_ids]
+        clashes = [offered[p].artist for p in lost_ids
+                   if offered[p].starts_at < adding.ends_at
+                   and adding.starts_at < offered[p].ends_at]
         gained = [offered[p].artist for p in after - base
                   if p != r.performance_id and p in offered]
         on_the_day = offered[r.performance_id].starts_at.date()
@@ -351,7 +362,8 @@ def add_cost(
                       for s in solved
                       if s.kind == "SET" and s.starts_at.date() == on_the_day)
         out.append(AddCost(performance_id=r.performance_id, artist=r.name,
-                           costs=sorted(lost), gains=sorted(gained), available=True,
+                           costs=sorted(lost), clashes=sorted(clashes),
+                           gains=sorted(gained), available=True,
                            day_minutes_after=int(round(minutes))))
 
     return AddCostResponse(user_id=user_id, edition_id=edition_id, costs=out)

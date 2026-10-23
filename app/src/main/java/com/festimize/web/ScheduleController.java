@@ -422,17 +422,39 @@ public class ScheduleController {
         if (cost == null || !cost.available()) {
             return null;
         }
-        // Say when the price is one of their own picks. "Costs System of a
-        // Down" reads like any other trade until you know you named that
-        // band yourself, and giving one up is not a casual aside.
-        List<String> priced = new ArrayList<>();
+        // A clash and a budget eviction are different facts and were being
+        // reported as one. Adding Scowl at 13:30 "cost Code Orange" at
+        // 16:30, which reads as nonsense: they do not overlap. The day was
+        // 430 minutes against a 450 cap, Scowl is 40, and the cap dropped
+        // the weakest set it was allowed to drop — hours away. True, and
+        // not what "costs" means to a reader.
+        //
+        // Names of their own picks are marked either way: giving one up is
+        // not a casual aside.
+        List<String> clash = new ArrayList<>();
+        List<String> freed = new ArrayList<>();
         for (String name : cost.costs()) {
-            priced.add(myPicks.contains(name) ? name + " (your pick)" : name);
+            String shown = myPicks.contains(name) ? name + " (your pick)" : name;
+            (cost.clashes().contains(name) ? clash : freed).add(shown);
         }
-        String what = priced.isEmpty() ? "nothing else changes"
-                : "costs " + String.join(" and ", priced);
+        if (clash.isEmpty() && freed.isEmpty()) {
+            return "nothing else changes";
+        }
+        StringBuilder what = new StringBuilder();
+        if (!clash.isEmpty()) {
+            what.append("clashes with ").append(String.join(" and ", clash));
+        }
+        if (!freed.isEmpty()) {
+            what.append(what.length() == 0 ? "no clash, but drops " : ", and drops ")
+                .append(String.join(" and ", freed))
+                .append(String.format(" to stay inside your %dh %02dm",
+                        ceiling / 60, ceiling % 60));
+        }
         int over = cost.day_minutes_after() - ceiling;
-        return over > 0 ? what + String.format(" · %d min over your limit", over) : what;
+        if (over > 0) {
+            what.append(String.format(" · %d min over your limit", over));
+        }
+        return what.toString();
     }
 
     /**
