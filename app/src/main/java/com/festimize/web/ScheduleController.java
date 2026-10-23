@@ -188,6 +188,8 @@ public class ScheduleController {
     public String swap(@RequestParam Long editionId, @RequestParam Long performanceId,
                        Principal principal) {
         AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
+        declined.undecline(me.getUserId(), editionId, performanceId);
+        declined.unpinClashing(me.getUserId(), editionId, performanceId);
         declined.pin(me.getUserId(), editionId, performanceId);
         planning.buildPlan(me.getUserId(), editionId);
         return "redirect:/schedule?editionId=" + editionId + "&swapped";
@@ -206,6 +208,8 @@ public class ScheduleController {
     public String add(@RequestParam Long editionId, @RequestParam Long performanceId,
                       Principal principal) {
         AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
+        declined.undecline(me.getUserId(), editionId, performanceId);
+        declined.unpinClashing(me.getUserId(), editionId, performanceId);
         declined.pin(me.getUserId(), editionId, performanceId);
         planning.buildPlan(me.getUserId(), editionId);
         return "redirect:/schedule?editionId=" + editionId + "&swapped";

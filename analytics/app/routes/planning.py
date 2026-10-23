@@ -5,13 +5,18 @@ POST /plan/{user_id}?edition_id=N builds a day-by-day schedule for one festival
 edition and saves it to plan and plan_item, replacing any previous plan for that
 user and edition.
 
+GET /plan/{user_id}/cost?edition_id=N answers a different question about the
+same machinery: for every set not currently in the schedule, what would adding
+it cost? It is the "add" button's own counterfactual, run before the click.
+
 The choosing is in app/scheduler.py; this module is the database half: load the
 candidates, call the scheduler once per festival day, write the result back.
 
 Targets Python 3.9 syntax.
 """
+import dataclasses
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import Dict, List, Optional, Sequence
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
@@ -48,16 +53,47 @@ class PlanResponse(BaseModel):
     slots: List[PlanSlot]
 
 
-@router.post("/plan/{user_id}", response_model=PlanResponse)
-def build_plan(
-    user_id: int,
-    edition_id: int = Query(..., description="Which festival edition to plan"),
-    discovery_quota: float = Query(1 / 3, ge=0.0, le=1.0),
-    # Keep in step with the scheduler default; overriding it here silently
-    # changed pacing behaviour and cost a set.
-    max_run_minutes: int = Query(180, ge=60, le=600),
-    db: Session = Depends(get_db),
-) -> PlanResponse:
+class AddCost(BaseModel):
+    performance_id: int
+    artist: str
+    # Sets that are in the schedule now and would not be afterwards. Empty
+    # means the addition is free: there is room for it.
+    costs: List[str]
+    # Sets that are not in the schedule now and would be afterwards, besides
+    # the one being added. Moving one set can open a gap that fits another,
+    # so an addition is not always a straight trade.
+    gains: List[str]
+    # False when the set falls outside the hours this person said they would
+    # attend, in which case adding it would do nothing at all.
+    available: bool
+
+
+class AddCostResponse(BaseModel):
+    user_id: int
+    edition_id: int
+    costs: List[AddCost]
+
+
+class _Bill:
+    """One edition's candidates and one person's pacing, loaded once.
+
+    The cost endpoint solves the same festival a few dozen times over. Loading
+    the bill per solve made that a few dozen round trips for data that cannot
+    have changed in between, so loading and solving are separated here.
+    """
+
+    def __init__(self, by_day, pinned, cap, meal_by, max_run_minutes):
+        self.by_day = by_day
+        self.pinned = pinned
+        self.cap = cap
+        self.meal_by = meal_by
+        self.max_run_minutes = max_run_minutes
+
+    def offered(self) -> Dict[int, Candidate]:
+        return {c.performance_id: c for day in self.by_day.values() for c in day}
+
+
+def _load(db: Session, user_id: int, edition_id: int, max_run_minutes: int) -> _Bill:
     rows = db.execute(
         text(
             """
@@ -118,10 +154,6 @@ def build_plan(
                       r.starts_at, r.ends_at, float(r.score), bool(r.is_pick))
         )
 
-    # Days are solved in order rather than independently, because one of the
-    # pacing rules spans them: how late you were out last night decides how
-    # early you can be out this morning. Each day is told the earliest it may
-    # begin, which the previous day's finish and the sleep floor determine.
     # Sets outside the hours this person will attend are not offered at all,
     # rather than offered and then dropped: the schedule should not argue with
     # someone about when their day starts.
@@ -132,19 +164,55 @@ def build_plan(
                     and (not pace.latest_end or c.ends_at.time() <= pace.latest_end)]
             by_day[day] = kept or found        # never leave a day with nothing
 
+    return _Bill(by_day, pinned, cap, meal_by=pace.meal_by if pace else None,
+                 max_run_minutes=max_run_minutes)
+
+
+def _solve(bill: _Bill, discovery_quota: float, also_pin: Sequence[int] = ()) -> list:
+    """Solve the whole edition. also_pin forces extra sets into the schedule.
+
+    Days are solved in order rather than independently, because one of the
+    pacing rules spans them: how late you were out last night decides how
+    early you can be out this morning. Each day is told the earliest it may
+    begin, which the previous day's finish and the sleep floor determine —
+    which is also why a counterfactual has to re-solve the whole edition and
+    not just the day the added set falls on.
+    """
+    pinned = list(bill.pinned) + list(also_pin)
     slots = []
     not_before = None
-    for day in sorted(by_day):
-        built = build_day(by_day[day],
+    for day in sorted(bill.by_day):
+        # Fresh copies every solve. build_day rewrites starts_at on a set
+        # joined late, in place, so handing it the same objects twice has the
+        # second solve planning a day that drifts later than the real one —
+        # harmless when a plan was built once, wrong as soon as the cost
+        # endpoint solves the same festival twenty times over.
+        fresh = [dataclasses.replace(c) for c in bill.by_day[day]]
+        built = build_day(fresh,
                           discovery_quota=discovery_quota,
-                          max_run_minutes=max_run_minutes,
+                          max_run_minutes=bill.max_run_minutes,
                           not_before=not_before,
-                          music_cap_minutes=cap,
-                          meal_by=pace.meal_by if pace else None,
+                          music_cap_minutes=bill.cap,
+                          meal_by=bill.meal_by,
                           pinned=pinned)
         slots.extend(built)
         finished = max((s.ends_at for s in built if s.kind == 'SET'), default=None)
         not_before = finished + timedelta(hours=SLEEP_FLOOR_HOURS) if finished else None
+    return slots
+
+
+@router.post("/plan/{user_id}", response_model=PlanResponse)
+def build_plan(
+    user_id: int,
+    edition_id: int = Query(..., description="Which festival edition to plan"),
+    discovery_quota: float = Query(1 / 3, ge=0.0, le=1.0),
+    # Keep in step with the scheduler default; overriding it here silently
+    # changed pacing behaviour and cost a set.
+    max_run_minutes: int = Query(180, ge=60, le=600),
+    db: Session = Depends(get_db),
+) -> PlanResponse:
+    bill = _load(db, user_id, edition_id, max_run_minutes)
+    slots = _solve(bill, discovery_quota)
 
     # One plan per user per edition; rewrite it wholesale rather than diffing.
     plan_id = db.execute(
@@ -176,9 +244,64 @@ def build_plan(
     picks = sum(1 for s in slots if s.kind == "SET" and s.reason == "your pick")
     sets = sum(1 for s in slots if s.kind == "SET")
     return PlanResponse(
-        user_id=user_id, edition_id=edition_id, days=len(by_day),
+        user_id=user_id, edition_id=edition_id, days=len(bill.by_day),
         sets=sets, rests=sum(1 for s in slots if s.kind == "REST"),
         discoveries=sets - picks,
         slots=[PlanSlot(kind=s.kind, starts_at=s.starts_at, ends_at=s.ends_at,
                         artist=s.artist, stage=s.stage, reason=s.reason) for s in slots],
     )
+
+
+@router.get("/plan/{user_id}/cost", response_model=AddCostResponse)
+def add_cost(
+    user_id: int,
+    edition_id: int = Query(..., description="Which festival edition"),
+    discovery_quota: float = Query(1 / 3, ge=0.0, le=1.0),
+    max_run_minutes: int = Query(180, ge=60, le=600),
+    db: Session = Depends(get_db),
+) -> AddCostResponse:
+    """What each absent set would cost, if it were added.
+
+    This is not an estimate. Adding a set pins it and re-solves, so the answer
+    is got by pinning it and re-solving: the same code path the button runs,
+    and therefore the same schedule, as long as nothing else changes in
+    between. Nothing is written.
+    """
+    bill = _load(db, user_id, edition_id, max_run_minutes)
+    offered = bill.offered()
+
+    base = {s.performance_id for s in _solve(bill, discovery_quota) if s.kind == "SET"}
+
+    # Every set on the bill that is not already in the schedule, including the
+    # ones the person's hours have filtered out — the lineup page offers those
+    # too, and "adding" one silently does nothing, which is worth saying.
+    absent = db.execute(
+        text(
+            """
+            select p.performance_id, a.name
+              from fact_performance p
+              join dim_artist a on a.artist_id = p.artist_id
+             where p.edition_id = :eid and p.starts_at is not null
+             order by p.starts_at
+            """
+        ),
+        {"eid": edition_id},
+    ).fetchall()
+
+    out = []
+    for r in absent:
+        if r.performance_id in base:
+            continue
+        if r.performance_id not in offered:
+            out.append(AddCost(performance_id=r.performance_id, artist=r.name,
+                               costs=[], gains=[], available=False))
+            continue
+        after = {s.performance_id for s in _solve(bill, discovery_quota, also_pin=[r.performance_id])
+                 if s.kind == "SET"}
+        lost = [offered[p].artist for p in base - after if p in offered]
+        gained = [offered[p].artist for p in after - base
+                  if p != r.performance_id and p in offered]
+        out.append(AddCost(performance_id=r.performance_id, artist=r.name,
+                           costs=sorted(lost), gains=sorted(gained), available=True))
+
+    return AddCostResponse(user_id=user_id, edition_id=edition_id, costs=out)

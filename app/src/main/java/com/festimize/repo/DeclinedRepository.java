@@ -67,6 +67,48 @@ public interface DeclinedRepository extends JpaRepository<Plan, Long> {
             """, nativeQuery = true)
     void unpinAll(@Param("userId") Long userId, @Param("editionId") Long editionId);
 
+    /**
+     * Lift any pin that clashes with the set about to be pinned.
+     *
+     * Two pinned sets at the same hour are a contradiction the scheduler
+     * cannot honour, and the way one arises is ordinary: ask for Currents
+     * over Slipknot, then change your mind. Without this the second request
+     * was added to the first rather than replacing it. The ten minutes match
+     * the scheduler's changeover, so a pin displaces exactly what it would
+     * have displaced there.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            delete from plan_pinned p
+             using plan pl, fact_performance mine, fact_performance theirs
+             where p.plan_id = pl.plan_id
+               and pl.user_id = :userId and pl.edition_id = :editionId
+               and mine.performance_id = :performanceId
+               and theirs.performance_id = p.performance_id
+               and theirs.performance_id <> mine.performance_id
+               and theirs.starts_at < mine.ends_at + interval '10 minutes'
+               and theirs.ends_at + interval '10 minutes' > mine.starts_at
+            """, nativeQuery = true)
+    void unpinClashing(@Param("userId") Long userId, @Param("editionId") Long editionId,
+                       @Param("performanceId") Long performanceId);
+
+    /**
+     * Asking for a set by name undoes having turned it down. A declined set is
+     * filtered out before the scheduler sees it, so pinning one without this
+     * is a button that does nothing.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            delete from plan_declined d using plan pl
+             where d.plan_id = pl.plan_id
+               and pl.user_id = :userId and pl.edition_id = :editionId
+               and d.performance_id = :performanceId
+            """, nativeQuery = true)
+    void undecline(@Param("userId") Long userId, @Param("editionId") Long editionId,
+                   @Param("performanceId") Long performanceId);
+
     @Query(value = """
             select count(*) from plan_pinned p join plan pl on pl.plan_id = p.plan_id
              where pl.user_id = :userId and pl.edition_id = :editionId

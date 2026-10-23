@@ -213,14 +213,28 @@ def build_day(candidates: Sequence[Candidate],
     # off the table before the solver runs, so the pin is honoured rather than
     # competed with — otherwise the day it produces is the day it preferred,
     # which is the thing being overruled.
+    #
+    # What a pin pushes off is remembered, not just discarded. Taking it off
+    # the table and saying nothing made the swap one-way: the set that had
+    # been chosen over was gone from candidates by the time the schedule works
+    # out what each slot beat, so the new slot named no alternative and the
+    # only way back was to put everything back.
+    asked, ousted = set(), {}
     if pinned:
         wanted = [c for c in candidates if c.performance_id in set(pinned)]
+        protected = {id(w) for w in wanted}
+        asked = set(protected)
         for keep in wanted:
-            candidates = [c for c in candidates
-                          if c is keep
-                          or not _overlaps(keep.starts_at, keep.ends_at,
-                                           c.starts_at - timedelta(minutes=changeover_minutes),
-                                           c.ends_at + timedelta(minutes=changeover_minutes))]
+            clashing = [c for c in candidates
+                        if c is not keep
+                        and id(c) not in protected
+                        and _overlaps(keep.starts_at, keep.ends_at,
+                                      c.starts_at - timedelta(minutes=changeover_minutes),
+                                      c.ends_at + timedelta(minutes=changeover_minutes))]
+            if clashing:
+                ousted[id(keep)] = max(clashing, key=lambda c: (c.is_pick, c.score))
+            dropped_ids = {id(c) for c in clashing}
+            candidates = [c for c in candidates if id(c) not in dropped_ids]
 
     # The sleep floor. Dropping the sets rather than warning about them is the
     # point: a schedule that lists a 09:00 set after a 02:00 finish is not
@@ -279,7 +293,12 @@ def build_day(candidates: Sequence[Candidate],
     if not chosen:
         return []
 
-    protected = {id(c) for c in chosen if c.is_pick or c.score >= 0.95 * best_score}
+    # A set the person asked for by name is protected like one of their own
+    # picks. Without this the pin was accepted, the schedule rebuilt, and the
+    # set quietly not there: Code Orange's fifty minutes took the day past the
+    # 450-minute cap, so the cap cut the thing that had just been requested.
+    protected = {id(c) for c in chosen
+                 if c.is_pick or id(c) in asked or c.score >= 0.95 * best_score}
     protected.add(id(chosen[-1]))           # never trade the last set of the day for a break
 
     def _carve(sets: List[Candidate], after: datetime, minutes: int, label: str,
@@ -353,15 +372,18 @@ def build_day(candidates: Sequence[Candidate],
         return None, None
 
     # The day's music cap. Cut from the weakest end, and never from the user's
-    # own picks: someone who came for one band gets to stand through the day
-    # for it, and being told they are tired by software is not help.
+    # own picks or the sets they asked for by name: someone who came for one
+    # band gets to stand through the day for it, and being told they are tired
+    # by software is not help.
     total = sum((c.ends_at - c.starts_at).total_seconds() / 60 for c in chosen)
     capped: List[Candidate] = []
     if total > music_cap_minutes:
-        for c in sorted(chosen, key=lambda c: (c.is_pick, c.score), reverse=True):
+        for c in sorted(chosen, key=lambda c: (c.is_pick or id(c) in asked, c.score),
+                        reverse=True):
             minutes = (c.ends_at - c.starts_at).total_seconds() / 60
             if sum((x.ends_at - x.starts_at).total_seconds() / 60
-                   for x in capped) + minutes <= music_cap_minutes or c.is_pick:
+                   for x in capped) + minutes <= music_cap_minutes \
+                    or c.is_pick or id(c) in asked:
                 capped.append(c)
         chosen = sorted(capped, key=lambda c: c.starts_at)
 
@@ -457,6 +479,11 @@ def build_day(candidates: Sequence[Candidate],
         if kept is None or other.score > kept.score:
             blamed[id(against)] = other
 
+    # A pinned set beat exactly one thing: whatever the pin removed. That is a
+    # better answer than anything the blame pass can reconstruct, since the
+    # casualty is no longer among the candidates it searches.
+    blamed.update(ousted)
+
     def displaced(c: Candidate) -> Optional[Candidate]:
         return blamed.get(id(c))
 
@@ -519,11 +546,17 @@ def build_day(candidates: Sequence[Candidate],
             # was chosen is the entire reason it was in contention.
             rival_label = ("also your pick" if rival.is_pick
                            else "%d%%" % round(rival.score * 100))
-            reason += " · chosen over %s (%s, %d min against %d)" % (
+            # "Chosen over" is wrong for a set the person pinned: nothing
+            # chose it, they did. Saying so is also the honest way to offer
+            # the way back, which is to lift the pin rather than overrule it.
+            reason += " · %s %s (%s, %d min against %d)" % (
+                "you asked for this, instead of" if id(c) in asked else "chosen over",
                 rival.artist, rival_label, minutes, mine)
             # Between two of their own picks the numbers are identical, so the
-            # only honest reason is what else the day can then hold.
-            if rival.is_pick and c.is_pick:
+            # only honest reason is what else the day can then hold. Not asked
+            # of a pin: its counterfactual is the day without the pin, which
+            # this function cannot see, having had the rival removed already.
+            if rival.is_pick and c.is_pick and id(c) not in asked:
                 why = instead(c, rival)
                 if why:
                     reason += " — " + why
