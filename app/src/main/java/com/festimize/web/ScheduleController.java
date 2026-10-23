@@ -119,7 +119,8 @@ public class ScheduleController {
     /** What one day of the plan adds up to, for the summary rail. */
     public record DayStat(String label, String tab, int sets, int breaks,
                           int discoveries, String active, String breakTime,
-                          int overBy, boolean worthActingOn, String dropInstead) {}
+                          int overBy, boolean worthActingOn, String dropInstead,
+                          String onSite) {}
 
     public record Slot(String kind, String time, String artist, Long artistId,
                        Long performanceId, Long alternativeId, String alternative,
@@ -169,6 +170,10 @@ public class ScheduleController {
         // total is not what somebody reads on the Saturday morning.
         Map<String, int[]> perDay = new LinkedHashMap<>();
         Map<String, String> tabOf = new LinkedHashMap<>();
+        // When the day starts and when it ends, which is not the same as how
+        // much music is in it. The limit counts music; what wears somebody
+        // out is the span, and the rail said only the first of those.
+        Map<String, java.time.OffsetDateTime[]> spanOf = new LinkedHashMap<>();
         int sets = 0, rests = 0, picks = 0, minutes = 0;
 
         if (plan.isPresent()) {
@@ -176,6 +181,14 @@ public class ScheduleController {
                 String dayKey = item.getStartsAt().format(DAY);
                 tabOf.putIfAbsent(dayKey, item.getStartsAt().format(TAB).toUpperCase(Locale.UK));
                 int[] tally = perDay.computeIfAbsent(dayKey, d -> new int[5]);
+                java.time.OffsetDateTime[] span = spanOf.computeIfAbsent(dayKey,
+                        d -> new java.time.OffsetDateTime[] {item.getStartsAt(), item.getEndsAt()});
+                if (item.getStartsAt().isBefore(span[0])) {
+                    span[0] = item.getStartsAt();
+                }
+                if (item.getEndsAt().isAfter(span[1])) {
+                    span[1] = item.getEndsAt();
+                }
                 int mins = (int) Duration.between(item.getStartsAt(), item.getEndsAt()).toMinutes();
                 boolean isSet = "SET".equals(item.getItemType());
                 if (isSet) {
@@ -296,7 +309,9 @@ public class ScheduleController {
                     // a mistake, and does not need telling to undo it.
                     over > OVERAGE_WORTH_ACTING_ON,
                     over > OVERAGE_WORTH_ACTING_ON
-                            ? blameFor(byDay.get(e.getKey()), askedFor, byArtist) : null));
+                            ? blameFor(byDay.get(e.getKey()), askedFor, byArtist) : null,
+                    clock((int) Duration.between(spanOf.get(e.getKey())[0],
+                                                 spanOf.get(e.getKey())[1]).toMinutes())));
         }
 
         // The pace panel says what this day was actually built to, rather

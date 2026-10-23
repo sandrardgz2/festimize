@@ -199,7 +199,13 @@
                     <span class="k">Sets</span><span class="v" th:text="${dayStat.sets}">5</span>
                 </div>
                 <div class="rail-stat">
-                    <span class="k">Active time</span><span class="v" th:text="${dayStat.active}">6h 20m</span>
+                    <span class="k">Music</span><span class="v" th:text="${dayStat.active}">6h 20m</span>
+                </div>
+                <!-- The limit counts music. The day is longer than that, and
+                     saying only the first of the two understates what the
+                     plan is actually asking of somebody. -->
+                <div class="rail-stat">
+                    <span class="k">On site</span><span class="v" th:text="${dayStat.onSite}">9h 45m</span>
                 </div>
                 <div class="rail-stat">
                     <span class="k">Breaks</span>
