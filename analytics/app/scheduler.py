@@ -176,7 +176,8 @@ def build_day(candidates: Sequence[Candidate],
               not_before: Optional[datetime] = None,
               music_cap_minutes: int = 450,
               meal_by: Optional[object] = None,
-              pinned: Optional[Sequence[int]] = None) -> List[Slot]:
+              pinned: Optional[Sequence[int]] = None,
+              tight: Optional[Sequence[int]] = None) -> List[Slot]:
     """
     Fill a day with music, then carve breaks out of it.
 
@@ -220,17 +221,26 @@ def build_day(candidates: Sequence[Candidate],
     # out what each slot beat, so the new slot named no alternative and the
     # only way back was to put everything back.
     asked, ousted = set(), {}
+    tight_ids = set(tight or ())
     if pinned:
         wanted = [c for c in candidates if c.performance_id in set(pinned)]
         protected = {id(w) for w in wanted}
         asked = set(protected)
         for keep in wanted:
+            # A pin asking for only part of a set has already been cut to fit
+            # the hole it is going into, so the changeover margin must not be
+            # applied to it: widening a 17:20-18:00 window by ten minutes each
+            # way swallowed the sets on both sides, which is exactly what the
+            # window existed to avoid. Walking time is still enforced between
+            # whatever the solver finally chooses.
+            margin = (timedelta(0) if keep.performance_id in tight_ids
+                      else timedelta(minutes=changeover_minutes))
             clashing = [c for c in candidates
                         if c is not keep
                         and id(c) not in protected
                         and _overlaps(keep.starts_at, keep.ends_at,
-                                      c.starts_at - timedelta(minutes=changeover_minutes),
-                                      c.ends_at + timedelta(minutes=changeover_minutes))]
+                                      c.starts_at - margin,
+                                      c.ends_at + margin)]
             if clashing:
                 ousted[id(keep)] = max(clashing, key=lambda c: (c.is_pick, c.score))
             dropped_ids = {id(c) for c in clashing}
@@ -325,32 +335,47 @@ def build_day(candidates: Sequence[Candidate],
         def free(start, end):
             return not any(_overlaps(start, end, r.starts_at, r.ends_at) for r in taken)
 
+        # Every piece of free time after the window, clamped to it: a gap
+        # that straddles the window counts, and the break goes in the part
+        # that falls inside. Discarding any gap whose previous set ended
+        # before the window threw away an eighty-five minute hole at 16:20
+        # because the window landed at 16:21, and sent dinner to 20:40 — a
+        # minute's arithmetic deciding where somebody eats.
+        openings = []
         for i in range(len(sets) - 1):
-            if sets[i].ends_at < after:
-                continue
-            gap = sets[i + 1].starts_at - sets[i].ends_at
-            if gap >= need and free(sets[i].ends_at, sets[i].ends_at + need):
-                return Slot("REST", sets[i].ends_at, sets[i].ends_at + need, reason=label), None
+            opens = max(sets[i].ends_at, after)
+            closes = sets[i + 1].starts_at
+            if closes > opens and free(opens, closes):
+                openings.append((opens, closes))
 
-        # Nothing long enough: take the longest gap that is still usable before
-        # considering dropping a set for it.
-        if shortest_acceptable is not None:
-            usable = []
-            for i in range(len(sets) - 1):
-                if sets[i].ends_at < after:
-                    continue
-                gap = sets[i + 1].starts_at - sets[i].ends_at
-                if gap >= timedelta(minutes=shortest_acceptable) and free(sets[i].ends_at, sets[i + 1].starts_at):
-                    usable.append((gap, sets[i].ends_at, sets[i + 1].starts_at))
-            if usable:
-                # For a meal: the latest gap that still lands before evening.
-                # Quarter to three is early to eat at a festival, and holding
-                # out for the very last gap pushed dinner to quarter past six.
-                in_window = [u for u in usable
-                             if prefer_latest_before is None or u[1] <= prefer_latest_before]
-                gap, start, end = (max(in_window, key=lambda u: u[1]) if in_window
-                                   else min(usable, key=lambda u: u[1]))
-                return Slot("REST", start, min(end, start + need), reason=label), None
+        floor = (timedelta(minutes=shortest_acceptable)
+                 if shortest_acceptable is not None else need)
+        usable = [o for o in openings if o[1] - o[0] >= floor]
+
+        if usable:
+            if prefer_latest_before is None:
+                # A breather goes in the first place it fits.
+                pick = next((o for o in usable if o[1] - o[0] >= need), usable[0])
+            else:
+                # A meal goes in the first real opportunity after the middle
+                # of the day, and "eat by" is a deadline rather than a target.
+                #
+                # Two earlier rules were wrong. The first took the first gap
+                # long enough for a whole meal and never read the setting at
+                # all, so the profile control did nothing. The second read it
+                # and took the latest gap before it, which turns "eat by 23:00"
+                # — a person saying they are easy — into dinner at twenty past
+                # eight while a perfectly good hole sits open at half five.
+                #
+                # Earliest-after-the-window cannot be too early, because the
+                # window is already forty per cent into the day. A gap that is
+                # a little short beats a full-length one hours later: forty
+                # minutes at 17:20 is a meal, forty-five at 20:15 is a late
+                # dinner nobody asked for.
+                before = [o for o in usable if o[0] <= prefer_latest_before]
+                pick = min(before or usable, key=lambda o: o[0])
+            opens, closes = pick
+            return Slot("REST", opens, min(closes, opens + need), reason=label), None
 
         if not may_drop:
             return None, None

@@ -114,4 +114,28 @@ public interface DeclinedRepository extends JpaRepository<Plan, Long> {
              where pl.user_id = :userId and pl.edition_id = :editionId
             """, nativeQuery = true)
     long pinnedFor(@Param("userId") Long userId, @Param("editionId") Long editionId);
+
+    /**
+     * Pin only the part of a set that falls inside a gap.
+     *
+     * The ordinary pin takes the whole set, which is right when somebody
+     * asks for an artist and wrong when the page has just told them that 40
+     * of 60 minutes fall in this gap: accepting that offer used to remove
+     * whatever the other 20 minutes clashed with, which on the account it
+     * was found on was one of their own picks. A window keeps the clash out
+     * of the day, so nothing is displaced.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            insert into plan_pinned (plan_id, performance_id, from_at, to_at)
+            select pl.plan_id, :performanceId, :fromAt, :toAt from plan pl
+             where pl.user_id = :userId and pl.edition_id = :editionId
+            on conflict (plan_id, performance_id)
+            do update set from_at = excluded.from_at, to_at = excluded.to_at
+            """, nativeQuery = true)
+    void pinWindow(@Param("userId") Long userId, @Param("editionId") Long editionId,
+                   @Param("performanceId") Long performanceId,
+                   @Param("fromAt") java.time.OffsetDateTime fromAt,
+                   @Param("toAt") java.time.OffsetDateTime toAt);
 }

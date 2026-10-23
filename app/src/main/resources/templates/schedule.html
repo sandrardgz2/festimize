@@ -111,14 +111,16 @@
                              of thumb. -->
                         <div class="tradeoff" th:if="${slot.gap and slot.alternativeId != null}">
                             <span class="muted" th:if="${slot.addCost != null}"
-                                  th:text="'Adding it: ' + ${slot.addCost} + '.'">Adding it: …</span>
-                            <form method="post" th:action="@{/schedule/add}" class="inline-action">
-                                <input type="hidden" name="editionId"
-                                       th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
-                                <input type="hidden" name="performanceId" th:value="${slot.alternativeId}"/>
-                                <button type="submit" class="button-quiet"
-                                        th:text="'Add ' + ${slot.alternative}">Add X</button>
-                            </form>
+                                  th:text="${slot.addCost} + '.'">you would catch …</span>
+                            <!-- No button here yet, deliberately. Adding the whole set
+                                 removes whatever its other half clashes with, which on
+                                 one account was the person's own pick, and adding only
+                                 the part inside the gap needs the solver to model
+                                 leaving a set early — it can model arriving late, but
+                                 not the other end. Until it can, this says what is on
+                                 and how much of it you would see, and lets the person
+                                 walk off and watch it without the schedule pretending
+                                 to have arranged it. -->
                         </div>
                         <div class="tags">
                             <span th:if="${slot.stage}" th:text="${slot.stage} + ' · '">Stage · </span>

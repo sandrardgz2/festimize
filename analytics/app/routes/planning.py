@@ -82,12 +82,17 @@ class _Bill:
     have changed in between, so loading and solving are separated here.
     """
 
-    def __init__(self, by_day, pinned, cap, meal_by, max_run_minutes):
+    def __init__(self, by_day, pinned, cap, meal_by, max_run_minutes, joined_late=None,
+                 windows=None):
         self.by_day = by_day
         self.pinned = pinned
         self.cap = cap
         self.meal_by = meal_by
         self.max_run_minutes = max_run_minutes
+        # performance_id -> (minutes missed, the time it really started)
+        self.joined_late = joined_late or {}
+        # performance_ids pinned to only part of their set
+        self.windows = windows or {}
 
     def offered(self) -> Dict[int, Candidate]:
         return {c.performance_id: c for day in self.by_day.values() for c in day}
@@ -118,11 +123,22 @@ def _load(db: Session, user_id: int, edition_id: int, max_run_minutes: int) -> _
     # before the scheduler sees them, so the solver optimises the day that is
     # actually on offer rather than choosing a set and having it removed
     # afterwards — which would leave the hole it was filling.
-    pinned = [r.performance_id for r in db.execute(
-        text("""select p.performance_id from plan_pinned p
+    pin_rows = db.execute(
+        text("""select p.performance_id, p.from_at, p.to_at from plan_pinned p
                    join plan pl on pl.plan_id = p.plan_id
                   where pl.user_id = :uid and pl.edition_id = :eid"""),
-        {"uid": user_id, "eid": edition_id}).fetchall()]
+        {"uid": user_id, "eid": edition_id}).fetchall()
+    pinned = [r.performance_id for r in pin_rows]
+    # A pin may name only part of a set: the part that falls in a gap, when
+    # the rest of it runs under something already in the day. Clamping the
+    # candidate before the solver sees it means a set you are catching the
+    # end of is simply a shorter set that starts when you arrive, so it fits
+    # the gap and displaces nothing. The original start is kept so the page
+    # can say you are joining late rather than pretending the band went on
+    # when you did.
+    windows = {r.performance_id: (r.from_at, r.to_at)
+               for r in pin_rows if r.from_at is not None or r.to_at is not None}
+
 
     declined = {r.performance_id for r in db.execute(
         text("""select d.performance_id from plan_declined d
@@ -148,10 +164,22 @@ def _load(db: Session, user_id: int, edition_id: int, max_run_minutes: int) -> _
         raise HTTPException(status_code=404, detail="No performances with set times for that edition.")
 
     by_day = {}
+    joined_late = {}
     for r in rows:
-        by_day.setdefault(r.starts_at.date(), []).append(
+        starts, ends = r.starts_at, r.ends_at
+        window = windows.get(r.performance_id)
+        if window:
+            from_at, to_at = window
+            starts = max(starts, from_at) if from_at else starts
+            ends = min(ends, to_at) if to_at else ends
+            if ends <= starts:                 # a window that leaves nothing
+                starts, ends = r.starts_at, r.ends_at
+            late = int((starts - r.starts_at).total_seconds() // 60)
+            if late > 0:
+                joined_late[r.performance_id] = (late, r.starts_at)
+        by_day.setdefault(starts.date(), []).append(
             Candidate(r.performance_id, r.artist_id, r.name, r.stage,
-                      r.starts_at, r.ends_at, float(r.score), bool(r.is_pick))
+                      starts, ends, float(r.score), bool(r.is_pick))
         )
 
     # Sets outside the hours this person will attend are not offered at all,
@@ -165,7 +193,8 @@ def _load(db: Session, user_id: int, edition_id: int, max_run_minutes: int) -> _
             by_day[day] = kept or found        # never leave a day with nothing
 
     return _Bill(by_day, pinned, cap, meal_by=pace.meal_by if pace else None,
-                 max_run_minutes=max_run_minutes)
+                 max_run_minutes=max_run_minutes, joined_late=joined_late,
+                 windows=windows)
 
 
 def _solve(bill: _Bill, discovery_quota: float, also_pin: Sequence[int] = ()) -> list:
@@ -194,7 +223,8 @@ def _solve(bill: _Bill, discovery_quota: float, also_pin: Sequence[int] = ()) ->
                           not_before=not_before,
                           music_cap_minutes=bill.cap,
                           meal_by=bill.meal_by,
-                          pinned=pinned)
+                          pinned=pinned,
+                          tight=list(bill.joined_late) + list(bill.windows))
         slots.extend(built)
         finished = max((s.ends_at for s in built if s.kind == 'SET'), default=None)
         not_before = finished + timedelta(hours=SLEEP_FLOOR_HOURS) if finished else None
@@ -228,6 +258,16 @@ def build_plan(
     db.execute(text("delete from plan_item where plan_id = :p"), {"p": plan_id})
 
     for s in slots:
+        reason = s.reason
+        # Say that this is part of a set rather than all of it. The solver was
+        # handed a clamped candidate and has no idea the band went on earlier,
+        # so the page would otherwise show a 40-minute set that is really the
+        # back half of a 60-minute one.
+        late = bill.joined_late.get(s.performance_id) if s.kind == "SET" else None
+        if late:
+            missed, really_started = late
+            reason += " · you join %d min in; they start at %s" % (
+                missed, really_started.strftime("%H:%M"))
         db.execute(
             text(
                 """
@@ -236,7 +276,7 @@ def build_plan(
                 """
             ),
             {"p": plan_id, "kind": s.kind, "perf": s.performance_id,
-             "start": s.starts_at, "end": s.ends_at, "reason": s.reason,
+             "start": s.starts_at, "end": s.ends_at, "reason": reason,
              "alt": s.alternative_id},
         )
     db.commit()

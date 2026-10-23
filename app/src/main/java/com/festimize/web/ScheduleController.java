@@ -89,7 +89,7 @@ public class ScheduleController {
                        Long performanceId, Long alternativeId, String alternative,
                        String stage,
                        String reason, String tradeoff, int minutes, boolean rising,
-                       String addCost) {
+                       String addCost, String fromAt, String toAt) {
         /** A plain changeover, as opposed to a break the scheduler chose. */
         public boolean gap() { return reason != null && reason.startsWith("gap"); }
     }
@@ -177,8 +177,39 @@ public class ScheduleController {
                                 ? item.getPerformance().getStage().getName() : null,
                         reasonOf(item), tradeoffOf(item), mins,
                         who != null && climbing.contains(who),
-                        costOf(item, addCosts)));
+                        costOf(item, addCosts),
+                        item.getStartsAt().toString(), item.getEndsAt().toString()));
             }
+        }
+
+        // What catching part of a set would do to the length of the day.
+        // Computed once the day's totals are known, which is why it is a
+        // second pass: the thing worth warning about is not what the add
+        // displaces — a clamped set displaces nothing — but that it pushes
+        // the day past the hours this person said they wanted.
+        int ceiling = me.musicCapMinutes();
+        for (Map.Entry<String, List<Slot>> oneDay : byDay.entrySet()) {
+            int already = perDay.get(oneDay.getKey())[2];
+            List<Slot> rewritten = new ArrayList<>();
+            for (Slot slot : oneDay.getValue()) {
+                if (!"REST".equals(slot.kind()) || slot.alternativeId() == null) {
+                    rewritten.add(slot);
+                    continue;
+                }
+                int extra = catchableMinutes(slot);
+                int after = already + extra;
+                String note = String.format("you would catch %d min of it, taking the day to "
+                                + "%dh %02dm", extra, after / 60, after % 60);
+                if (after > ceiling) {
+                    note += String.format(" — past the %dh %02dm you set",
+                            ceiling / 60, ceiling % 60);
+                }
+                rewritten.add(new Slot(slot.kind(), slot.time(), slot.artist(), slot.artistId(),
+                        slot.performanceId(), slot.alternativeId(), slot.alternative(),
+                        slot.stage(), slot.reason(), slot.tradeoff(), slot.minutes(),
+                        slot.rising(), note, slot.fromAt(), slot.toAt()));
+            }
+            oneDay.setValue(rewritten);
         }
 
         // Which day the tabs are showing. One at a time, as the wireframe has
@@ -304,6 +335,31 @@ public class ScheduleController {
         return "redirect:/schedule?editionId=" + editionId + "&swapped";
     }
 
+    /**
+     * Catch the part of a set that fits in a gap, without disturbing the day.
+     *
+     * The ordinary add pins the whole set, which is right when somebody asks
+     * for an artist by name and wrong here: the page has just said that 40 of
+     * its 60 minutes fall in this gap, and accepting that offer used to
+     * remove whatever the other 20 minutes clashed with. On the account this
+     * was found on, that was one of the person's own picks.
+     *
+     * Pinning a window instead clamps the candidate before the solver runs,
+     * so the set the day sees is the part that fits. It displaces nothing,
+     * because there is nothing left of it to clash with.
+     */
+    @PostMapping("/schedule/squeeze")
+    public String squeeze(@RequestParam Long editionId, @RequestParam Long performanceId,
+                          @RequestParam String from, @RequestParam String to,
+                          Principal principal) {
+        AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
+        declined.undecline(me.getUserId(), editionId, performanceId);
+        declined.pinWindow(me.getUserId(), editionId, performanceId,
+                java.time.OffsetDateTime.parse(from), java.time.OffsetDateTime.parse(to));
+        planning.buildPlan(me.getUserId(), editionId);
+        return "redirect:/schedule?editionId=" + editionId + "&swapped";
+    }
+
     /** Put everything back, for someone who has declined their way into a corner. */
     @PostMapping("/schedule/restore")
     public String restore(@RequestParam Long editionId, Principal principal) {
@@ -343,13 +399,23 @@ public class ScheduleController {
         if (cost == null || !cost.available()) {
             return null;
         }
-        if (cost.costs().isEmpty()) {
-            return cost.gains().isEmpty()
-                    ? "nothing else in your day changes"
-                    : "nothing else is lost, and it also brings in "
-                      + String.join(" and ", cost.gains());
-        }
-        return "this would cost you " + String.join(" and ", cost.costs());
+        // Deliberately not the whole-set forecast. Only the part inside the
+        // gap is being added, so nothing is displaced by construction; what
+        // the person still deserves to know is that the day gets longer.
+        return null;
+    }
+
+    /** How much of the offered set falls inside this gap. */
+    private int catchableMinutes(Slot gap) {
+        return performances.findById(gap.alternativeId())
+                .map(p -> {
+                    java.time.OffsetDateTime from = java.time.OffsetDateTime.parse(gap.fromAt());
+                    java.time.OffsetDateTime to = java.time.OffsetDateTime.parse(gap.toAt());
+                    java.time.OffsetDateTime a = p.getStartsAt().isAfter(from) ? p.getStartsAt() : from;
+                    java.time.OffsetDateTime b = p.getEndsAt().isBefore(to) ? p.getEndsAt() : to;
+                    return b.isAfter(a) ? (int) Duration.between(a, b).toMinutes() : 0;
+                })
+                .orElse(0);
     }
 
     /** Minutes as "6h 20m", or "45m" when there is no hour to show. */
