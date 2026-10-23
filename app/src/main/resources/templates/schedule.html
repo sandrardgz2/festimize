@@ -51,6 +51,8 @@
         Pick your artists on the <a th:href="@{/setup}">setup page</a> first — the schedule is built around them.
     </p>
     <p class="muted" th:if="${hasPlan}">
+        Drop any set you do not want and the whole day is worked out again around it —
+        other sets may move or change too, and your saved artists are untouched.
         Built from the artists you have saved. The schedule only changes when your picks do —
         it is not shuffled, and pressing this again gives the same day.
     </p>
@@ -77,18 +79,19 @@
                         <span th:text="${slot.reason}">reason</span>
                     </div>
                     <div class="tradeoff" th:if="${slot.tradeoff}" th:text="${slot.tradeoff}">chosen over …</div>
-                    <!-- Turning a set down changes this plan, not your taste. The
-                         day is solved again afterwards, so whatever this set beat
-                         can take the slot it leaves behind. -->
+                    <!-- One label for every slot, and deliberately not "swap for
+                         X". The whole day is solved again rather than patched, so
+                         the set that takes the freed slot is often not the one
+                         this slot beat: dropping Dying Wish at 14:30 brought in
+                         Sevendust there AND moved Knocked Loose aside for
+                         Spiritbox an hour later. Naming an alternative would
+                         promise something the solver does not guarantee. -->
                     <form method="post" th:action="@{/schedule/decline}" class="slot-actions"
                           th:if="${slot.kind == 'SET' and slot.performanceId != null}">
                         <input type="hidden" name="editionId"
                                th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
                         <input type="hidden" name="performanceId" th:value="${slot.performanceId}"/>
-                        <button type="submit" class="button-quiet"
-                                th:text="${slot.tradeoff} != null
-                                         ? 'Not this one — rebuild the day'
-                                         : 'Not this one'">Not this one</button>
+                        <button type="submit" class="button-quiet">Drop this set</button>
                     </form>
                 </div>
             </div>
