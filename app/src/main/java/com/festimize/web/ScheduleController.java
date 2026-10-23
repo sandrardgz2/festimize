@@ -168,6 +168,15 @@ public class ScheduleController {
                     String.format("%dh %02dm", t[2] / 60, t[2] % 60)));
         }
 
+        // The pace panel says what this day was actually built to, rather
+        // than describing in the abstract that rules exist.
+        model.addAttribute("paceCap", String.format("%.1f", me.musicCapMinutes() / 60.0));
+        model.addAttribute("paceRun", me.getMaxRunMinutes() == null ? null
+                : String.format("%.1f", me.getMaxRunMinutes() / 60.0));
+        model.addAttribute("paceMeal", me.getMealBy());
+        model.addAttribute("paceEarliest", me.getEarliestStart());
+        model.addAttribute("paceLatest", me.getLatestEnd());
+
         model.addAttribute("activeNav", "schedule");
         model.addAttribute("editions", all);
         model.addAttribute("chosen", chosen);

@@ -5,6 +5,7 @@ import com.festimize.domain.FestivalEdition;
 import com.festimize.repo.AppUserRepository;
 import com.festimize.repo.FestivalEditionRepository;
 import com.festimize.repo.InsightsRepository;
+import com.festimize.repo.UserArtistRepository;
 import java.security.Principal;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
@@ -33,12 +34,14 @@ public class InsightsController {
     private final InsightsRepository insights;
     private final FestivalEditionRepository editions;
     private final AppUserRepository users;
+    private final UserArtistRepository saved;
 
     public InsightsController(InsightsRepository insights, FestivalEditionRepository editions,
-                              AppUserRepository users) {
+                              AppUserRepository users, UserArtistRepository saved) {
         this.insights = insights;
         this.editions = editions;
         this.users = users;
+        this.saved = saved;
     }
 
     public record Tag(String name, double you, double lineup) {}
@@ -52,6 +55,12 @@ public class InsightsController {
                            Principal principal, Model model) {
         AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
         List<FestivalEdition> plannable = editions.findPlannable();
+        // Nothing on this page means anything without a taste profile. The
+        // taste comparison in particular drew the lineup's bars against an
+        // empty set of the person's own and printed a legend for a colour
+        // that was not there, which reads as broken rather than as empty.
+        boolean hasPicks = !saved.findSavedArtists(me.getUserId()).isEmpty();
+        model.addAttribute("hasPicks", hasPicks);
         model.addAttribute("activeNav", "insights");
         model.addAttribute("editions", plannable);
         if (plannable.isEmpty()) {
@@ -63,6 +72,9 @@ public class InsightsController {
         model.addAttribute("chosen", chosen);
         model.addAttribute("festivalName",
                 chosen.getFestival().getName() + " " + chosen.getYear());
+        if (!hasPicks) {
+            return "insights";
+        }
 
         Object[] d = first(insights.discovery(me.getUserId(), chosen.getEditionId()));
         long sets = num(d, 0), discoveries = num(d, 1);

@@ -30,14 +30,18 @@
                 <span th:unless="${hasPlan}">no plan built yet</span>
             </p>
         </div>
-        <form method="post" th:action="@{/schedule/build}">
+        <!-- Offered only when it can work. A green "Build my schedule" on an
+             account with no saved artists is a button whose whole job is to
+             fail, sitting above the sentence explaining that it will. -->
+        <form method="post" th:action="@{/schedule/build}" th:if="${hasPicks}">
             <input type="hidden" name="editionId" th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
             <button type="submit" class="btn"
                     th:text="${hasPlan} ? 'Rebuild my schedule' : 'Build my schedule'">Build</button>
         </form>
+        <a th:unless="${hasPicks}" th:href="@{/setup}" class="button">Pick your artists</a>
     </section>
 
-    <p class="demo-note">
+    <p class="demo-note" th:if="${hasPicks}">
         <strong>Demonstration data.</strong> These artists are real, but the 2027 lineup and set times are
         illustrative and were entered by hand — they are not the festival's announced lineup.
     </p>
@@ -60,9 +64,16 @@
         The schedule could not be built — the analytics service did not respond. Start it with
         <code>cd analytics &amp;&amp; .venv/bin/python -m uvicorn app.main:app --port 8000</code> and try again.
     </p>
-    <p class="muted" th:if="${!hasPlan and !hasPicks}">
-        Pick your artists on the <a th:href="@{/setup}">setup page</a> first — the schedule is built around them.
-    </p>
+    <!-- Not shown when a plan exists anyway: a set can be added straight
+         from the lineup without naming anybody, and telling someone to start
+         over while their day is on screen below would be nonsense. -->
+    <section class="panel" th:if="${!hasPicks and !hasPlan}">
+        <h2 class="section-title">Name a few artists first</h2>
+        <p class="section-note">
+            The schedule is built around the artists you already love — it needs those
+            before it can plan a day. About ten is plenty.
+        </p>
+    </section>
     <p class="muted" th:if="${!hasPlan and hasPicks and !buildFailed}">
         No schedule for this festival yet. Press <strong>Build my schedule</strong> above.
     </p>
@@ -161,11 +172,28 @@
             </section>
 
             <section class="panel" style="margin-top:16px">
-                <h2 class="section-title">Pace</h2>
-                <p class="section-note">
-                    The rules this day was built to respect are yours to change.
-                </p>
-                <p><a th:href="@{/profile}">Your pace settings →</a></p>
+                <h2 class="section-title">Built to your pace</h2>
+                <div class="rail-stat">
+                    <span class="k">Most music a day</span>
+                    <span class="v" th:text="${paceCap} + ' h'">7.5 h</span>
+                </div>
+                <div class="rail-stat" th:if="${paceRun != null}">
+                    <span class="k">Longest stretch</span>
+                    <span class="v" th:text="${paceRun} + ' h'">3.0 h</span>
+                </div>
+                <div class="rail-stat" th:if="${paceMeal != null}">
+                    <span class="k">Eat by</span>
+                    <span class="v" th:text="${#temporals.format(paceMeal, 'HH:mm')}">13:00</span>
+                </div>
+                <div class="rail-stat" th:if="${paceEarliest != null}">
+                    <span class="k">Not before</span>
+                    <span class="v" th:text="${#temporals.format(paceEarliest, 'HH:mm')}">12:00</span>
+                </div>
+                <div class="rail-stat" th:if="${paceLatest != null}">
+                    <span class="k">Not after</span>
+                    <span class="v" th:text="${#temporals.format(paceLatest, 'HH:mm')}">23:30</span>
+                </div>
+                <p style="margin-top:12px"><a th:href="@{/profile}">Change these →</a></p>
             </section>
         </aside>
     </div>

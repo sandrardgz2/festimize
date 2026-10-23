@@ -11,7 +11,18 @@
         No festival can be planned yet, so there is nothing to report on.
     </p>
 
-    <div th:unless="${#lists.isEmpty(editions)}">
+    <!-- Nothing here can be computed without a taste profile, so the page
+         says so once and stops, rather than drawing empty charts. -->
+    <section class="panel" th:if="${!#lists.isEmpty(editions) and !hasPicks}">
+        <h2 class="section-title">Nothing to measure yet</h2>
+        <p class="section-note">
+            These numbers describe your plan against your taste, and you have not named
+            any artists yet. It takes a minute.
+        </p>
+        <p><a th:href="@{/setup}" class="button">Pick your artists</a></p>
+    </section>
+
+    <div th:if="${!#lists.isEmpty(editions) and hasPicks}">
         <!-- The festival switcher is in the header now, on every page, which
              is where the wireframes put it. The lineup page keeps its own as
              well, because that one also reaches the 331 historical lineups
