@@ -40,14 +40,15 @@
             <h2 class="section-title">1 · How we score artists</h2>
             <p>
                 Every artist carries a handful of labels — doom, melodic, hardcore punk,
-                2000s — collected from MusicBrainz and Last.fm. The ten or so artists you
-                name give us your labels. A percentage is simply how much an artist on the
-                bill shares them.
+                2000s — from MusicBrainz and Last.fm. The ten or so artists you name give
+                us yours, and <strong>43% match</strong> means an artist on the bill shares
+                that much of them.
             </p>
             <p class="muted">
-                Nothing is needed from your listening history, which is why a band nobody
-                has heard of can be scored just as well as a famous one. It is a measure of
-                overlap, not a promise that you will like them.
+                An artist you named yourself is marked <strong>your pick</strong> and shows
+                no percentage, because they match themselves perfectly. Nothing is needed
+                from your listening history, so an unknown band scores as fairly as a
+                famous one. It measures overlap, not whether you will like them.
             </p>
         </section>
 
@@ -80,51 +81,6 @@
             </p>
         </section>
     </div>
-
-    <!-- This was the backtest table — rank correlation, top decile, lift over
-         chance — which is the right way to report an experiment and the wrong
-         thing to put in front of somebody deciding which band to watch. The
-         numbers live in the implementation document and in
-         docs/evaluation/momentum-backtest.md. What belongs here is what the
-         words on their own screen mean. -->
-    <section class="panel" style="margin-top:16px">
-        <h2 class="section-title">What the numbers on screen mean</h2>
-        <table class="settimes">
-            <tbody>
-            <tr>
-                <td style="width:30%"><strong>43% match</strong></td>
-                <td>How many of that artist's labels are also on the artists you named.
-                    It measures overlap, not how much you will enjoy them.</td>
-            </tr>
-            <tr>
-                <td><strong>Your pick</strong></td>
-                <td>One of the artists you named. No percentage is shown, because an
-                    artist always matches themselves perfectly.</td>
-            </tr>
-            <tr>
-                <td><strong>Rising</strong></td>
-                <td>Booked at a growing share of festivals, over at least three years and
-                    three festivals. Most of a lineup has too little history to say, and
-                    then nothing is claimed.</td>
-            </tr>
-            <tr>
-                <td><strong>Chosen over Korn</strong></td>
-                <td>The set this one beat for the slot. Taking the other instead is one
-                    click, and the schedule says first what it would cost you.</td>
-            </tr>
-            <tr>
-                <td><strong>Joined 10 min late</strong></td>
-                <td>You are walking from the last set. The time shown is when you get
-                    there, not when the band starts.</td>
-            </tr>
-            <tr>
-                <td><strong>No close match</strong></td>
-                <td>Nothing playing then looks like your taste. The slot is filled with
-                    the best of what is on rather than left empty.</td>
-            </tr>
-            </tbody>
-        </table>
-    </section>
 
     <div class="grid grid-2" style="margin-top:16px">
         <section class="panel">
