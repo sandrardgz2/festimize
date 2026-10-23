@@ -43,9 +43,11 @@
     </nav>
     <span class="session" sec:authorize="!isAuthenticated()" style="margin-left:auto">
         <a th:href="@{/login}" class="button-quiet"
+           th:unless="${currentPath == '/login'}"
            style="padding:4px 12px;font-size:13px">Sign in</a>
         &nbsp;
         <a th:href="@{/register}" class="button"
+           th:unless="${currentPath == '/register'}"
            style="padding:5px 14px;font-size:13px">Create an account</a>
     </span>
 
