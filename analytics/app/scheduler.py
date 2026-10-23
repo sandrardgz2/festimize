@@ -668,7 +668,20 @@ def build_day(candidates: Sequence[Candidate],
                     if caught >= 20:
                         catchable.append((caught, o))
                 if catchable:
-                    caught, best_other = max(catchable, key=lambda t: (t[0] * t[1].score, t[0]))
+                    # Where you are going next matters as much as who is on.
+                    # Something playing on the stage of your next set means
+                    # standing still instead of walking there twice, and on
+                    # these bills that option exists in twenty-five of the
+                    # twenty-nine long gaps. It is a tie-break and not an
+                    # override: a set worth half as much is not worth staying
+                    # put for, so value still leads and the stage decides only
+                    # between options that are already close.
+                    best_value = max(t[0] * t[1].score for t in catchable)
+                    handy = [t for t in catchable
+                             if later.stage and t[1].stage == later.stage
+                             and t[0] * t[1].score >= 0.75 * best_value]
+                    caught, best_other = max(handy or catchable,
+                                             key=lambda t: (t[0] * t[1].score, t[0]))
                     whole = (best_other.ends_at - best_other.starts_at).total_seconds() / 60
                     # No percentage on one of their own picks. A saved artist
                     # is one of the profiles taste is scored against, so it
@@ -684,6 +697,8 @@ def build_day(candidates: Sequence[Candidate],
                     if caught < whole - 1:
                         reason += " — %d of its %d minutes fall in this gap" % (
                             round(caught), round(whole))
+                    if later.stage and best_other.stage == later.stage:
+                        reason += " · same stage as your next set, so you can stay put"
                     suggestion = best_other.performance_id
             # alternative_id on a gap is the set being suggested, so the page
             # has something a form can post back. On a chosen set the same
