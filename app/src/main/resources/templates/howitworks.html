@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<!--
+  Page 1 of the wireframes. Public, because it is the page that says what the
+  site claims and how much of it was tested.
+-->
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head('How it works')}"></head>
+<body>
+<header th:replace="~{layout :: topbar}"></header>
+
+<main class="wrap">
+
+    <section class="hero">
+        <div>
+            <h1 class="hero-title">How Festimize works</h1>
+            <p class="lede hero-sub">
+                Every recommendation on this site is explained here — including the
+                places where the honest answer is that we cannot tell you.
+            </p>
+        </div>
+        <div class="tiles">
+            <div class="tile">
+                <div class="tile-figure" th:text="${#numbers.formatInteger(performances, 1, 'COMMA')}">39,778</div>
+                <div class="tile-label">bookings</div>
+            </div>
+            <div class="tile">
+                <div class="tile-figure" th:text="${festivals}">36</div>
+                <div class="tile-label">festivals</div>
+            </div>
+            <div class="tile">
+                <div class="tile-figure"
+                     th:text="${firstYear} + '–' + ${lastYear}">2015–2026</div>
+                <div class="tile-label">years</div>
+            </div>
+        </div>
+    </section>
+
+    <div class="grid grid-3">
+        <section class="panel">
+            <h2 class="section-title">1 · How we score artists</h2>
+            <p>
+                The artists you name become a tag profile. Every artist on the lineup is
+                tagged from MusicBrainz and Last.fm, then compared to it.
+            </p>
+            <p class="muted">
+                No listening data is needed, so an artist nobody has heard of can still be
+                scored. A percentage is the overlap between their tags and yours — not a
+                prediction that you will like them.
+            </p>
+        </section>
+
+        <section class="panel">
+            <h2 class="section-title">2 · How “rising” is measured</h2>
+            <p>
+                <span th:text="${#numbers.formatInteger(performances, 1, 'COMMA')}">39,778</span>
+                bookings across <span th:text="${festivals}">36</span> festivals and
+                <span th:text="${editions}">331</span> editions. We track the share of
+                festivals an artist is booked at, year on year. Climbing is rising.
+            </p>
+            <p class="muted">
+                This describes the past, not the future. The badge only appears where there
+                is enough history to measure one — three years, three festivals — which is
+                a minority of any lineup.
+            </p>
+        </section>
+
+        <section class="panel">
+            <h2 class="section-title">3 · How your schedule is built</h2>
+            <p>
+                The aim is the most music you can actually sustain, not the most music.
+                Every day is solved exactly rather than greedily: each set asks whether the
+                day is better with it or without it.
+            </p>
+            <p class="muted">
+                Rules: no overlapping sets · a break every few hours · a meal window ·
+                nine hours between the end of one day and the start of the next · a daily
+                cap you set yourself.
+            </p>
+        </section>
+    </div>
+
+    <section class="panel" style="margin-top:16px">
+        <h2 class="section-title">Does it actually work?</h2>
+        <p class="section-note">
+            Several definitions of “rising” are defensible. This one was chosen by holding
+            back the last three years of the corpus, computing each definition from the
+            years before them, and asking which picked the artists who were in fact booked
+            more afterwards. 669 artists were eligible, after holding out the 1,073 already
+            in the top tenth — a rising badge should mean ascending, and Metallica being
+            booked a lot is not news.
+        </p>
+        <table class="measure-table">
+            <thead>
+            <tr>
+                <th>Definition</th>
+                <th>Rank correlation</th>
+                <th>Best picks in the top decile</th>
+                <th>Lift over chance</th>
+                <th>Best picks booked at all</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="d : ${definitions}" th:classappend="${d.shipped} ? 'winner'">
+                <td>
+                    <span th:text="${d.name}">Trend line</span>
+                    <span class="badge" th:if="${d.shipped}">what shipped</span>
+                </td>
+                <td th:text="${d.correlation}">0.278</td>
+                <td th:text="${d.topDecile}">23%</td>
+                <td th:text="${d.lift}">2.3×</td>
+                <td th:text="${d.bookedAtAll}">64%</td>
+            </tr>
+            </tbody>
+        </table>
+        <p class="muted" style="margin-top:12px">
+            Trend line finds more than twice as many of the artists who went on to be
+            booked heavily as picking at random would. It does not beat simple recency on
+            rank correlation, and moving up the bill — the measure originally designed —
+            was tested and dropped: at 0.079 it carried nothing that knowing an artist
+            played lately did not already carry. The full method is in
+            <code>docs/evaluation/momentum-backtest.md</code>.
+        </p>
+    </section>
+
+    <div class="grid grid-2" style="margin-top:16px">
+        <section class="panel">
+            <h2 class="section-title">Where the data comes from</h2>
+            <ul class="preview">
+                <li><span class="lead">Wikipedia and Wikidata</span>
+                    <span class="trail">festival lineups</span></li>
+                <li><span class="lead">MusicBrainz</span>
+                    <span class="trail">artist metadata and tags</span></li>
+                <li><span class="lead">Last.fm</span>
+                    <span class="trail">tags</span></li>
+                <li><span class="lead">setlist.fm</span>
+                    <span class="trail">set times</span></li>
+            </ul>
+            <p class="muted" style="margin-top:10px">
+                Every row records where it came from and what its licence allows.
+                <span th:text="${#numbers.formatInteger(artists, 1, 'COMMA')}">15,799</span>
+                artists are in the corpus.
+            </p>
+        </section>
+
+        <section class="panel">
+            <h2 class="section-title">What this cannot do</h2>
+            <ul class="preview">
+                <li><span class="lead">An artist with one appearance has no trajectory.</span></li>
+                <li><span class="lead">Tag quality varies a lot for very small artists.</span></li>
+                <li><span class="lead">Rest guidance is advisory, not medical.</span></li>
+                <li><span class="lead">A match percentage is tag overlap, not a prediction.</span></li>
+            </ul>
+            <p class="muted" style="margin-top:10px">
+                The 2027 lineups on this site are demonstration data, entered by hand. The
+                historical lineups they are measured against are real.
+            </p>
+        </section>
+    </div>
+
+</main>
+<footer th:replace="~{layout :: footer}"></footer>
+</body>
+</html>
