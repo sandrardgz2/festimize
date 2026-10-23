@@ -42,6 +42,12 @@ public class ScheduleController {
      */
     private static final int OVERAGE_WORTH_ACTING_ON = 30;
 
+    /** Minutes allowed for walking between stages; mirrors the scheduler. */
+    private static final int CHANGEOVER = 10;
+
+    /** The shortest piece of a set worth going to see. */
+    private static final int WORTH_CATCHING = 20;
+
     /**
      * The shortest stretch without music that counts as a break rather than
      * as walking between stages.
@@ -104,7 +110,7 @@ public class ScheduleController {
                        Long performanceId, Long alternativeId, String alternative,
                        String stage,
                        String reason, String tradeoff, int minutes, boolean rising,
-                       String addCost, String fromAt, String toAt) {
+                       String addCost, String fromAt, String toAt, int catchMinutes) {
         /** A plain changeover, as opposed to a break the scheduler chose. */
         public boolean gap() { return reason != null && reason.startsWith("gap"); }
     }
@@ -193,7 +199,7 @@ public class ScheduleController {
                         reasonOf(item), tradeoffOf(item), mins,
                         who != null && climbing.contains(who),
                         null,            // filled in by the pass below
-                        item.getStartsAt().toString(), item.getEndsAt().toString()));
+                        item.getStartsAt().toString(), item.getEndsAt().toString(), 0));
             }
         }
 
@@ -214,16 +220,33 @@ public class ScheduleController {
         for (Map.Entry<String, List<Slot>> oneDay : byDay.entrySet()) {
             int already = perDay.get(oneDay.getKey())[2];
             List<Slot> rewritten = new ArrayList<>();
-            for (Slot slot : oneDay.getValue()) {
+            List<Slot> ofDay = oneDay.getValue();
+            for (int at = 0; at < ofDay.size(); at++) {
+                Slot slot = ofDay.get(at);
                 if (!"REST".equals(slot.kind()) || slot.alternativeId() == null) {
                     rewritten.add(slot);
                     continue;
+                }
+                // The set that follows this gap, which is what decides
+                // whether the part inside it can be taken and left in time.
+                Slot nextSet = null;
+                for (int ahead = at + 1; ahead < ofDay.size() && nextSet == null; ahead++) {
+                    if ("SET".equals(ofDay.get(ahead).kind())) {
+                        nextSet = ofDay.get(ahead);
+                    }
+                }
+                Slot prevSet = null;
+                for (int back = at - 1; back >= 0 && prevSet == null; back--) {
+                    if ("SET".equals(ofDay.get(back).kind())) {
+                        prevSet = ofDay.get(back);
+                    }
                 }
                 String note = shortCost(addCosts.get(slot.alternativeId()), ceiling, myPicks);
                 rewritten.add(new Slot(slot.kind(), slot.time(), slot.artist(), slot.artistId(),
                         slot.performanceId(), slot.alternativeId(), slot.alternative(),
                         slot.stage(), slot.reason(), slot.tradeoff(), slot.minutes(),
-                        slot.rising(), note, slot.fromAt(), slot.toAt()));
+                        slot.rising(), note, slot.fromAt(), slot.toAt(),
+                        catchableWithoutDisturbing(slot, prevSet, nextSet)));
             }
             oneDay.setValue(rewritten);
         }
@@ -518,6 +541,59 @@ public class ScheduleController {
             }
         }
         return weakest;
+    }
+
+    /**
+     * Can the part of this set that falls inside the gap be taken without
+     * disturbing anything?
+     *
+     * Only when it ends clear of the next set -- with walking time unless it
+     * is on the same stage -- and leaves at least twenty minutes worth going
+     * for. Evanescence in a 17:20-18:00 gap fails this: it runs to 18:00 and
+     * the next set begins at 18:00, so taking it would mean leaving early,
+     * which the solver cannot express. Eyehategod in a 13:15-14:15 gap
+     * passes: clamped it runs 13:15-13:45, and the next set is at 14:15 on
+     * the same stage.
+     *
+     * Returns the minutes you would catch, or 0 when it cannot be offered.
+     */
+    private int catchableWithoutDisturbing(Slot gap, Slot prevSet, Slot nextSet) {
+        if (gap.alternativeId() == null || nextSet == null || nextSet.fromAt() == null) {
+            return 0;
+        }
+        return performances.findById(gap.alternativeId()).map(p -> {
+            java.time.OffsetDateTime gapStart = java.time.OffsetDateTime.parse(gap.fromAt());
+            java.time.OffsetDateTime gapEnd = java.time.OffsetDateTime.parse(gap.toAt());
+            java.time.OffsetDateTime from =
+                    p.getStartsAt().isAfter(gapStart) ? p.getStartsAt() : gapStart;
+            java.time.OffsetDateTime to =
+                    p.getEndsAt().isBefore(gapEnd) ? p.getEndsAt() : gapEnd;
+            String stage = performances.stageNameFor(gap.alternativeId()).orElse(null);
+            // You have to walk there. Quoting the length of the window and
+            // not the length of the visit promised thirty minutes of a band
+            // you would see twenty of.
+            if (prevSet != null && prevSet.toAt() != null) {
+                java.time.OffsetDateTime leaving = java.time.OffsetDateTime.parse(prevSet.toAt());
+                boolean sameAsPrev = stage != null && stage.equals(prevSet.stage());
+                java.time.OffsetDateTime arrive =
+                        sameAsPrev ? leaving : leaving.plusMinutes(CHANGEOVER);
+                if (arrive.isAfter(from)) {
+                    from = arrive;
+                }
+            }
+            if (!to.isAfter(from)) {
+                return 0;
+            }
+            int minutes = (int) Duration.between(from, to).toMinutes();
+            if (minutes < WORTH_CATCHING) {
+                return 0;
+            }
+            java.time.OffsetDateTime nextStart = java.time.OffsetDateTime.parse(nextSet.fromAt());
+            boolean sameStage = stage != null && stage.equals(nextSet.stage());
+            java.time.OffsetDateTime doneBy =
+                    sameStage ? nextStart : nextStart.minusMinutes(CHANGEOVER);
+            return to.isAfter(doneBy) ? 0 : minutes;
+        }).orElse(0);
     }
 
     /** Minutes as "6h 20m", or "45m" when there is no hour to show. */

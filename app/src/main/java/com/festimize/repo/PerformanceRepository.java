@@ -33,4 +33,16 @@ public interface PerformanceRepository extends JpaRepository<Performance, Long> 
             "select p.artist.name from Performance p where p.performanceId = :id")
     java.util.Optional<String> artistNameFor(
             @org.springframework.data.repository.query.Param("id") Long id);
+
+    /**
+     * The stage's name for one performance, as a string.
+     *
+     * Same reason as artistNameFor: findById hands back a Performance whose
+     * stage is a lazy proxy, and open-in-view is off, so touching the name
+     * outside a transaction throws. Third time this has bitten.
+     */
+    @org.springframework.data.jpa.repository.Query(
+            "select p.stage.name from Performance p where p.performanceId = :id")
+    java.util.Optional<String> stageNameFor(
+            @org.springframework.data.repository.query.Param("id") Long id);
 }

@@ -149,6 +149,20 @@
                                 <button type="submit" class="button-quiet"
                                         th:text="'Add ' + ${slot.alternative}">Add X</button>
                             </form>
+                            <!-- Only where the part inside the gap ends clear of the
+                                 next set. The window posted is the gap's own; the
+                                 planner clamps the set to it, so what goes in the day
+                                 is the piece you can actually be there for. -->
+                            <form method="post" th:action="@{/schedule/squeeze}" class="inline-action"
+                                  th:if="${slot.catchMinutes > 0}">
+                                <input type="hidden" name="editionId"
+                                       th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                                <input type="hidden" name="performanceId" th:value="${slot.alternativeId}"/>
+                                <input type="hidden" name="from" th:value="${slot.fromAt}"/>
+                                <input type="hidden" name="to" th:value="${slot.toAt}"/>
+                                <button type="submit" class="button-quiet"
+                                        th:text="'Catch ' + ${slot.catchMinutes} + ' min of it, keeping the rest'">Catch the end</button>
+                            </form>
                         </div>
 
                         <!-- The swap sits with the sentence that names the artist,

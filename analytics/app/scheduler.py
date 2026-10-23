@@ -96,7 +96,8 @@ def choose_best(candidates: Sequence[Candidate],
                 pick_bonus: float = 10.0,
                 minute_value: float = 0.0005,
                 least_worth_catching: int = 25,
-                least_fraction: float = 0.6) -> List[tuple]:
+                least_fraction: float = 0.6,
+                always: Optional[Sequence[int]] = None) -> List[tuple]:
     """
     Choose the best possible set of performances, allowing late arrivals.
 
@@ -121,6 +122,7 @@ def choose_best(candidates: Sequence[Candidate],
     sets = sorted(candidates, key=lambda c: c.ends_at)
     changeover = timedelta(minutes=changeover_minutes)
     least = timedelta(minutes=least_worth_catching)
+    wanted = set(always or ())
     n = len(sets)
 
     def arrival(prev_index: int, i: int):
@@ -129,8 +131,9 @@ def choose_best(candidates: Sequence[Candidate],
         if prev_index >= 0:
             earliest = max(earliest, sets[prev_index].ends_at + changeover)
         full = sets[i].ends_at - sets[i].starts_at
-        enough = max(least, full * least_fraction)
-        return earliest if (sets[i].ends_at - earliest) >= enough else None
+        enough = (timedelta(0) if sets[i].performance_id in wanted
+                  else max(least, full * least_fraction))
+        return earliest if (sets[i].ends_at - earliest) > enough else None
 
     def value(i: int, arrive) -> float:
         minutes = (sets[i].ends_at - arrive).total_seconds() / 60
@@ -267,7 +270,8 @@ def build_day(candidates: Sequence[Candidate],
     # the day as published, not as walked.
     advertised = {id(c): (c.starts_at, c.ends_at) for c in candidates}
 
-    picked = choose_best(candidates, changeover_minutes=changeover_minutes)
+    picked = choose_best(candidates, changeover_minutes=changeover_minutes,
+                         always=[c.performance_id for c in candidates if id(c) in asked])
 
     # Some sets are joined late, having walked from somewhere else. Record how
     # much is missed, then treat the arrival as the start for everything that
