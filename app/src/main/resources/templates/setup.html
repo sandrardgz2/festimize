@@ -15,20 +15,19 @@
 
 <main class="wrap">
 
+    <!-- Two steps, not the wireframe's three. "Choose festival" was first in
+         the drawing and is not a step here: the artist list lives on the
+         account and works for every festival, so there is nothing to choose
+         before naming them — which is why it could not be clicked. The
+         festival is picked from the header, on the pages where it means
+         something. Both of these go somewhere. -->
     <div class="steps">
-        <!-- Not marked done. The festival is chosen in the header, and
-             showing a tick for a step somebody has not taken is the kind of
-             small lie a progress indicator should never tell. -->
-        <span class="step">
-            <span class="step-num">1</span> Choose festival
-        </span>
+        <a class="step active" th:href="@{/setup}">
+            <span class="step-num">1</span> Artists you love
+        </a>
         <span class="step-rule"></span>
-        <span class="step active">
-            <span class="step-num">2</span> Artists you love
-        </span>
-        <span class="step-rule"></span>
-        <a class="step" th:href="@{/profile}">
-            <span class="step-num">3</span> Your pace
+        <a class="step" th:classappend="${chosenCount > 0} ? '' : 'muted'" th:href="@{/profile}">
+            <span class="step-num">2</span> Your pace
         </a>
     </div>
 
@@ -36,6 +35,8 @@
     <p class="page-sub">
         Name about ten. We use these to score every artist on the lineup — and the list
         lives on your account, so it works for every festival, not just this one.
+        <br>
+        New here? <a th:href="@{/how-it-works}">See how this works →</a>
     </p>
 
     <!-- What is already chosen, before anything else. -->

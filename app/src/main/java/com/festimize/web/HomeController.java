@@ -58,11 +58,13 @@ public class HomeController {
     private final PlanItemRepository items;
     private final PerformanceRepository performances;
     private final InsightsRepository insights;
+    private final EditionChoice editionChoice;
 
     public HomeController(FestivalEditionRepository editions, AppUserRepository users,
                           UserArtistRepository saved, ArtistScoreRepository scores,
                           PlanRepository plans, PlanItemRepository items,
-                          PerformanceRepository performances, InsightsRepository insights) {
+                          PerformanceRepository performances, InsightsRepository insights,
+                          EditionChoice editionChoice) {
         this.editions = editions;
         this.users = users;
         this.saved = saved;
@@ -71,6 +73,7 @@ public class HomeController {
         this.items = items;
         this.performances = performances;
         this.insights = insights;
+        this.editionChoice = editionChoice;
     }
 
     /** One line of a preview list: a label, something trailing it, and a link. */
@@ -89,9 +92,7 @@ public class HomeController {
             model.addAttribute("activeNav", "home");
             return "home";
         }
-        FestivalEdition chosen = plannable.stream()
-                .filter(e -> editionId == null || e.getEditionId().equals(editionId))
-                .findFirst().orElse(plannable.get(0));
+        FestivalEdition chosen = editionChoice.choose(plannable, editionId, me.getUserId());
 
         // ------------------------------------------------------------ lineup
         Set<Long> myPicks = new HashSet<>();

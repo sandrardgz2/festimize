@@ -35,13 +35,16 @@ public class InsightsController {
     private final FestivalEditionRepository editions;
     private final AppUserRepository users;
     private final UserArtistRepository saved;
+    private final EditionChoice editionChoice;
 
     public InsightsController(InsightsRepository insights, FestivalEditionRepository editions,
-                              AppUserRepository users, UserArtistRepository saved) {
+                              AppUserRepository users, UserArtistRepository saved,
+                              EditionChoice editionChoice) {
         this.insights = insights;
         this.editions = editions;
         this.users = users;
         this.saved = saved;
+        this.editionChoice = editionChoice;
     }
 
     public record Tag(String name, double you, double lineup) {}
@@ -66,9 +69,7 @@ public class InsightsController {
         if (plannable.isEmpty()) {
             return "insights";
         }
-        FestivalEdition chosen = plannable.stream()
-                .filter(e -> editionId == null || e.getEditionId().equals(editionId))
-                .findFirst().orElse(plannable.get(0));
+        FestivalEdition chosen = editionChoice.choose(plannable, editionId, me.getUserId());
         model.addAttribute("chosen", chosen);
         model.addAttribute("festivalName",
                 chosen.getFestival().getName() + " " + chosen.getYear());

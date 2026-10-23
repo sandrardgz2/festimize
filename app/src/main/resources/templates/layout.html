@@ -22,12 +22,15 @@
 
 <header class="topbar" th:fragment="topbar">
     <a class="brand" th:href="@{/}">festimize</a>
-    <nav>
-        <!-- In the order you actually use them: name your artists, see them
-             ranked against a bill, get a day built, read what it says about
-             you. Setup sat between Insights and How it works, which matches
-             neither the journey nor the step indicator on the setup page,
-             where naming artists is step two of three. -->
+    <!-- Signed in, the sections in the order you actually use them: name your
+         artists, see them ranked against a bill, get a day built, read what it
+         says about you.
+
+         Signed out, only the two things that work. Showing all six to someone
+         with no account is six links, five of which bounce off the sign-in
+         page — the method page is public precisely so it can be read first,
+         and burying it among dead ends wastes that. -->
+    <nav sec:authorize="isAuthenticated()">
         <a th:href="@{/}" th:classappend="${activeNav == 'home'} ? 'active'">Home</a>
         <a th:href="@{/setup}" th:classappend="${activeNav == 'setup'} ? 'active'">Setup</a>
         <a th:href="@{/lineup}" th:classappend="${activeNav == 'lineup'} ? 'active'">Lineup</a>
@@ -35,6 +38,16 @@
         <a th:href="@{/insights}" th:classappend="${activeNav == 'insights'} ? 'active'">Insights</a>
         <a th:href="@{/how-it-works}" th:classappend="${activeNav == 'how'} ? 'active'">How it works</a>
     </nav>
+    <nav sec:authorize="!isAuthenticated()">
+        <a th:href="@{/how-it-works}" th:classappend="${activeNav == 'how'} ? 'active'">How it works</a>
+    </nav>
+    <span class="session" sec:authorize="!isAuthenticated()" style="margin-left:auto">
+        <a th:href="@{/login}" class="button-quiet"
+           style="padding:4px 12px;font-size:13px">Sign in</a>
+        &nbsp;
+        <a th:href="@{/register}" class="button"
+           style="padding:5px 14px;font-size:13px">Create an account</a>
+    </span>
 
     <!-- Shown only where a festival is in scope. -->
     <form class="switcher" method="get" th:action="${currentPath}"
@@ -62,7 +75,7 @@
 </header>
 
 <footer class="site" th:fragment="footer">
-    Festimize — IST 440W capstone. Taste matching, scheduling and the rising-artist measure are implemented; lineups for 2027 are demonstration data.
+    Festimize — IST 440W capstone
 </footer>
 
 </body>

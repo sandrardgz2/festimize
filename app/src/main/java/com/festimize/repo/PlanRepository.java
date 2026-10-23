@@ -22,4 +22,17 @@ public interface PlanRepository extends JpaRepository<Plan, Long> {
     Optional<Plan> findByUser_UserIdAndEdition_EditionId(Long userId, Long editionId);
 
     List<Plan> findByUser_UserIdOrderByUpdatedAtDesc(Long userId);
+
+    /**
+     * Editions this person has a plan for, most recently touched first.
+     *
+     * Ids rather than entities: Plan.edition is lazy and open-in-view is off,
+     * so reading it outside a transaction throws. The path expression makes
+     * the join explicit.
+     */
+    @org.springframework.data.jpa.repository.Query(
+            "select p.edition.editionId from Plan p where p.user.userId = :userId "
+            + "order by p.updatedAt desc")
+    java.util.List<Long> recentEditionIds(
+            @org.springframework.data.repository.query.Param("userId") Long userId);
 }

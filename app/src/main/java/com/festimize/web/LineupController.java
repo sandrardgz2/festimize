@@ -43,6 +43,7 @@ public class LineupController {
     private final UserArtistRepository saved;
     private final ArtistMomentumRepository momentum;
     private final com.festimize.repo.PlanRepository plans;
+    private final EditionChoice editionChoice;
 
     public LineupController(FestivalEditionRepository editions,
                             PerformanceRepository performances,
@@ -52,7 +53,8 @@ public class LineupController {
                             ScoringClient scoring,
                             UserArtistRepository saved,
                             ArtistMomentumRepository momentum,
-                            com.festimize.repo.PlanRepository plans) {
+                            com.festimize.repo.PlanRepository plans,
+                            EditionChoice editionChoice) {
         this.editions = editions;
         this.performances = performances;
         this.tags = tags;
@@ -62,6 +64,7 @@ public class LineupController {
         this.saved = saved;
         this.momentum = momentum;
         this.plans = plans;
+        this.editionChoice = editionChoice;
     }
 
     /**
@@ -90,10 +93,17 @@ public class LineupController {
         java.util.Set<Long> plannable = editions.findPlannable().stream()
                 .map(FestivalEdition::getEditionId)
                 .collect(java.util.stream.Collectors.toSet());
+        // Any edition may be asked for by id, including the 331 historical
+        // bills, but the one you land on without asking is a plannable one —
+        // defaulting into a 2016 lineup you cannot schedule would be a strange
+        // place to start.
+        AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
         FestivalEdition chosen = all.stream()
-                .filter(e -> editionId == null || e.getEditionId().equals(editionId))
+                .filter(e -> editionId != null && e.getEditionId().equals(editionId))
                 .findFirst()
-                .orElse(all.get(0));
+                .orElseGet(() -> editionChoice.choose(
+                        all.stream().filter(e -> plannable.contains(e.getEditionId())).toList(),
+                        null, me.getUserId()));
 
         List<Performance> sets = performances.findForEditionOrderedByStart(chosen.getEditionId());
 
@@ -107,7 +117,6 @@ public class LineupController {
                         chosen.getEditionId()));
 
         // Ask the analytics service to refresh this user's scores, then read the cache.
-        AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
         boolean analyticsUp = scoring.rescore(me.getUserId());
         java.util.Set<Long> myPicks = new java.util.HashSet<>();
         saved.findSavedArtists(me.getUserId()).forEach(a -> myPicks.add(a.getArtistId()));

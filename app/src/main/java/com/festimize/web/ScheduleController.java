@@ -44,6 +44,7 @@ public class ScheduleController {
     private final PlanningClient planning;
     private final UserArtistRepository saved;
     private final com.festimize.repo.PerformanceRepository performances;
+    private final EditionChoice editionChoice;
 
     public ScheduleController(FestivalEditionRepository editions,
                               com.festimize.repo.ArtistMomentumRepository momentum,
@@ -51,7 +52,8 @@ public class ScheduleController {
                               AppUserRepository users,
                               PlanRepository plans, PlanItemRepository items, PlanningClient planning,
                               UserArtistRepository saved,
-                              com.festimize.repo.PerformanceRepository performances) {
+                              com.festimize.repo.PerformanceRepository performances,
+                              EditionChoice editionChoice) {
         this.editions = editions;
         this.momentum = momentum;
         this.declined = declined;
@@ -61,6 +63,7 @@ public class ScheduleController {
         this.planning = planning;
         this.saved = saved;
         this.performances = performances;
+        this.editionChoice = editionChoice;
     }
 
     /** What one day of the plan adds up to, for the summary rail. */
@@ -87,10 +90,8 @@ public class ScheduleController {
             model.addAttribute("activeNav", "schedule");
             return "schedule";
         }
-        FestivalEdition chosen = all.stream()
-                .filter(e -> editionId == null || e.getEditionId().equals(editionId))
-                .findFirst().orElse(all.get(0));
         AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
+        FestivalEdition chosen = editionChoice.choose(all, editionId, me.getUserId());
 
         Optional<Plan> plan = plans.findByUser_UserIdAndEdition_EditionId(me.getUserId(), chosen.getEditionId());
         // The rising measure for everyone on this plan, in one query. A day you
