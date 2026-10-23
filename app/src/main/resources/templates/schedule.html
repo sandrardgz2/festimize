@@ -101,7 +101,12 @@
                             <span class="badge badge-rising" th:if="${slot.rising}">Rising</span>
                         </div>
                         <div class="name" th:if="${slot.kind == 'REST' and !slot.gap}">Break — <span th:text="${slot.minutes} + ' min'">40 min</span></div>
-                        <div class="gap-label" th:if="${slot.gap}" th:text="${slot.minutes} + ' min changeover'">30 min changeover</div>
+                        <!-- Twenty minutes is where the summary starts calling it a break, so
+                             the timeline calls it one too. Labelling a 65-minute hole
+                             "changeover" while the rail counted it as rest was the same
+                             slot described two ways. -->
+                        <div class="gap-label" th:if="${slot.gap}"
+                             th:text="${slot.minutes} + (${slot.minutes} >= 20 ? ' min break' : ' min changeover')">30 min changeover</div>
                         <!-- A set offered inside a gap is, by construction, one the
                              solver could not simply take: either the day is already
                              as long as this person said they wanted it, or the set
@@ -109,23 +114,22 @@
                              would cost says which, exactly, because the answer comes
                              from pinning it and re-solving rather than from a rule
                              of thumb. -->
-                        <div class="tradeoff" th:if="${slot.gap and slot.alternativeId != null}">
-                            <span class="muted" th:if="${slot.addCost != null}"
-                                  th:text="${slot.addCost} + '.'">you would catch …</span>
-                            <!-- No button here yet, deliberately. Adding the whole set
-                                 removes whatever its other half clashes with, which on
-                                 one account was the person's own pick, and adding only
-                                 the part inside the gap needs the solver to model
-                                 leaving a set early — it can model arriving late, but
-                                 not the other end. Until it can, this says what is on
-                                 and how much of it you would see, and lets the person
-                                 walk off and watch it without the schedule pretending
-                                 to have arranged it. -->
-                        </div>
                         <div class="tags">
                             <span th:if="${slot.stage}" th:text="${slot.stage} + ' · '">Stage · </span>
                             <span th:text="${slot.reason}">reason</span>
                         </div>
+                        <div class="tradeoff" th:if="${slot.gap and slot.alternativeId != null}">
+                            <span class="muted" th:if="${slot.addCost != null}"
+                                  th:text="${slot.addCost}">costs X · 25 min over your limit</span>
+                            <form method="post" th:action="@{/schedule/add}" class="inline-action">
+                                <input type="hidden" name="editionId"
+                                       th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                                <input type="hidden" name="performanceId" th:value="${slot.alternativeId}"/>
+                                <button type="submit" class="button-quiet"
+                                        th:text="'Add ' + ${slot.alternative}">Add X</button>
+                            </form>
+                        </div>
+
                         <!-- The swap sits with the sentence that names the artist,
                              because that sentence is the reason anyone would want it.
                              Dropping is the general action and stays below. -->
@@ -181,6 +185,17 @@
                 <div class="rail-stat">
                     <span class="k">New artists</span><span class="v" th:text="${dayStat.discoveries}">3</span>
                 </div>
+                <!-- The one place a person reads the shape of the whole day, so
+                     the one place worth saying it runs longer than they asked
+                     for. Inline in every gap it was a paragraph nobody needed
+                     three times. -->
+                <p class="demo-note" th:if="${dayStat.overBy > 0}" style="margin-top:12px">
+                    <strong th:text="${dayStat.overBy} + ' min over your limit.'">25 min over.</strong>
+                    <span th:if="${dayStat.dropInstead != null}"
+                          th:text="'Drop a set to make room — ' + ${dayStat.dropInstead}
+                                   + ' is the slightest thing in your day.'">Drop a set.</span>
+                    <span th:if="${dayStat.dropInstead == null}">Every set here is one of your own picks.</span>
+                </p>
             </section>
 
             <section class="panel" th:if="${!#lists.isEmpty(tradeoffs)}" style="margin-top:16px">

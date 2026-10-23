@@ -31,7 +31,7 @@ public class PlanningClient {
 
     /** What one absent set would cost if it were added, and what it would gain. */
     public record AddCost(long performance_id, String artist, List<String> costs,
-                          List<String> gains, boolean available) {}
+                          List<String> gains, boolean available, int day_minutes_after) {}
 
     private record AddCostResponse(long user_id, long edition_id, List<AddCost> costs) {}
 

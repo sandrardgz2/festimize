@@ -640,11 +640,17 @@ def build_day(candidates: Sequence[Candidate],
                 if catchable:
                     caught, best_other = max(catchable, key=lambda t: (t[0] * t[1].score, t[0]))
                     whole = (best_other.ends_at - best_other.starts_at).total_seconds() / 60
-                    reason += " · %s plays %s–%s (%d%%) if you would rather" % (
+                    # No percentage on one of their own picks. A saved artist
+                    # is one of the profiles taste is scored against, so it
+                    # matches itself perfectly and prints "100%" — the same
+                    # tautology the chosen-over sentence already avoids.
+                    how = ("your pick" if best_other.is_pick
+                           else "%d%%" % round(best_other.score * 100))
+                    reason += " · %s plays %s–%s (%s) if you would rather" % (
                         best_other.artist,
                         best_other.starts_at.strftime("%H:%M"),
                         best_other.ends_at.strftime("%H:%M"),
-                        round(best_other.score * 100))
+                        how)
                     if caught < whole - 1:
                         reason += " — %d of its %d minutes fall in this gap" % (
                             round(caught), round(whole))

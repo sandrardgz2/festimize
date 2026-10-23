@@ -32,6 +32,17 @@ public class ScheduleController {
 
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("EEEE d MMMM");
     /**
+     * How far past the daily limit a suggestion may push the day before it
+     * stops being a note and starts being a problem.
+     *
+     * Under this, saying so is enough — a person who set 7h 30m and ends up
+     * at 7h 50m has made a choice, not a mistake. Over it, the page says
+     * which set to drop, because at that point the honest advice is not
+     * "mind how you go" but "then something has to come out".
+     */
+    private static final int OVERAGE_WORTH_ACTING_ON = 30;
+
+    /**
      * The shortest stretch without music that counts as a break rather than
      * as walking between stages.
      *
@@ -60,6 +71,7 @@ public class ScheduleController {
     private final UserArtistRepository saved;
     private final com.festimize.repo.PerformanceRepository performances;
     private final EditionChoice editionChoice;
+    private final com.festimize.repo.ArtistScoreRepository scores;
 
     public ScheduleController(FestivalEditionRepository editions,
                               com.festimize.repo.ArtistMomentumRepository momentum,
@@ -68,7 +80,8 @@ public class ScheduleController {
                               PlanRepository plans, PlanItemRepository items, PlanningClient planning,
                               UserArtistRepository saved,
                               com.festimize.repo.PerformanceRepository performances,
-                              EditionChoice editionChoice) {
+                              EditionChoice editionChoice,
+                              com.festimize.repo.ArtistScoreRepository scores) {
         this.editions = editions;
         this.momentum = momentum;
         this.declined = declined;
@@ -79,11 +92,13 @@ public class ScheduleController {
         this.saved = saved;
         this.performances = performances;
         this.editionChoice = editionChoice;
+        this.scores = scores;
     }
 
     /** What one day of the plan adds up to, for the summary rail. */
     public record DayStat(String label, String tab, int sets, int breaks,
-                          int discoveries, String active, String breakTime) {}
+                          int discoveries, String active, String breakTime,
+                          int overBy, String dropInstead) {}
 
     public record Slot(String kind, String time, String artist, Long artistId,
                        Long performanceId, Long alternativeId, String alternative,
@@ -177,7 +192,7 @@ public class ScheduleController {
                                 ? item.getPerformance().getStage().getName() : null,
                         reasonOf(item), tradeoffOf(item), mins,
                         who != null && climbing.contains(who),
-                        costOf(item, addCosts),
+                        null,            // filled in by the pass below
                         item.getStartsAt().toString(), item.getEndsAt().toString()));
             }
         }
@@ -188,6 +203,14 @@ public class ScheduleController {
         // displaces — a clamped set displaces nothing — but that it pushes
         // the day past the hours this person said they wanted.
         int ceiling = me.musicCapMinutes();
+        java.util.Set<String> myPicks = new java.util.HashSet<>();
+        saved.findSavedArtists(me.getUserId()).forEach(a -> myPicks.add(a.getName()));
+        Map<Long, Integer> byArtist = new LinkedHashMap<>();
+        for (com.festimize.domain.ArtistScore sc
+                : scores.findByUser_UserIdOrderByMatchScoreDesc(me.getUserId())) {
+            byArtist.put(sc.getArtist().getArtistId(),
+                    sc.getMatchScore().multiply(java.math.BigDecimal.valueOf(100)).intValue());
+        }
         for (Map.Entry<String, List<Slot>> oneDay : byDay.entrySet()) {
             int already = perDay.get(oneDay.getKey())[2];
             List<Slot> rewritten = new ArrayList<>();
@@ -196,14 +219,7 @@ public class ScheduleController {
                     rewritten.add(slot);
                     continue;
                 }
-                int extra = catchableMinutes(slot);
-                int after = already + extra;
-                String note = String.format("you would catch %d min of it, taking the day to "
-                                + "%dh %02dm", extra, after / 60, after % 60);
-                if (after > ceiling) {
-                    note += String.format(" — past the %dh %02dm you set",
-                            ceiling / 60, ceiling % 60);
-                }
+                String note = shortCost(addCosts.get(slot.alternativeId()), ceiling, myPicks);
                 rewritten.add(new Slot(slot.kind(), slot.time(), slot.artist(), slot.artistId(),
                         slot.performanceId(), slot.alternativeId(), slot.alternative(),
                         slot.stage(), slot.reason(), slot.tradeoff(), slot.minutes(),
@@ -221,8 +237,11 @@ public class ScheduleController {
         List<DayStat> dayStats = new ArrayList<>();
         for (Map.Entry<String, int[]> e : perDay.entrySet()) {
             int[] t = e.getValue();
+            int over = t[2] - me.musicCapMinutes();
             dayStats.add(new DayStat(e.getKey(), tabOf.get(e.getKey()), t[0], t[1], t[3],
-                    clock(t[2]), clock(t[4])));
+                    clock(t[2]), clock(t[4]),
+                    Math.max(0, over),
+                    over > 0 ? weakestSetOf(byDay.get(e.getKey()), byArtist) : null));
         }
 
         // The pace panel says what this day was actually built to, rather
@@ -382,40 +401,60 @@ public class ScheduleController {
      * our own prose is a dependency on wording that nobody remembers having.
      */
     /**
-     * What adding the set suggested during a gap would cost, in a sentence.
+     * One clause beside the set a gap offers: what it displaces, and whether
+     * it pushes the day past the limit.
      *
-     * Only for gaps: a chosen set's alternative_id means the set it displaced,
-     * and offering to add that would be the swap button, which already exists.
-     * Null when there is nothing to say or analytics could not be reached, in
-     * which case the page offers the action without a forecast rather than
-     * guessing at one.
+     * Short on purpose. The detail belongs by the summary, where a person
+     * reads the shape of their day; here they are deciding about one set and
+     * need two facts.
+     *
+     * The day length is the re-solved figure from the service, not this
+     * page's arithmetic. Adding a set is not simply more minutes — the solver
+     * drops what no longer fits, so adding Korn to a 445-minute day leaves it
+     * at 450 rather than the 475 that adding its catchable half would suggest.
      */
-    private static String costOf(PlanItem item,
-                                 Map<Long, com.festimize.analytics.PlanningClient.AddCost> costs) {
-        if (!"REST".equals(item.getItemType()) || item.getAlternativeId() == null) {
-            return null;
-        }
-        com.festimize.analytics.PlanningClient.AddCost cost = costs.get(item.getAlternativeId());
+    private static String shortCost(com.festimize.analytics.PlanningClient.AddCost cost,
+                                    int ceiling, java.util.Set<String> myPicks) {
         if (cost == null || !cost.available()) {
             return null;
         }
-        // Deliberately not the whole-set forecast. Only the part inside the
-        // gap is being added, so nothing is displaced by construction; what
-        // the person still deserves to know is that the day gets longer.
-        return null;
+        // Say when the price is one of their own picks. "Costs System of a
+        // Down" reads like any other trade until you know you named that
+        // band yourself, and giving one up is not a casual aside.
+        List<String> priced = new ArrayList<>();
+        for (String name : cost.costs()) {
+            priced.add(myPicks.contains(name) ? name + " (your pick)" : name);
+        }
+        String what = priced.isEmpty() ? "nothing else changes"
+                : "costs " + String.join(" and ", priced);
+        int over = cost.day_minutes_after() - ceiling;
+        return over > 0 ? what + String.format(" · %d min over your limit", over) : what;
     }
 
-    /** How much of the offered set falls inside this gap. */
-    private int catchableMinutes(Slot gap) {
-        return performances.findById(gap.alternativeId())
-                .map(p -> {
-                    java.time.OffsetDateTime from = java.time.OffsetDateTime.parse(gap.fromAt());
-                    java.time.OffsetDateTime to = java.time.OffsetDateTime.parse(gap.toAt());
-                    java.time.OffsetDateTime a = p.getStartsAt().isAfter(from) ? p.getStartsAt() : from;
-                    java.time.OffsetDateTime b = p.getEndsAt().isBefore(to) ? p.getEndsAt() : to;
-                    return b.isAfter(a) ? (int) Duration.between(a, b).toMinutes() : 0;
-                })
-                .orElse(0);
+    /**
+     * The set in this day with the least to recommend it, which is the one to
+     * drop if something has to go.
+     *
+     * Never one of the person's own picks: somebody who came for a band is
+     * not going to be told to skip them because the arithmetic is tidier
+     * that way. Null when every set in the day is a pick, and the advice
+     * then stays general.
+     */
+    private static String weakestSetOf(List<Slot> day, Map<Long, Integer> byArtist) {
+        String weakest = null;
+        int lowest = Integer.MAX_VALUE;
+        for (Slot slot : day) {
+            if (!"SET".equals(slot.kind()) || slot.artistId() == null
+                    || (slot.reason() != null && slot.reason().startsWith("your pick"))) {
+                continue;
+            }
+            int score = byArtist.getOrDefault(slot.artistId(), 0);
+            if (score < lowest) {
+                lowest = score;
+                weakest = slot.artist();
+            }
+        }
+        return weakest;
     }
 
     /** Minutes as "6h 20m", or "45m" when there is no hour to show. */

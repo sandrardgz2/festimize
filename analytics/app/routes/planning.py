@@ -66,6 +66,11 @@ class AddCost(BaseModel):
     # False when the set falls outside the hours this person said they would
     # attend, in which case adding it would do nothing at all.
     available: bool
+    # Minutes of music on the day this set falls on, after adding it. The
+    # page needs this to say whether the addition puts the day past the
+    # hours the person set, which is a different question from what it
+    # displaces and the more important one.
+    day_minutes_after: int = 0
 
 
 class AddCostResponse(BaseModel):
@@ -336,12 +341,17 @@ def add_cost(
             out.append(AddCost(performance_id=r.performance_id, artist=r.name,
                                costs=[], gains=[], available=False))
             continue
-        after = {s.performance_id for s in _solve(bill, discovery_quota, also_pin=[r.performance_id])
-                 if s.kind == "SET"}
+        solved = _solve(bill, discovery_quota, also_pin=[r.performance_id])
+        after = {s.performance_id for s in solved if s.kind == "SET"}
         lost = [offered[p].artist for p in base - after if p in offered]
         gained = [offered[p].artist for p in after - base
                   if p != r.performance_id and p in offered]
+        on_the_day = offered[r.performance_id].starts_at.date()
+        minutes = sum((s.ends_at - s.starts_at).total_seconds() / 60
+                      for s in solved
+                      if s.kind == "SET" and s.starts_at.date() == on_the_day)
         out.append(AddCost(performance_id=r.performance_id, artist=r.name,
-                           costs=sorted(lost), gains=sorted(gained), available=True))
+                           costs=sorted(lost), gains=sorted(gained), available=True,
+                           day_minutes_after=int(round(minutes))))
 
     return AddCostResponse(user_id=user_id, edition_id=edition_id, costs=out)
