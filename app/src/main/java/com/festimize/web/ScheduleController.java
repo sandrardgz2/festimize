@@ -98,7 +98,7 @@ public class ScheduleController {
     /** What one day of the plan adds up to, for the summary rail. */
     public record DayStat(String label, String tab, int sets, int breaks,
                           int discoveries, String active, String breakTime,
-                          int overBy, String dropInstead) {}
+                          int overBy, boolean worthActingOn, String dropInstead) {}
 
     public record Slot(String kind, String time, String artist, Long artistId,
                        Long performanceId, Long alternativeId, String alternative,
@@ -241,7 +241,12 @@ public class ScheduleController {
             dayStats.add(new DayStat(e.getKey(), tabOf.get(e.getKey()), t[0], t[1], t[3],
                     clock(t[2]), clock(t[4]),
                     Math.max(0, over),
-                    over > 0 ? weakestSetOf(byDay.get(e.getKey()), byArtist) : null));
+                    // Only worth acting on past half an hour. Somebody who
+                    // set 7h 30m and lands at 7h 50m has made a choice, not
+                    // a mistake, and does not need telling to undo it.
+                    over > OVERAGE_WORTH_ACTING_ON,
+                    over > OVERAGE_WORTH_ACTING_ON
+                            ? weakestSetOf(byDay.get(e.getKey()), byArtist) : null));
         }
 
         // The pace panel says what this day was actually built to, rather

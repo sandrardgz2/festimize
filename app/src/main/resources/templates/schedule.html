@@ -191,10 +191,10 @@
                      three times. -->
                 <p class="demo-note" th:if="${dayStat.overBy > 0}" style="margin-top:12px">
                     <strong th:text="${dayStat.overBy} + ' min over your limit.'">25 min over.</strong>
-                    <span th:if="${dayStat.dropInstead != null}"
+                    <span th:if="${dayStat.worthActingOn and dayStat.dropInstead != null}"
                           th:text="'Drop a set to make room — ' + ${dayStat.dropInstead}
                                    + ' is the slightest thing in your day.'">Drop a set.</span>
-                    <span th:if="${dayStat.dropInstead == null}">Every set here is one of your own picks.</span>
+                    <span th:if="${dayStat.worthActingOn and dayStat.dropInstead == null}">Every set here is one of your own picks.</span>
                 </p>
             </section>
 

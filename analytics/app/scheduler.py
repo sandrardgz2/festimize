@@ -221,26 +221,28 @@ def build_day(candidates: Sequence[Candidate],
     # out what each slot beat, so the new slot named no alternative and the
     # only way back was to put everything back.
     asked, ousted = set(), {}
-    tight_ids = set(tight or ())
+    tight_ids = set(tight or ())   # noqa: F841 — windows still mark these
     if pinned:
         wanted = [c for c in candidates if c.performance_id in set(pinned)]
         protected = {id(w) for w in wanted}
         asked = set(protected)
         for keep in wanted:
-            # A pin asking for only part of a set has already been cut to fit
-            # the hole it is going into, so the changeover margin must not be
-            # applied to it: widening a 17:20-18:00 window by ten minutes each
-            # way swallowed the sets on both sides, which is exactly what the
-            # window existed to avoid. Walking time is still enforced between
-            # whatever the solver finally chooses.
-            margin = (timedelta(0) if keep.performance_id in tight_ids
-                      else timedelta(minutes=changeover_minutes))
+            # Only what genuinely overlaps. Widening by the changeover
+            # deleted sets the solver could perfectly well have taken: Drain
+            # ends 13:10 and Vended starts 13:15, so a ten-minute margin
+            # removed Vended outright, even though left alone the solver
+            # takes both and joins Vended five minutes late — which is what
+            # it had already done before the pin. The pin was applying a
+            # stricter rule than the thing it was protecting the pin from.
+            #
+            # Walking time is still enforced, where it belongs: choose_best
+            # works out arrival for whatever it ends up choosing, and says
+            # how many minutes were missed.
             clashing = [c for c in candidates
                         if c is not keep
                         and id(c) not in protected
                         and _overlaps(keep.starts_at, keep.ends_at,
-                                      c.starts_at - margin,
-                                      c.ends_at + margin)]
+                                      c.starts_at, c.ends_at)]
             if clashing:
                 ousted[id(keep)] = max(clashing, key=lambda c: (c.is_pick, c.score))
             dropped_ids = {id(c) for c in clashing}
