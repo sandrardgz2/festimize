@@ -589,21 +589,47 @@ def build_day(candidates: Sequence[Candidate],
             if minutes < 15:
                 continue
             reason = "gap — %d minutes between sets" % minutes
+            suggestion = None
             # Say what is on during a long gap. Standing around for an hour is
             # one thing; standing around while an artist you might like plays
             # is another, and the user should be the one deciding.
+            #
+            # Ranked by how much of the set actually falls inside the gap,
+            # not by score alone. Scoring alone recommended Mudvayne during a
+            # gap running 16:20 to 17:45 when Mudvayne played 15:30 to 16:30
+            # — ten minutes of a sixty-minute set, the rest of it clashing
+            # with the band you were already watching. Three of the four
+            # suggestions on the demonstration plans were that shape. A
+            # suggestion you can only act on by walking out on something else
+            # is not a suggestion, so anything under the twenty minutes the
+            # scheduler calls a break is no longer offered at all.
             if minutes >= 40:
-                playing = [o for o in candidates
-                           if o not in chosen and o.score > 0.05
-                           and _overlaps(f_start, f_end, o.starts_at, o.ends_at)]
-                if playing:
-                    best_other = max(playing, key=lambda o: o.score)
+                catchable = []
+                for o in candidates:
+                    if o in chosen or o.score <= 0.05:
+                        continue
+                    caught = (min(f_end, o.ends_at) - max(f_start, o.starts_at))
+                    caught = caught.total_seconds() / 60
+                    if caught >= 20:
+                        catchable.append((caught, o))
+                if catchable:
+                    caught, best_other = max(catchable, key=lambda t: (t[0] * t[1].score, t[0]))
+                    whole = (best_other.ends_at - best_other.starts_at).total_seconds() / 60
                     reason += " · %s plays %s–%s (%d%%) if you would rather" % (
                         best_other.artist,
                         best_other.starts_at.strftime("%H:%M"),
                         best_other.ends_at.strftime("%H:%M"),
                         round(best_other.score * 100))
-            slots.append(Slot("REST", f_start, f_end, reason=reason))
+                    if caught < whole - 1:
+                        reason += " — %d of its %d minutes fall in this gap" % (
+                            round(caught), round(whole))
+                    suggestion = best_other.performance_id
+            # alternative_id on a gap is the set being suggested, so the page
+            # has something a form can post back. On a chosen set the same
+            # field means the set it displaced; both answer "the other thing
+            # you could be doing here", which is why they share a column.
+            slots.append(Slot("REST", f_start, f_end, reason=reason,
+                              alternative_id=suggestion))
 
     slots.sort(key=lambda s: s.starts_at)
     return slots

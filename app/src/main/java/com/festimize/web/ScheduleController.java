@@ -88,7 +88,8 @@ public class ScheduleController {
     public record Slot(String kind, String time, String artist, Long artistId,
                        Long performanceId, Long alternativeId, String alternative,
                        String stage,
-                       String reason, String tradeoff, int minutes, boolean rising) {
+                       String reason, String tradeoff, int minutes, boolean rising,
+                       String addCost) {
         /** A plain changeover, as opposed to a break the scheduler chose. */
         public boolean gap() { return reason != null && reason.startsWith("gap"); }
     }
@@ -117,6 +118,13 @@ public class ScheduleController {
         for (com.festimize.domain.ArtistMomentum m : momentum.findRising()) {
             climbing.add(m.getArtist().getArtistId());
         }
+
+        // What each absent set would do to the day, asked once rather than
+        // per gap. Used only for the sets offered inside a gap, which are the
+        // only place the page invites somebody to add one.
+        Map<Long, com.festimize.analytics.PlanningClient.AddCost> addCosts =
+                plan.isPresent() ? planning.addCosts(me.getUserId(), chosen.getEditionId())
+                                 : Map.of();
 
         Map<String, List<Slot>> byDay = new LinkedHashMap<>();
         // The same figures as the whole-plan ones, kept a day at a time, so
@@ -168,7 +176,8 @@ public class ScheduleController {
                         isSet && item.getPerformance() != null && item.getPerformance().getStage() != null
                                 ? item.getPerformance().getStage().getName() : null,
                         reasonOf(item), tradeoffOf(item), mins,
-                        who != null && climbing.contains(who)));
+                        who != null && climbing.contains(who),
+                        costOf(item, addCosts)));
             }
         }
 
@@ -316,6 +325,33 @@ public class ScheduleController {
      * even though alternative_id was sitting right there on the row. Parsing
      * our own prose is a dependency on wording that nobody remembers having.
      */
+    /**
+     * What adding the set suggested during a gap would cost, in a sentence.
+     *
+     * Only for gaps: a chosen set's alternative_id means the set it displaced,
+     * and offering to add that would be the swap button, which already exists.
+     * Null when there is nothing to say or analytics could not be reached, in
+     * which case the page offers the action without a forecast rather than
+     * guessing at one.
+     */
+    private static String costOf(PlanItem item,
+                                 Map<Long, com.festimize.analytics.PlanningClient.AddCost> costs) {
+        if (!"REST".equals(item.getItemType()) || item.getAlternativeId() == null) {
+            return null;
+        }
+        com.festimize.analytics.PlanningClient.AddCost cost = costs.get(item.getAlternativeId());
+        if (cost == null || !cost.available()) {
+            return null;
+        }
+        if (cost.costs().isEmpty()) {
+            return cost.gains().isEmpty()
+                    ? "nothing else in your day changes"
+                    : "nothing else is lost, and it also brings in "
+                      + String.join(" and ", cost.gains());
+        }
+        return "this would cost you " + String.join(" and ", cost.costs());
+    }
+
     /** Minutes as "6h 20m", or "45m" when there is no hour to show. */
     private static String clock(int minutes) {
         return minutes >= 60 ? String.format("%dh %02dm", minutes / 60, minutes % 60)

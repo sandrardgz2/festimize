@@ -102,6 +102,24 @@
                         </div>
                         <div class="name" th:if="${slot.kind == 'REST' and !slot.gap}">Break — <span th:text="${slot.minutes} + ' min'">40 min</span></div>
                         <div class="gap-label" th:if="${slot.gap}" th:text="${slot.minutes} + ' min changeover'">30 min changeover</div>
+                        <!-- A set offered inside a gap is, by construction, one the
+                             solver could not simply take: either the day is already
+                             as long as this person said they wanted it, or the set
+                             clashes with something they are keeping. Saying what it
+                             would cost says which, exactly, because the answer comes
+                             from pinning it and re-solving rather than from a rule
+                             of thumb. -->
+                        <div class="tradeoff" th:if="${slot.gap and slot.alternativeId != null}">
+                            <span class="muted" th:if="${slot.addCost != null}"
+                                  th:text="'Adding it: ' + ${slot.addCost} + '.'">Adding it: …</span>
+                            <form method="post" th:action="@{/schedule/add}" class="inline-action">
+                                <input type="hidden" name="editionId"
+                                       th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                                <input type="hidden" name="performanceId" th:value="${slot.alternativeId}"/>
+                                <button type="submit" class="button-quiet"
+                                        th:text="'Add ' + ${slot.alternative}">Add X</button>
+                            </form>
+                        </div>
                         <div class="tags">
                             <span th:if="${slot.stage}" th:text="${slot.stage} + ' · '">Stage · </span>
                             <span th:text="${slot.reason}">reason</span>
