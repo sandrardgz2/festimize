@@ -40,7 +40,9 @@ public class ScheduleController {
      * solver agree about what a break is. Counting only the breaks the
      * scheduler deliberately placed said "1" about a day containing an hour
      * of sitting down; counting every gap said "5" about a day containing
-     * three stage walks.
+     * three stage walks. The short ones are simply not counted — they are
+     * on the timeline, where a changeover is something you can see rather
+     * than a figure anybody needs totalled.
      */
     private static final int BREAK_MINUTES = 20;
 
@@ -81,8 +83,7 @@ public class ScheduleController {
 
     /** What one day of the plan adds up to, for the summary rail. */
     public record DayStat(String label, String tab, int sets, int breaks,
-                          int discoveries, String active, String breakTime,
-                          String changeover) {}
+                          int discoveries, String active, String breakTime) {}
 
     public record Slot(String kind, String time, String artist, Long artistId,
                        Long performanceId, Long alternativeId, String alternative,
@@ -129,7 +130,7 @@ public class ScheduleController {
             for (PlanItem item : items.findForPlan(plan.get().getPlanId())) {
                 String dayKey = item.getStartsAt().format(DAY);
                 tabOf.putIfAbsent(dayKey, item.getStartsAt().format(TAB).toUpperCase(Locale.UK));
-                int[] tally = perDay.computeIfAbsent(dayKey, d -> new int[6]);
+                int[] tally = perDay.computeIfAbsent(dayKey, d -> new int[5]);
                 int mins = (int) Duration.between(item.getStartsAt(), item.getEndsAt()).toMinutes();
                 boolean isSet = "SET".equals(item.getItemType());
                 if (isSet) {
@@ -151,8 +152,6 @@ public class ScheduleController {
                     if (mins >= BREAK_MINUTES) {
                         tally[1]++;
                         tally[4] += mins;
-                    } else {
-                        tally[5] += mins;
                     }
                 }
                 Long who = isSet && item.getPerformance() != null
@@ -183,7 +182,7 @@ public class ScheduleController {
         for (Map.Entry<String, int[]> e : perDay.entrySet()) {
             int[] t = e.getValue();
             dayStats.add(new DayStat(e.getKey(), tabOf.get(e.getKey()), t[0], t[1], t[3],
-                    clock(t[2]), clock(t[4]), clock(t[5])));
+                    clock(t[2]), clock(t[4])));
         }
 
         // The pace panel says what this day was actually built to, rather
