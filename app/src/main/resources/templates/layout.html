@@ -23,11 +23,16 @@
 <header class="topbar" th:fragment="topbar">
     <a class="brand" th:href="@{/}">festimize</a>
     <nav>
+        <!-- In the order you actually use them: name your artists, see them
+             ranked against a bill, get a day built, read what it says about
+             you. Setup sat between Insights and How it works, which matches
+             neither the journey nor the step indicator on the setup page,
+             where naming artists is step two of three. -->
         <a th:href="@{/}" th:classappend="${activeNav == 'home'} ? 'active'">Home</a>
+        <a th:href="@{/setup}" th:classappend="${activeNav == 'setup'} ? 'active'">Setup</a>
         <a th:href="@{/lineup}" th:classappend="${activeNav == 'lineup'} ? 'active'">Lineup</a>
         <a th:href="@{/schedule}" th:classappend="${activeNav == 'schedule'} ? 'active'">Schedule</a>
         <a th:href="@{/insights}" th:classappend="${activeNav == 'insights'} ? 'active'">Insights</a>
-        <a th:href="@{/setup}" th:classappend="${activeNav == 'setup'} ? 'active'">Setup</a>
         <a th:href="@{/how-it-works}" th:classappend="${activeNav == 'how'} ? 'active'">How it works</a>
     </nav>
 
