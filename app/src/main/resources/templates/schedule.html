@@ -101,10 +101,6 @@
                             <span class="badge badge-rising" th:if="${slot.rising}">Rising</span>
                         </div>
                         <div class="name" th:if="${slot.kind == 'REST' and !slot.gap}">Break — <span th:text="${slot.minutes} + ' min'">40 min</span></div>
-                        <!-- Twenty minutes is where the summary starts calling it a break, so
-                             the timeline calls it one too. Labelling a 65-minute hole
-                             "changeover" while the rail counted it as rest was the same
-                             slot described two ways. -->
                         <div class="gap-label" th:if="${slot.gap}"
                              th:text="${slot.minutes} + (${slot.minutes} >= 20 ? ' min break' : ' min changeover')">30 min changeover</div>
                         <!-- A set offered inside a gap is, by construction, one the
@@ -118,6 +114,31 @@
                             <span th:if="${slot.stage}" th:text="${slot.stage} + ' · '">Stage · </span>
                             <span th:text="${slot.reason}">reason</span>
                         </div>
+                        <!-- The meal goes where the person says, when there is a
+                             choice to make. Thirty minutes is the shortest the
+                             scheduler will call a meal, so shorter gaps are not
+                             offered: eating in twenty minutes is a sandwich on
+                             the walk, not a break. -->
+                        <form method="post" th:action="@{/schedule/eat-here}" class="slot-actions"
+                              th:if="${slot.gap and slot.minutes >= 30}">
+                            <input type="hidden" name="editionId"
+                                   th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                            <input type="hidden" name="startsAt" th:value="${slot.fromAt}"/>
+                            <button type="submit" class="button-quiet">Eat here instead</button>
+                        </form>
+                        <form method="post" th:action="@{/schedule/eat-anywhere}" class="slot-actions"
+                              th:if="${slot.kind == 'REST' and !slot.gap and mealChosen
+                                       and slot.reason != null and #strings.startsWith(slot.reason, 'meal')}">
+                            <input type="hidden" name="editionId"
+                                   th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                            <input type="hidden" name="onDay" th:value="${slot.fromAt}"/>
+                            <button type="submit" class="button-quiet">Let the schedule decide</button>
+                        </form>
+                        <!-- Twenty minutes is where the summary starts calling it a break, so
+                             the timeline calls it one too. Labelling a 65-minute hole
+                             "changeover" while the rail counted it as rest was the same
+                             slot described two ways. -->
+
                         <div class="tradeoff" th:if="${slot.gap and slot.alternativeId != null}">
                             <span class="muted" th:if="${slot.addCost != null}"
                                   th:text="${slot.addCost}">costs X · 25 min over your limit</span>

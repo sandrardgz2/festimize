@@ -177,7 +177,8 @@ def build_day(candidates: Sequence[Candidate],
               music_cap_minutes: int = 450,
               meal_by: Optional[object] = None,
               pinned: Optional[Sequence[int]] = None,
-              tight: Optional[Sequence[int]] = None) -> List[Slot]:
+              tight: Optional[Sequence[int]] = None,
+              meal_at: Optional[datetime] = None) -> List[Slot]:
     """
     Fill a day with music, then carve breaks out of it.
 
@@ -438,9 +439,26 @@ def build_day(candidates: Sequence[Candidate],
     if meal_by is not None:
         dinner_by = day_start.replace(hour=meal_by.hour, minute=meal_by.minute,
                                       second=0, microsecond=0)
-    meal, dropped = _carve(chosen, meal_window, meal_minutes, "meal break", rests,
-                           may_drop_a_pick=True, shortest_acceptable=30,
-                           prefer_latest_before=dinner_by)
+    # Somewhere the person chose, if they chose one and it is still free.
+    # The default placement is a reasonable guess about an afternoon that is
+    # not ours, so where there are gaps to pick between, their answer wins.
+    # A choice that no longer fits — the day was rebuilt around different
+    # artists and the gap closed — quietly falls back to the guess rather
+    # than wedging a break into the middle of a set.
+    meal = dropped = None
+    if meal_at is not None:
+        for earlier, later in zip(chosen, chosen[1:]):
+            if earlier.ends_at <= meal_at < later.starts_at:
+                room = later.starts_at - meal_at
+                if room >= timedelta(minutes=30):
+                    meal = Slot("REST", meal_at,
+                                min(later.starts_at, meal_at + timedelta(minutes=meal_minutes)),
+                                reason="meal break")
+                break
+    if meal is None:
+        meal, dropped = _carve(chosen, meal_window, meal_minutes, "meal break", rests,
+                               may_drop_a_pick=True, shortest_acceptable=30,
+                               prefer_latest_before=dinner_by)
     if meal:
         rests.append(meal)
         if dropped:

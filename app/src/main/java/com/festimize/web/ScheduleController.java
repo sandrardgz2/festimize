@@ -281,6 +281,8 @@ public class ScheduleController {
         model.addAttribute("rests", rests);
         model.addAttribute("picks", picks);
         model.addAttribute("discoveries", sets - picks);
+        model.addAttribute("mealChosen", !plans.chosenMeals(me.getUserId(),
+                chosen.getEditionId()).isEmpty());
         model.addAttribute("declinedCount", declined.countFor(me.getUserId(), chosen.getEditionId())
                 + declined.pinnedFor(me.getUserId(), chosen.getEditionId()));
         model.addAttribute("hours", String.format("%dh %02dm", minutes / 60, minutes % 60));
@@ -384,6 +386,33 @@ public class ScheduleController {
         declined.undecline(me.getUserId(), editionId, performanceId);
         declined.pinWindow(me.getUserId(), editionId, performanceId,
                 java.time.OffsetDateTime.parse(from), java.time.OffsetDateTime.parse(to));
+        planning.buildPlan(me.getUserId(), editionId);
+        return "redirect:/schedule?editionId=" + editionId + "&swapped";
+    }
+
+    /**
+     * Eat in this gap instead of where the scheduler put the break.
+     *
+     * The default placement — the first real opportunity after the middle of
+     * the day, before the hour you said you want to have eaten by — is a
+     * reasonable guess about an afternoon that is not ours. Where there is
+     * more than one gap to choose between, the person knows better.
+     */
+    @PostMapping("/schedule/eat-here")
+    public String eatHere(@RequestParam Long editionId, @RequestParam String startsAt,
+                          Principal principal) {
+        AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
+        plans.chooseMeal(me.getUserId(), editionId, startsAt);
+        planning.buildPlan(me.getUserId(), editionId);
+        return "redirect:/schedule?editionId=" + editionId + "&swapped";
+    }
+
+    /** Hand that day's meal back to the scheduler. */
+    @PostMapping("/schedule/eat-anywhere")
+    public String eatAnywhere(@RequestParam Long editionId, @RequestParam String onDay,
+                              Principal principal) {
+        AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
+        plans.clearMeal(me.getUserId(), editionId, onDay);
         planning.buildPlan(me.getUserId(), editionId);
         return "redirect:/schedule?editionId=" + editionId + "&swapped";
     }

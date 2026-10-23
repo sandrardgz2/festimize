@@ -94,7 +94,7 @@ class _Bill:
     """
 
     def __init__(self, by_day, pinned, cap, meal_by, max_run_minutes, joined_late=None,
-                 windows=None):
+                 windows=None, meals=None):
         self.by_day = by_day
         self.pinned = pinned
         self.cap = cap
@@ -104,6 +104,8 @@ class _Bill:
         self.joined_late = joined_late or {}
         # performance_ids pinned to only part of their set
         self.windows = windows or {}
+        # date -> the moment this person wants their meal break to start
+        self.meals = meals or {}
 
     def offered(self) -> Dict[int, Candidate]:
         return {c.performance_id: c for day in self.by_day.values() for c in day}
@@ -150,6 +152,13 @@ def _load(db: Session, user_id: int, edition_id: int, max_run_minutes: int) -> _
     windows = {r.performance_id: (r.from_at, r.to_at)
                for r in pin_rows if r.from_at is not None or r.to_at is not None}
 
+
+    # Where this person said they want to eat, a day at a time.
+    meals = {r.meal_on: r.starts_at for r in db.execute(
+        text("""select m.meal_on, m.starts_at from plan_meal m
+                   join plan pl on pl.plan_id = m.plan_id
+                  where pl.user_id = :uid and pl.edition_id = :eid"""),
+        {"uid": user_id, "eid": edition_id}).fetchall()}
 
     declined = {r.performance_id for r in db.execute(
         text("""select d.performance_id from plan_declined d
@@ -205,7 +214,7 @@ def _load(db: Session, user_id: int, edition_id: int, max_run_minutes: int) -> _
 
     return _Bill(by_day, pinned, cap, meal_by=pace.meal_by if pace else None,
                  max_run_minutes=max_run_minutes, joined_late=joined_late,
-                 windows=windows)
+                 windows=windows, meals=meals)
 
 
 def _solve(bill: _Bill, discovery_quota: float, also_pin: Sequence[int] = ()) -> list:
@@ -235,7 +244,8 @@ def _solve(bill: _Bill, discovery_quota: float, also_pin: Sequence[int] = ()) ->
                           music_cap_minutes=bill.cap,
                           meal_by=bill.meal_by,
                           pinned=pinned,
-                          tight=list(bill.joined_late) + list(bill.windows))
+                          tight=list(bill.joined_late) + list(bill.windows),
+                          meal_at=bill.meals.get(day))
         slots.extend(built)
         finished = max((s.ends_at for s in built if s.kind == 'SET'), default=None)
         not_before = finished + timedelta(hours=SLEEP_FLOOR_HOURS) if finished else None
