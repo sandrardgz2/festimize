@@ -138,4 +138,42 @@ public interface DeclinedRepository extends JpaRepository<Plan, Long> {
                    @Param("performanceId") Long performanceId,
                    @Param("fromAt") java.time.OffsetDateTime fromAt,
                    @Param("toAt") java.time.OffsetDateTime toAt);
+
+    /** Lift one pin, leaving the rest of the person's edits alone. */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            delete from plan_pinned p using plan pl
+             where p.plan_id = pl.plan_id
+               and pl.user_id = :userId and pl.edition_id = :editionId
+               and p.performance_id = :performanceId
+            """, nativeQuery = true)
+    void unpinOne(@Param("userId") Long userId, @Param("editionId") Long editionId,
+                  @Param("performanceId") Long performanceId);
+
+    /**
+     * The edits somebody has made to this plan, so the page can list them
+     * and undo them one at a time.
+     *
+     * Until now the only way back was "put them all back", which is a poor
+     * answer to regretting one of three decisions.
+     */
+    @Query(value = """
+            select d.performance_id from plan_declined d join plan pl on pl.plan_id = d.plan_id
+             where pl.user_id = :userId and pl.edition_id = :editionId
+             order by d.declined_at
+            """, nativeQuery = true)
+    java.util.List<Long> declinedPerformances(@Param("userId") Long userId,
+                                              @Param("editionId") Long editionId);
+
+    /** Pinned sets, as "performanceId|whole" or "performanceId|part". */
+    @Query(value = """
+            select p.performance_id || '|' ||
+                   case when p.from_at is null then 'whole' else 'part' end
+              from plan_pinned p join plan pl on pl.plan_id = p.plan_id
+             where pl.user_id = :userId and pl.edition_id = :editionId
+             order by p.pinned_at
+            """, nativeQuery = true)
+    java.util.List<String> pinnedPerformances(@Param("userId") Long userId,
+                                              @Param("editionId") Long editionId);
 }

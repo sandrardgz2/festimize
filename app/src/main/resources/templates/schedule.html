@@ -51,14 +51,7 @@
         your saved artists are untouched.
     </p>
     <p class="notice" th:if="${param.restored != null}">Everything is back.</p>
-    <form method="post" th:action="@{/schedule/restore}"
-          th:if="${declinedCount != null and declinedCount > 0}">
-        <input type="hidden" name="editionId" th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
-        <p class="muted">
-            <span th:text="${declinedCount}">0</span> change(s) you have made to this plan.
-            <button type="submit" class="button-quiet">Put them all back</button>
-        </p>
-    </form>
+
 
     <p class="muted" th:if="${buildFailed}">
         The schedule could not be built — the analytics service did not respond. Start it with
@@ -245,6 +238,30 @@
                         <span class="trail" th:text="'over ' + ${t.alternative}">over Zulu</span>
                     </li>
                 </ul>
+            </section>
+
+            <!-- Named, and undoable one at a time. "Put them all back" was the
+                 only way out, which is a poor answer to regretting one of three
+                 decisions -- and the page never said what the three were. -->
+            <section class="panel" th:if="${changes != null and !#lists.isEmpty(changes)}"
+                     style="margin-top:16px">
+                <h2 class="section-title">Your changes</h2>
+                <div class="rail-stat" th:each="c : ${changes}">
+                    <span class="k" th:text="${c.what}">Dropped Slipknot</span>
+                    <form method="post" th:action="@{/schedule/undo}" style="display:inline">
+                        <input type="hidden" name="editionId"
+                               th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                        <input type="hidden" name="performanceId" th:value="${c.performanceId}"/>
+                        <input type="hidden" name="kind" th:value="${c.kind}"/>
+                        <button type="submit" class="button-quiet"
+                                style="padding:2px 9px;font-size:12px">Undo</button>
+                    </form>
+                </div>
+                <form method="post" th:action="@{/schedule/restore}" style="margin-top:10px">
+                    <input type="hidden" name="editionId"
+                           th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                    <button type="submit" class="button-quiet">Put them all back</button>
+                </form>
             </section>
 
             <section class="panel" style="margin-top:16px">

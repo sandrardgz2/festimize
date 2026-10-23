@@ -49,6 +49,16 @@
             </div>
         </section>
 
+        <!-- The schedule and the insights page both say when a day runs past
+             the limit. This one used to print the total as though it were
+             fine, which made two pages honest and one of them not. -->
+        <p class="demo-note" th:if="${overBy != null and overBy > 0}">
+            <strong th:text="${overDays == 1 ? 'One day runs long.' : overDays + ' days run long.'}">One day runs long.</strong>
+            Your longest is <span th:text="${overBy}">50</span> min past the
+            <span th:text="${ceilingHours}">7h 30m</span> you set —
+            <a th:href="@{/schedule(editionId=${chosen.editionId})}">see what to drop</a>.
+        </p>
+
         <div class="grid grid-3">
 
             <section class="panel">

@@ -124,6 +124,10 @@ public class HomeController {
                 me.getUserId(), chosen.getEditionId());
         List<Line> firstSlots = new ArrayList<>();
         int sets = 0, picks = 0, minutes = 0;
+        // Minutes a day, so this page can say the same thing the schedule and
+        // the insights page already say. It was reporting "11 sets, 8h 20m"
+        // about a day fifty minutes past the limit, as though that were fine.
+        java.util.Map<java.time.LocalDate, Integer> perDay = new java.util.LinkedHashMap<>();
         if (plan.isPresent()) {
             for (PlanItem item : items.findForPlan(plan.get().getPlanId())) {
                 boolean isSet = "SET".equals(item.getItemType());
@@ -131,6 +135,7 @@ public class HomeController {
                 if (isSet) {
                     sets++;
                     minutes += mins;
+                    perDay.merge(item.getStartsAt().toLocalDate(), mins, Integer::sum);
                     if (item.getReason() != null && item.getReason().startsWith("your pick")) {
                         picks++;
                     }
@@ -166,6 +171,13 @@ public class HomeController {
         model.addAttribute("where", chosen.getFestival().getCity());
         model.addAttribute("when", dates(chosen));
         model.addAttribute("hasPlan", sets > 0);
+        int ceiling = me.musicCapMinutes();
+        int worst = perDay.values().stream().mapToInt(Integer::intValue).max().orElse(0) - ceiling;
+        model.addAttribute("overBy", Math.max(0, worst));
+        model.addAttribute("overDays", perDay.values().stream()
+                .filter(m -> m > ceiling).count());
+        model.addAttribute("ceilingHours",
+                String.format("%dh %02dm", ceiling / 60, ceiling % 60));
 
         model.addAttribute("sets", sets);
         model.addAttribute("hours", minutes == 0 ? "—"

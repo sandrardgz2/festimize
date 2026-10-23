@@ -101,6 +101,9 @@ public class ScheduleController {
         this.scores = scores;
     }
 
+    /** One edit the person has made, and how to take it back. */
+    public record Change(String kind, String what, Long performanceId) {}
+
     /** What one day of the plan adds up to, for the summary rail. */
     public record DayStat(String label, String tab, int sets, int breaks,
                           int discoveries, String active, String breakTime,
@@ -304,6 +307,21 @@ public class ScheduleController {
         model.addAttribute("rests", rests);
         model.addAttribute("picks", picks);
         model.addAttribute("discoveries", sets - picks);
+        // Every edit, named, so each can be taken back on its own.
+        List<Change> changes = new ArrayList<>();
+        for (Long perf : declined.declinedPerformances(me.getUserId(), chosen.getEditionId())) {
+            performances.artistNameFor(perf).ifPresent(name ->
+                    changes.add(new Change("declined", "Dropped " + name, perf)));
+        }
+        for (String row : declined.pinnedPerformances(me.getUserId(), chosen.getEditionId())) {
+            String[] parts = row.split("\\|");
+            Long perf = Long.valueOf(parts[0]);
+            boolean partial = parts.length > 1 && "part".equals(parts[1]);
+            performances.artistNameFor(perf).ifPresent(name ->
+                    changes.add(new Change("pinned",
+                            (partial ? "Catching part of " : "Asked for ") + name, perf)));
+        }
+        model.addAttribute("changes", changes);
         model.addAttribute("mealChosen", !plans.chosenMeals(me.getUserId(),
                 chosen.getEditionId()).isEmpty());
         model.addAttribute("declinedCount", declined.countFor(me.getUserId(), chosen.getEditionId())
@@ -436,6 +454,20 @@ public class ScheduleController {
                               Principal principal) {
         AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
         plans.clearMeal(me.getUserId(), editionId, onDay);
+        planning.buildPlan(me.getUserId(), editionId);
+        return "redirect:/schedule?editionId=" + editionId + "&swapped";
+    }
+
+    /** Put one set back, without undoing every other decision. */
+    @PostMapping("/schedule/undo")
+    public String undo(@RequestParam Long editionId, @RequestParam Long performanceId,
+                       @RequestParam String kind, Principal principal) {
+        AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
+        if ("declined".equals(kind)) {
+            declined.undecline(me.getUserId(), editionId, performanceId);
+        } else {
+            declined.unpinOne(me.getUserId(), editionId, performanceId);
+        }
         planning.buildPlan(me.getUserId(), editionId);
         return "redirect:/schedule?editionId=" + editionId + "&swapped";
     }
