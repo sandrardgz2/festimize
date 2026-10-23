@@ -38,7 +38,7 @@
           th:if="${declinedCount != null and declinedCount > 0}">
         <input type="hidden" name="editionId" th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
         <p class="muted">
-            <span th:text="${declinedCount}">0</span> set(s) turned down on this plan.
+            <span th:text="${declinedCount}">0</span> change(s) you have made to this plan.
             <button type="submit" class="button-quiet">Put them all back</button>
         </p>
     </form>
@@ -92,6 +92,18 @@
                                th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
                         <input type="hidden" name="performanceId" th:value="${slot.performanceId}"/>
                         <button type="submit" class="button-quiet">Drop this set</button>
+                    </form>
+                    <!-- Asking for the other artist by name, which is a
+                         different request from dropping this one: dropping
+                         frees the slot and lets the solver choose, and it
+                         often chooses a third act. -->
+                    <form method="post" th:action="@{/schedule/swap}" class="slot-actions"
+                          th:if="${slot.kind == 'SET' and slot.alternativeId != null}">
+                        <input type="hidden" name="editionId"
+                               th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                        <input type="hidden" name="performanceId" th:value="${slot.alternativeId}"/>
+                        <button type="submit" class="button-quiet"
+                                th:text="'See ' + ${slot.alternative} + ' instead'">See X instead</button>
                     </form>
                 </div>
             </div>

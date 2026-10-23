@@ -42,4 +42,34 @@ public interface DeclinedRepository extends JpaRepository<Plan, Long> {
              where pl.user_id = :userId and pl.edition_id = :editionId
             """, nativeQuery = true)
     long countFor(@Param("userId") Long userId, @Param("editionId") Long editionId);
+
+    /**
+     * Ask for one artist by name. Dropping a set frees its slot and lets the
+     * solver decide what fills it; pinning says which act should have it.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = """
+            insert into plan_pinned (plan_id, performance_id)
+            select pl.plan_id, :performanceId from plan pl
+             where pl.user_id = :userId and pl.edition_id = :editionId
+            on conflict do nothing
+            """, nativeQuery = true)
+    void pin(@Param("userId") Long userId, @Param("editionId") Long editionId,
+             @Param("performanceId") Long performanceId);
+
+    @Modifying
+    @Transactional
+    @Query(value = """
+            delete from plan_pinned p using plan pl
+             where p.plan_id = pl.plan_id
+               and pl.user_id = :userId and pl.edition_id = :editionId
+            """, nativeQuery = true)
+    void unpinAll(@Param("userId") Long userId, @Param("editionId") Long editionId);
+
+    @Query(value = """
+            select count(*) from plan_pinned p join plan pl on pl.plan_id = p.plan_id
+             where pl.user_id = :userId and pl.edition_id = :editionId
+            """, nativeQuery = true)
+    long pinnedFor(@Param("userId") Long userId, @Param("editionId") Long editionId);
 }

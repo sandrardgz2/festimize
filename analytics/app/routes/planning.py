@@ -82,6 +82,12 @@ def build_plan(
     # before the scheduler sees them, so the solver optimises the day that is
     # actually on offer rather than choosing a set and having it removed
     # afterwards — which would leave the hole it was filling.
+    pinned = [r.performance_id for r in db.execute(
+        text("""select p.performance_id from plan_pinned p
+                   join plan pl on pl.plan_id = p.plan_id
+                  where pl.user_id = :uid and pl.edition_id = :eid"""),
+        {"uid": user_id, "eid": edition_id}).fetchall()]
+
     declined = {r.performance_id for r in db.execute(
         text("""select d.performance_id from plan_declined d
                    join plan pl on pl.plan_id = d.plan_id
@@ -134,7 +140,8 @@ def build_plan(
                           max_run_minutes=max_run_minutes,
                           not_before=not_before,
                           music_cap_minutes=cap,
-                          meal_by=pace.meal_by if pace else None)
+                          meal_by=pace.meal_by if pace else None,
+                          pinned=pinned)
         slots.extend(built)
         finished = max((s.ends_at for s in built if s.kind == 'SET'), default=None)
         not_before = finished + timedelta(hours=SLEEP_FLOOR_HOURS) if finished else None
@@ -156,12 +163,13 @@ def build_plan(
         db.execute(
             text(
                 """
-                insert into plan_item (plan_id, item_type, performance_id, starts_at, ends_at, reason)
-                values (:p, :kind, :perf, :start, :end, :reason)
+                insert into plan_item (plan_id, item_type, performance_id, starts_at, ends_at, reason, alternative_id)
+                values (:p, :kind, :perf, :start, :end, :reason, :alt)
                 """
             ),
             {"p": plan_id, "kind": s.kind, "perf": s.performance_id,
-             "start": s.starts_at, "end": s.ends_at, "reason": s.reason},
+             "start": s.starts_at, "end": s.ends_at, "reason": s.reason,
+             "alt": s.alternative_id},
         )
     db.commit()
 

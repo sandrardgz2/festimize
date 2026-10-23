@@ -148,6 +148,11 @@ CREATE TABLE plan_item (
     starts_at      timestamptz NOT NULL,
     ends_at        timestamptz NOT NULL,
     reason         text,                               -- why the scheduler chose this
+    -- Which performance this set displaced, so the page can offer it as a
+    -- swap. Written by the planner, which is the only thing that knows: the
+    -- explanation sentence carries the artist's name and nothing a form
+    -- could post back.
+    alternative_id bigint REFERENCES fact_performance,
     CHECK (ends_at > starts_at),
     CHECK ((item_type = 'SET') = (performance_id IS NOT NULL))
 );
@@ -159,6 +164,16 @@ CREATE INDEX idx_plan_item_plan ON plan_item (plan_id, starts_at);
 -- profile that scores everything else. Declines survive a rebuild, because
 -- the plan is regenerated from scratch and the rejected set would otherwise
 -- come straight back.
+-- Sets the person asked for by name. Dropping a set frees its slot and lets
+-- the solver decide; pinning says which artist should have it, and the solver
+-- builds the day around that rather than deriving it again.
+CREATE TABLE plan_pinned (
+    plan_id        bigint NOT NULL REFERENCES plan ON DELETE CASCADE,
+    performance_id bigint NOT NULL REFERENCES fact_performance ON DELETE CASCADE,
+    pinned_at      timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (plan_id, performance_id)
+);
+
 CREATE TABLE plan_declined (
     plan_id        bigint NOT NULL REFERENCES plan ON DELETE CASCADE,
     performance_id bigint NOT NULL REFERENCES fact_performance ON DELETE CASCADE,

@@ -58,6 +58,10 @@ class Slot:
     artist: Optional[str] = None
     stage: Optional[str] = None
     reason: str = ""
+    # Which performance this set displaced, so the page can offer it as a
+    # swap. The explanation sentence has the artist's name in it and nothing
+    # a form could post back.
+    alternative_id: Optional[int] = None
 
 
 def _overlaps(a_start, a_end, b_start, b_end) -> bool:
@@ -171,7 +175,8 @@ def build_day(candidates: Sequence[Candidate],
               swap_tolerance: float = 0.10,
               not_before: Optional[datetime] = None,
               music_cap_minutes: int = 450,
-              meal_by: Optional[object] = None) -> List[Slot]:
+              meal_by: Optional[object] = None,
+              pinned: Optional[Sequence[int]] = None) -> List[Slot]:
     """
     Fill a day with music, then carve breaks out of it.
 
@@ -203,6 +208,19 @@ def build_day(candidates: Sequence[Candidate],
     """
     if not candidates:
         return []
+
+    # Sets the person asked for by name. Everything clashing with one is taken
+    # off the table before the solver runs, so the pin is honoured rather than
+    # competed with — otherwise the day it produces is the day it preferred,
+    # which is the thing being overruled.
+    if pinned:
+        wanted = [c for c in candidates if c.performance_id in set(pinned)]
+        for keep in wanted:
+            candidates = [c for c in candidates
+                          if c is keep
+                          or not _overlaps(keep.starts_at, keep.ends_at,
+                                           c.starts_at - timedelta(minutes=changeover_minutes),
+                                           c.ends_at + timedelta(minutes=changeover_minutes))]
 
     # The sleep floor. Dropping the sets rather than warning about them is the
     # point: a schedule that lists a 09:00 set after a 02:00 finish is not
@@ -511,7 +529,8 @@ def build_day(candidates: Sequence[Candidate],
                     reason += " — " + why
         if id(c) in missed:
             reason += " · joined %d min late, walking from the last set" % missed[id(c)]
-        slots.append(Slot("SET", c.starts_at, c.ends_at, c.performance_id, c.artist, c.stage, reason))
+        slots.append(Slot("SET", c.starts_at, c.ends_at, c.performance_id, c.artist, c.stage,
+                          reason, rival.performance_id if rival is not None else None))
     slots += rests
 
     # Account for every minute. A gap left blank on a timeline looks like a

@@ -52,6 +52,22 @@ public class PlanItem {
     @Column(name = "reason")
     private String reason;
 
+    /**
+     * The performance this set displaced, so the page can offer it as a swap.
+     * Written by the planner: the explanation sentence names the artist and
+     * carries nothing a form could post back.
+     */
+    @Column(name = "alternative_id")
+    private Long alternativeId;
+
+    public Long getAlternativeId() {
+        return alternativeId;
+    }
+
+    public void setAlternativeId(Long alternativeId) {
+        this.alternativeId = alternativeId;
+    }
+
     public Long getPlanItemId() {
         return planItemId;
     }

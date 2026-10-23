@@ -58,7 +58,8 @@ public class ScheduleController {
     }
 
     public record Slot(String kind, String time, String artist, Long artistId,
-                       Long performanceId, String stage,
+                       Long performanceId, Long alternativeId, String alternative,
+                       String stage,
                        String reason, String tradeoff, int minutes, boolean rising) {
         /** A plain changeover, as opposed to a break the scheduler chose. */
         public boolean gap() { return reason != null && reason.startsWith("gap"); }
@@ -114,6 +115,8 @@ public class ScheduleController {
                         who,
                         isSet && item.getPerformance() != null
                                 ? item.getPerformance().getPerformanceId() : null,
+                        item.getAlternativeId(),
+                        alternativeOf(item),
                         isSet && item.getPerformance() != null && item.getPerformance().getStage() != null
                                 ? item.getPerformance().getStage().getName() : null,
                         reasonOf(item), tradeoffOf(item), mins,
@@ -130,7 +133,8 @@ public class ScheduleController {
         model.addAttribute("rests", rests);
         model.addAttribute("picks", picks);
         model.addAttribute("discoveries", sets - picks);
-        model.addAttribute("declinedCount", declined.countFor(me.getUserId(), chosen.getEditionId()));
+        model.addAttribute("declinedCount", declined.countFor(me.getUserId(), chosen.getEditionId())
+                + declined.pinnedFor(me.getUserId(), chosen.getEditionId()));
         model.addAttribute("hours", String.format("%dh %02dm", minutes / 60, minutes % 60));
         model.addAttribute("hasPlan", !byDay.isEmpty());
         model.addAttribute("hasPicks", !saved.findSavedArtists(me.getUserId()).isEmpty());
@@ -172,13 +176,43 @@ public class ScheduleController {
         return "redirect:/schedule?editionId=" + editionId + "&swapped";
     }
 
+    /**
+     * Take the artist this set beat, instead of this set.
+     *
+     * Pinning rather than declining the winner, because they are different
+     * requests. Dropping frees the slot and lets the solver decide — which
+     * gave Dying Wish's slot to Sevendust, not to the act the page named.
+     * This says which artist should have it, and the day is built round that.
+     */
+    @PostMapping("/schedule/swap")
+    public String swap(@RequestParam Long editionId, @RequestParam Long performanceId,
+                       Principal principal) {
+        AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
+        declined.pin(me.getUserId(), editionId, performanceId);
+        planning.buildPlan(me.getUserId(), editionId);
+        return "redirect:/schedule?editionId=" + editionId + "&swapped";
+    }
+
     /** Put everything back, for someone who has declined their way into a corner. */
     @PostMapping("/schedule/restore")
     public String restore(@RequestParam Long editionId, Principal principal) {
         AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
         declined.restoreAll(me.getUserId(), editionId);
+        declined.unpinAll(me.getUserId(), editionId);
         planning.buildPlan(me.getUserId(), editionId);
         return "redirect:/schedule?editionId=" + editionId + "&restored";
+    }
+
+    /** The displaced artist's name, lifted out of the explanation sentence. */
+    private static String alternativeOf(PlanItem item) {
+        String r = item.getReason() == null ? "" : item.getReason();
+        int at = r.indexOf(" \u00b7 chosen over ");
+        if (at < 0) {
+            return null;
+        }
+        String rest = r.substring(at + " \u00b7 chosen over ".length());
+        int bracket = rest.indexOf(" (");
+        return bracket < 0 ? rest : rest.substring(0, bracket);
     }
 
     /** The match or pick label, without the explanation of what it beat. */
