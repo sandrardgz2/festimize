@@ -15,6 +15,7 @@ import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.Locale;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -30,6 +31,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class ScheduleController {
 
     private static final DateTimeFormatter DAY = DateTimeFormatter.ofPattern("EEEE d MMMM");
+    /** The short form the wireframe puts on the day tabs: "SAT 14". */
+    private static final DateTimeFormatter TAB = DateTimeFormatter.ofPattern("EEE d");
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm");
 
     private final FestivalEditionRepository editions;
@@ -40,13 +43,15 @@ public class ScheduleController {
     private final PlanItemRepository items;
     private final PlanningClient planning;
     private final UserArtistRepository saved;
+    private final com.festimize.repo.PerformanceRepository performances;
 
     public ScheduleController(FestivalEditionRepository editions,
                               com.festimize.repo.ArtistMomentumRepository momentum,
                               com.festimize.repo.DeclinedRepository declined,
                               AppUserRepository users,
                               PlanRepository plans, PlanItemRepository items, PlanningClient planning,
-                              UserArtistRepository saved) {
+                              UserArtistRepository saved,
+                              com.festimize.repo.PerformanceRepository performances) {
         this.editions = editions;
         this.momentum = momentum;
         this.declined = declined;
@@ -55,7 +60,12 @@ public class ScheduleController {
         this.items = items;
         this.planning = planning;
         this.saved = saved;
+        this.performances = performances;
     }
+
+    /** What one day of the plan adds up to, for the summary rail. */
+    public record DayStat(String label, String tab, int sets, int breaks,
+                          int discoveries, String active) {}
 
     public record Slot(String kind, String time, String artist, Long artistId,
                        Long performanceId, Long alternativeId, String alternative,
@@ -68,6 +78,7 @@ public class ScheduleController {
     @GetMapping("/schedule")
     public String schedule(@RequestParam(required = false) Long editionId,
                            @RequestParam(required = false) String error,
+                           @RequestParam(required = false) String day,
                            Principal principal, Model model) {
         // Only editions with set times: a schedule cannot be built without them,
         // and after the corpus load there are 334 editions that have none.
@@ -92,23 +103,43 @@ public class ScheduleController {
         }
 
         Map<String, List<Slot>> byDay = new LinkedHashMap<>();
+        // The same figures as the whole-plan ones, kept a day at a time, so
+        // the summary rail describes the day actually on screen. A three-day
+        // total is not what somebody reads on the Saturday morning.
+        Map<String, int[]> perDay = new LinkedHashMap<>();
+        Map<String, String> tabOf = new LinkedHashMap<>();
         int sets = 0, rests = 0, picks = 0, minutes = 0;
 
         if (plan.isPresent()) {
             for (PlanItem item : items.findForPlan(plan.get().getPlanId())) {
-                String day = item.getStartsAt().format(DAY);
+                String dayKey = item.getStartsAt().format(DAY);
+                tabOf.putIfAbsent(dayKey, item.getStartsAt().format(TAB).toUpperCase(Locale.UK));
+                int[] tally = perDay.computeIfAbsent(dayKey, d -> new int[4]);
                 int mins = (int) Duration.between(item.getStartsAt(), item.getEndsAt()).toMinutes();
                 boolean isSet = "SET".equals(item.getItemType());
                 if (isSet) {
                     sets++;
                     minutes += mins;
-                    if (item.getReason() != null && item.getReason().startsWith("your pick")) picks++;
+                    tally[0]++;
+                    tally[2] += mins;
+                    if (item.getReason() != null && item.getReason().startsWith("your pick")) {
+                        picks++;
+                    } else {
+                        tally[3]++;
+                    }
                 } else {
                     rests++;
+                    // Only breaks the scheduler placed. The slots it calls
+                    // rests also include plain changeovers, and counting a
+                    // walk between stages as a break said "6 breaks" about a
+                    // day that had one.
+                    if (item.getReason() == null || !item.getReason().startsWith("gap")) {
+                        tally[1]++;
+                    }
                 }
                 Long who = isSet && item.getPerformance() != null
                         ? item.getPerformance().getArtist().getArtistId() : null;
-                byDay.computeIfAbsent(day, d -> new ArrayList<>()).add(new Slot(
+                byDay.computeIfAbsent(dayKey, d -> new ArrayList<>()).add(new Slot(
                         item.getItemType(),
                         item.getStartsAt().format(TIME) + " – " + item.getEndsAt().format(TIME),
                         isSet && item.getPerformance() != null ? item.getPerformance().getArtist().getName() : null,
@@ -124,11 +155,34 @@ public class ScheduleController {
             }
         }
 
+        // Which day the tabs are showing. One at a time, as the wireframe has
+        // it; stacking three days made the page a scroll and the summary at
+        // the end of it belonged to nothing in particular.
+        String showing = byDay.containsKey(day) ? day
+                : byDay.keySet().stream().findFirst().orElse(null);
+
+        List<DayStat> dayStats = new ArrayList<>();
+        for (Map.Entry<String, int[]> e : perDay.entrySet()) {
+            int[] t = e.getValue();
+            dayStats.add(new DayStat(e.getKey(), tabOf.get(e.getKey()), t[0], t[1], t[3],
+                    String.format("%dh %02dm", t[2] / 60, t[2] % 60)));
+        }
+
         model.addAttribute("activeNav", "schedule");
         model.addAttribute("editions", all);
         model.addAttribute("chosen", chosen);
         model.addAttribute("festivalName", chosen.getFestival().getName() + " " + chosen.getYear());
+        model.addAttribute("where", chosen.getFestival().getCity());
         model.addAttribute("days", byDay);
+        model.addAttribute("dayStats", dayStats);
+        model.addAttribute("showing", showing);
+        model.addAttribute("slots", showing == null ? List.of() : byDay.get(showing));
+        model.addAttribute("dayStat", dayStats.stream()
+                .filter(d -> d.label().equals(showing)).findFirst().orElse(null));
+        // Every "chosen over" sentence for the day on screen, collected into
+        // the rail the wireframe calls TRADEOFFS.
+        model.addAttribute("tradeoffs", showing == null ? List.of()
+                : byDay.get(showing).stream().filter(sl -> sl.tradeoff() != null).toList());
         model.addAttribute("sets", sets);
         model.addAttribute("rests", rests);
         model.addAttribute("picks", picks);
@@ -226,15 +280,21 @@ public class ScheduleController {
     }
 
     /** The displaced artist's name, lifted out of the explanation sentence. */
-    private static String alternativeOf(PlanItem item) {
-        String r = item.getReason() == null ? "" : item.getReason();
-        int at = r.indexOf(" \u00b7 chosen over ");
-        if (at < 0) {
+    /**
+     * Who the swap button offers, read from the row rather than the sentence.
+     *
+     * This used to pull the name back out of the reason text by looking for
+     * " \u00b7 chosen over ". Then a pinned set started explaining itself as
+     * "you asked for this, instead of Slipknot" — the same fact, different
+     * words — the search missed, and the button to swap back disappeared
+     * even though alternative_id was sitting right there on the row. Parsing
+     * our own prose is a dependency on wording that nobody remembers having.
+     */
+    private String alternativeOf(PlanItem item) {
+        if (item.getAlternativeId() == null) {
             return null;
         }
-        String rest = r.substring(at + " \u00b7 chosen over ".length());
-        int bracket = rest.indexOf(" (");
-        return bracket < 0 ? rest : rest.substring(0, bracket);
+        return performances.artistNameFor(item.getAlternativeId()).orElse(null);
     }
 
     /** The match or pick label, without the explanation of what it beat. */
@@ -245,9 +305,21 @@ public class ScheduleController {
     }
 
     /** "chosen over X" — why this set won its slot, shown quietly beneath it. */
+    /**
+     * The sentence explaining what this slot beat, whichever way it is put.
+     *
+     * Two phrasings reach here: the scheduler's own "chosen over X", and
+     * "you asked for this, instead of X" for a set the person pinned, where
+     * claiming the scheduler chose it would be false.
+     */
     private static String tradeoffOf(PlanItem item) {
         String r = item.getReason() == null ? "" : item.getReason();
-        int at = r.indexOf(" \u00b7 chosen over ");
-        return at < 0 ? null : r.substring(at + 3);
+        for (String marker : new String[]{" \u00b7 chosen over ", " \u00b7 you asked for this, instead of "}) {
+            int at = r.indexOf(marker);
+            if (at >= 0) {
+                return r.substring(at + 3);
+            }
+        }
+        return null;
     }
 }

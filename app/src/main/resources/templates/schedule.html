@@ -1,33 +1,46 @@
 <!DOCTYPE html>
+<!--
+  Page 6 of the wireframes: the day on the left, what it adds up to on the
+  right, one day at a time.
+
+  The wireframe's rail also carries "Walking 3.1 km". There is no walking
+  distance in the corpus — stages have names, not coordinates — so it is not
+  here. Its "Lock a set" button is not here either: this page already has
+  three more specific actions that were built after the wireframe, and they
+  do the work a lock was sketched to do.
+-->
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout :: head('Schedule')}"></head>
 <body>
 <header th:replace="~{layout :: topbar}"></header>
 
 <main class="wrap">
-    <h1 class="page-title" th:text="${festivalName} ?: 'Your schedule'">Your schedule</h1>
-    <p class="page-sub" th:if="${hasPlan}">
-        <span th:text="${sets}">0</span> sets ·
-        <span th:text="${picks}">0</span> of your picks ·
-        <span th:text="${discoveries}">0</span> discoveries ·
-        <span th:text="${rests}">0</span> breaks ·
-        <span th:text="${hours}">0h</span> of music
-    </p>
+
+    <section class="hero">
+        <div>
+            <h1 class="hero-title" th:text="${festivalName} ?: 'Your schedule'">Your schedule</h1>
+            <p class="hero-sub">
+                <span th:if="${where != null}" th:text="${where} + ' · '">Catton Park · </span>
+                <span th:if="${hasPlan}">
+                    <span th:text="${sets}">0</span> sets ·
+                    <span th:text="${picks}">0</span> of your picks ·
+                    <span th:text="${discoveries}">0</span> discoveries ·
+                    <span th:text="${hours}">0h</span> of music
+                </span>
+                <span th:unless="${hasPlan}">no plan built yet</span>
+            </p>
+        </div>
+        <form method="post" th:action="@{/schedule/build}">
+            <input type="hidden" name="editionId" th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+            <button type="submit" class="btn"
+                    th:text="${hasPlan} ? 'Rebuild my schedule' : 'Build my schedule'">Build</button>
+        </form>
+    </section>
 
     <p class="demo-note">
         <strong>Demonstration data.</strong> These artists are real, but the 2027 lineup and set times are
         illustrative and were entered by hand — they are not the festival's announced lineup.
     </p>
-
-    <form method="post" th:action="@{/schedule/build}">
-        <input type="hidden" name="editionId" th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
-        <button type="submit" class="btn" th:text="${hasPlan} ? 'Update my schedule' : 'Build my schedule'">Build</button>
-        <span class="muted" th:if="${#lists.size(editions) > 1}">
-            &nbsp;
-            <a th:each="e : ${editions}" th:href="@{/schedule(editionId=${e.editionId})}"
-               th:text="${e.festival.name} + ' ' + ${e.year}" class="badge">Festival</a>
-        </span>
-    </form>
 
     <p class="notice" th:if="${param.swapped != null}">
         Set turned down and the day rebuilt around it. This changes only this plan —
@@ -50,67 +63,113 @@
     <p class="muted" th:if="${!hasPlan and !hasPicks}">
         Pick your artists on the <a th:href="@{/setup}">setup page</a> first — the schedule is built around them.
     </p>
-    <p class="muted" th:if="${hasPlan}">
-        Drop any set you do not want and the whole day is worked out again around it —
-        other sets may move or change too, and your saved artists are untouched.
-        Built from the artists you have saved. The schedule only changes when your picks do —
-        it is not shuffled, and pressing this again gives the same day.
-    </p>
     <p class="muted" th:if="${!hasPlan and hasPicks and !buildFailed}">
         No schedule for this festival yet. Press <strong>Build my schedule</strong> above.
     </p>
 
-    <section th:each="day : ${days}">
-        <h2 th:text="${day.key}">Day</h2>
-        <div class="timeline">
-            <div th:each="slot : ${day.value}"
-                 th:classappend="${slot.gap} ? 'slot slot-gap' : (${slot.kind == 'REST'} ? 'slot slot-rest' : 'slot slot-set')" class="slot">
-                <div class="slot-time" th:text="${slot.time}">12:00 – 13:00</div>
-                <div class="slot-body">
-                    <div class="name" th:if="${slot.kind == 'SET'}">
-                        <a th:href="@{/artist/{id}(id=${slot.artistId})}" th:text="${slot.artist}"
-                           class="artist-link">Artist</a>
-                        <span class="badge badge-rising" th:if="${slot.rising}">Rising</span>
-                    </div>
-                    <div class="name" th:if="${slot.kind == 'REST' and !slot.gap}">Break — <span th:text="${slot.minutes} + ' min'">40 min</span></div>
-                    <div class="gap-label" th:if="${slot.gap}" th:text="${slot.minutes} + ' min changeover'">30 min changeover</div>
-                    <div class="tags">
-                        <span th:if="${slot.stage}" th:text="${slot.stage} + ' · '">Stage · </span>
-                        <span th:text="${slot.reason}">reason</span>
-                    </div>
-                    <!-- The swap sits with the sentence that names the artist,
-                         because that sentence is the reason anyone would want it.
-                         Dropping is the general action and stays below. -->
-                    <div class="tradeoff" th:if="${slot.tradeoff}">
-                        <span th:text="${slot.tradeoff}">chosen over …</span>
-                        <form method="post" th:action="@{/schedule/swap}" class="inline-action"
-                              th:if="${slot.alternativeId != null}">
+    <!-- One tab per festival day. -->
+    <div class="daytabs" th:if="${hasPlan and #lists.size(dayStats) > 1}">
+        <a th:each="d : ${dayStats}"
+           th:href="@{/schedule(editionId=${chosen.editionId}, day=${d.label})}"
+           th:classappend="${d.label == showing} ? 'active'"
+           class="daytab" th:text="${d.tab}">SAT 14</a>
+    </div>
+
+    <div class="split" th:if="${hasPlan}">
+
+        <section>
+            <h2 class="section-title" th:text="${showing}">Saturday 14 August</h2>
+            <div class="timeline">
+                <div th:each="slot : ${slots}"
+                     th:classappend="${slot.gap} ? 'slot slot-gap' : (${slot.kind == 'REST'} ? 'slot slot-rest' : 'slot slot-set')" class="slot">
+                    <div class="slot-time" th:text="${slot.time}">12:00 – 13:00</div>
+                    <div class="slot-body">
+                        <div class="name" th:if="${slot.kind == 'SET'}">
+                            <a th:href="@{/artist/{id}(id=${slot.artistId})}" th:text="${slot.artist}"
+                               class="artist-link">Artist</a>
+                            <span class="badge badge-rising" th:if="${slot.rising}">Rising</span>
+                        </div>
+                        <div class="name" th:if="${slot.kind == 'REST' and !slot.gap}">Break — <span th:text="${slot.minutes} + ' min'">40 min</span></div>
+                        <div class="gap-label" th:if="${slot.gap}" th:text="${slot.minutes} + ' min changeover'">30 min changeover</div>
+                        <div class="tags">
+                            <span th:if="${slot.stage}" th:text="${slot.stage} + ' · '">Stage · </span>
+                            <span th:text="${slot.reason}">reason</span>
+                        </div>
+                        <!-- The swap sits with the sentence that names the artist,
+                             because that sentence is the reason anyone would want it.
+                             Dropping is the general action and stays below. -->
+                        <div class="tradeoff" th:if="${slot.tradeoff}">
+                            <span th:text="${slot.tradeoff}">chosen over …</span>
+                            <form method="post" th:action="@{/schedule/swap}" class="inline-action"
+                                  th:if="${slot.alternativeId != null}">
+                                <input type="hidden" name="editionId"
+                                       th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                                <input type="hidden" name="performanceId"
+                                       th:value="${slot.alternativeId}"/>
+                                <button type="submit" class="button-quiet"
+                                        th:text="'See ' + ${slot.alternative} + ' instead'">See X instead</button>
+                            </form>
+                        </div>
+                        <!-- One label for every slot, and deliberately not "swap for
+                             X". The whole day is solved again rather than patched, so
+                             the set that takes the freed slot is often not the one
+                             this slot beat: dropping Dying Wish at 14:30 brought in
+                             Sevendust there AND moved Knocked Loose aside for
+                             Spiritbox an hour later. Naming an alternative would
+                             promise something the solver does not guarantee. -->
+                        <form method="post" th:action="@{/schedule/decline}" class="slot-actions"
+                              th:if="${slot.kind == 'SET' and slot.performanceId != null}">
                             <input type="hidden" name="editionId"
                                    th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
-                            <input type="hidden" name="performanceId"
-                                   th:value="${slot.alternativeId}"/>
-                            <button type="submit" class="button-quiet"
-                                    th:text="'See ' + ${slot.alternative} + ' instead'">See X instead</button>
+                            <input type="hidden" name="performanceId" th:value="${slot.performanceId}"/>
+                            <button type="submit" class="button-quiet">Drop this set</button>
                         </form>
                     </div>
-                    <!-- One label for every slot, and deliberately not "swap for
-                         X". The whole day is solved again rather than patched, so
-                         the set that takes the freed slot is often not the one
-                         this slot beat: dropping Dying Wish at 14:30 brought in
-                         Sevendust there AND moved Knocked Loose aside for
-                         Spiritbox an hour later. Naming an alternative would
-                         promise something the solver does not guarantee. -->
-                    <form method="post" th:action="@{/schedule/decline}" class="slot-actions"
-                          th:if="${slot.kind == 'SET' and slot.performanceId != null}">
-                        <input type="hidden" name="editionId"
-                               th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
-                        <input type="hidden" name="performanceId" th:value="${slot.performanceId}"/>
-                        <button type="submit" class="button-quiet">Drop this set</button>
-                    </form>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
+
+        <aside>
+            <section class="panel" th:if="${dayStat != null}">
+                <h2 class="section-title">Summary</h2>
+                <div class="rail-stat">
+                    <span class="k">Sets</span><span class="v" th:text="${dayStat.sets}">5</span>
+                </div>
+                <div class="rail-stat">
+                    <span class="k">Active time</span><span class="v" th:text="${dayStat.active}">6h 20m</span>
+                </div>
+                <div class="rail-stat">
+                    <span class="k">Breaks</span><span class="v" th:text="${dayStat.breaks}">2</span>
+                </div>
+                <div class="rail-stat">
+                    <span class="k">New artists</span><span class="v" th:text="${dayStat.discoveries}">3</span>
+                </div>
+            </section>
+
+            <section class="panel" th:if="${!#lists.isEmpty(tradeoffs)}" style="margin-top:16px">
+                <h2 class="section-title">Tradeoffs</h2>
+                <p class="section-note">What this day cost, set by set.</p>
+                <ul class="preview">
+                    <!-- Short here on purpose: the full sentence is already
+                         beside the set it belongs to, and repeating it word
+                         for word made the rail longer than the day. -->
+                    <li th:each="t : ${tradeoffs}" th:if="${t.alternative != null}">
+                        <span class="lead" th:text="${t.artist}">Artist</span>
+                        <span class="trail" th:text="'over ' + ${t.alternative}">over Zulu</span>
+                    </li>
+                </ul>
+            </section>
+
+            <section class="panel" style="margin-top:16px">
+                <h2 class="section-title">Pace</h2>
+                <p class="section-note">
+                    The rules this day was built to respect are yours to change.
+                </p>
+                <p><a th:href="@{/profile}">Your pace settings →</a></p>
+            </section>
+        </aside>
+    </div>
 </main>
+<footer th:replace="~{layout :: footer}"></footer>
 </body>
 </html>

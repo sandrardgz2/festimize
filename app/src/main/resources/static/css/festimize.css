@@ -719,13 +719,14 @@ a.avatar:hover {
     display: flex;
     align-items: flex-end;
     gap: 14px;
-    height: 120px;
+    min-height: 120px;
     padding-top: 8px;
 }
 
 .climb-col {
     display: flex;
     flex-direction: column;
+    justify-content: flex-end;
     align-items: center;
     gap: 6px;
     flex: 1;

@@ -12,13 +12,10 @@
     </p>
 
     <div th:unless="${#lists.isEmpty(editions)}">
-        <form method="get" th:action="@{/insights}" th:if="${#lists.size(editions) > 1}">
-            <select name="editionId" onchange="this.form.submit()">
-                <option th:each="e : ${editions}" th:value="${e.editionId}"
-                        th:selected="${chosen != null and e.editionId == chosen.editionId}"
-                        th:text="${e.festival.name} + ' ' + ${e.year}">Festival</option>
-            </select>
-        </form>
+        <!-- The festival switcher is in the header now, on every page, which
+             is where the wireframes put it. The lineup page keeps its own as
+             well, because that one also reaches the 331 historical lineups
+             and the header lists only the three you can plan. -->
 
         <p class="muted" th:if="${sets == 0}">
             No schedule built for this festival yet — build one on the

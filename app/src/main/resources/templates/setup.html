@@ -1,15 +1,57 @@
 <!DOCTYPE html>
+<!--
+  Page 2 of the wireframes. The three-step indicator, the artists you have
+  already chosen as chips, and a counter against the suggested ten.
+
+  The checkbox grid below them is the mechanism that was already here and is
+  deliberately unchanged: saving replaces the whole list, so a save made from
+  a filtered view carries the artists the filter hid as hidden fields. Chips
+  are a second way in, not a replacement.
+-->
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout :: head('Setup')}"></head>
 <body>
 <header th:replace="~{layout :: topbar}"></header>
 
 <main class="wrap">
-    <h1 class="page-title">Pick the artists you love</h1>
+
+    <div class="steps">
+        <span class="step done">
+            <span class="step-num">1</span> Choose festival
+        </span>
+        <span class="step-rule"></span>
+        <span class="step active">
+            <span class="step-num">2</span> Artists you love
+        </span>
+        <span class="step-rule"></span>
+        <a class="step" th:href="@{/profile}">
+            <span class="step-num">3</span> Your pace
+        </a>
+    </div>
+
+    <h1 class="page-title">Which artists do you love?</h1>
     <p class="page-sub">
-        Ten is enough to start — add as many as you like. This list lives on your account, so it works
-        for every festival, not just this one.
+        Name about ten. We use these to score every artist on the lineup — and the list
+        lives on your account, so it works for every festival, not just this one.
     </p>
+
+    <!-- What is already chosen, before anything else. -->
+    <section th:if="${!#lists.isEmpty(mine)}">
+        <div class="chip-row">
+            <span class="chip-removable" th:each="a : ${mine}">
+                <a th:href="@{'/artist/' + ${a.artistId}}" th:text="${a.name}">Artist</a>
+                <form method="post" th:action="@{/setup/remove}" style="display:inline">
+                    <input type="hidden" name="artistId" th:value="${a.artistId}"/>
+                    <button type="submit" th:title="'Remove ' + ${a.name}">×</button>
+                </form>
+            </span>
+        </div>
+        <p class="counter">
+            <span th:text="${chosenCount}">6</span> of <span th:text="${target}">10</span> added<span
+                th:if="${chosenCount >= target}"> — plenty to work with</span>.
+            <a th:href="@{/lineup}" th:if="${chosenCount > 0}">See your lineup →</a>
+        </p>
+    </section>
 
     <!-- Searching the whole corpus, not just the artists already tagged. An
          artist nobody has tagged gets them fetched from MusicBrainz when they
@@ -35,7 +77,7 @@
         <input type="hidden" name="artistIds" th:each="id : ${keep}" th:value="${id}"/>
         <p>
             <button type="submit" class="btn">Save my artists</button>
-            <span class="muted">Currently saved: <span th:text="${chosenCount}">0</span></span>
+            <span class="counter">Currently saved: <span th:text="${chosenCount}">0</span></span>
         </p>
 
         <div class="grid grid-2">
@@ -51,5 +93,6 @@
         <p><button type="submit" class="btn">Save my artists</button></p>
     </form>
 </main>
+<footer th:replace="~{layout :: footer}"></footer>
 </body>
 </html>
