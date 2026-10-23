@@ -151,8 +151,8 @@
                                 <input type="hidden" name="editionId"
                                        th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
                                 <input type="hidden" name="performanceId" th:value="${slot.alternativeId}"/>
-                                <input type="hidden" name="from" th:value="${slot.fromAt}"/>
-                                <input type="hidden" name="to" th:value="${slot.toAt}"/>
+                                <input type="hidden" name="from" th:value="${slot.catchFrom}"/>
+                                <input type="hidden" name="to" th:value="${slot.catchTo}"/>
                                 <button type="submit" class="button-quiet"
                                         th:text="'Catch ' + ${slot.catchMinutes} + ' min of it, keeping the rest'">Catch the end</button>
                             </form>

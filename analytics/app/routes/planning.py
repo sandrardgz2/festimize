@@ -94,7 +94,7 @@ class _Bill:
     """
 
     def __init__(self, by_day, pinned, cap, meal_by, max_run_minutes, joined_late=None,
-                 windows=None, meals=None):
+                 windows=None, meals=None, leaves_early=None):
         self.by_day = by_day
         self.pinned = pinned
         self.cap = cap
@@ -106,6 +106,8 @@ class _Bill:
         self.windows = windows or {}
         # date -> the moment this person wants their meal break to start
         self.meals = meals or {}
+        # performance_id -> (minutes cut from the end, when it really finishes)
+        self.leaves_early = leaves_early or {}
 
     def offered(self) -> Dict[int, Candidate]:
         return {c.performance_id: c for day in self.by_day.values() for c in day}
@@ -185,6 +187,7 @@ def _load(db: Session, user_id: int, edition_id: int, max_run_minutes: int) -> _
 
     by_day = {}
     joined_late = {}
+    leaves_early = {}
     for r in rows:
         starts, ends = r.starts_at, r.ends_at
         window = windows.get(r.performance_id)
@@ -197,6 +200,9 @@ def _load(db: Session, user_id: int, edition_id: int, max_run_minutes: int) -> _
             late = int((starts - r.starts_at).total_seconds() // 60)
             if late > 0:
                 joined_late[r.performance_id] = (late, r.starts_at)
+            early = int((r.ends_at - ends).total_seconds() // 60)
+            if early > 0:
+                leaves_early[r.performance_id] = (early, r.ends_at)
         by_day.setdefault(starts.date(), []).append(
             Candidate(r.performance_id, r.artist_id, r.name, r.stage,
                       starts, ends, float(r.score), bool(r.is_pick))
@@ -214,7 +220,7 @@ def _load(db: Session, user_id: int, edition_id: int, max_run_minutes: int) -> _
 
     return _Bill(by_day, pinned, cap, meal_by=pace.meal_by if pace else None,
                  max_run_minutes=max_run_minutes, joined_late=joined_late,
-                 windows=windows, meals=meals)
+                 windows=windows, meals=meals, leaves_early=leaves_early)
 
 
 def _solve(bill: _Bill, discovery_quota: float, also_pin: Sequence[int] = ()) -> list:
@@ -289,6 +295,13 @@ def build_plan(
             missed, really_started = late
             reason += " · you join %d min in; they start at %s" % (
                 missed, really_started.strftime("%H:%M"))
+        # And say when you are leaving before the end, which a clamped window
+        # can also mean: the set the solver was given finishes when you do.
+        early = bill.leaves_early.get(s.performance_id) if s.kind == "SET" else None
+        if early:
+            left, really_ends = early
+            reason += " · you leave %d min early; they play until %s" % (
+                left, really_ends.strftime("%H:%M"))
         db.execute(
             text(
                 """

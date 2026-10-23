@@ -113,7 +113,8 @@ public class ScheduleController {
                        Long performanceId, Long alternativeId, String alternative,
                        String stage,
                        String reason, String tradeoff, int minutes, boolean rising,
-                       String addCost, String fromAt, String toAt, int catchMinutes) {
+                       String addCost, String fromAt, String toAt, int catchMinutes,
+                       String catchFrom, String catchTo) {
         /** A plain changeover, as opposed to a break the scheduler chose. */
         public boolean gap() { return reason != null && reason.startsWith("gap"); }
     }
@@ -202,7 +203,7 @@ public class ScheduleController {
                         reasonOf(item), tradeoffOf(item), mins,
                         who != null && climbing.contains(who),
                         null,            // filled in by the pass below
-                        item.getStartsAt().toString(), item.getEndsAt().toString(), 0));
+                        item.getStartsAt().toString(), item.getEndsAt().toString(), 0, null, null));
             }
         }
 
@@ -245,11 +246,14 @@ public class ScheduleController {
                     }
                 }
                 String note = shortCost(addCosts.get(slot.alternativeId()), ceiling, myPicks);
+                String[] window = catchWindow(slot, prevSet, nextSet);
                 rewritten.add(new Slot(slot.kind(), slot.time(), slot.artist(), slot.artistId(),
                         slot.performanceId(), slot.alternativeId(), slot.alternative(),
                         slot.stage(), slot.reason(), slot.tradeoff(), slot.minutes(),
                         slot.rising(), note, slot.fromAt(), slot.toAt(),
-                        catchableWithoutDisturbing(slot, prevSet, nextSet)));
+                        window == null ? 0 : Integer.parseInt(window[2]),
+                        window == null ? null : window[0],
+                        window == null ? null : window[1]));
             }
             oneDay.setValue(rewritten);
         }
@@ -589,9 +593,9 @@ public class ScheduleController {
      *
      * Returns the minutes you would catch, or 0 when it cannot be offered.
      */
-    private int catchableWithoutDisturbing(Slot gap, Slot prevSet, Slot nextSet) {
+    private String[] catchWindow(Slot gap, Slot prevSet, Slot nextSet) {
         if (gap.alternativeId() == null || nextSet == null || nextSet.fromAt() == null) {
-            return 0;
+            return null;
         }
         return performances.findById(gap.alternativeId()).map(p -> {
             java.time.OffsetDateTime gapStart = java.time.OffsetDateTime.parse(gap.fromAt());
@@ -613,19 +617,24 @@ public class ScheduleController {
                     from = arrive;
                 }
             }
-            if (!to.isAfter(from)) {
-                return 0;
-            }
-            int minutes = (int) Duration.between(from, to).toMinutes();
-            if (minutes < WORTH_CATCHING) {
-                return 0;
-            }
+            // You can leave before the end, too. Clamping the window at both
+            // ends is what makes that expressible: the solver never has to
+            // model walking out of a set, because the set it is given
+            // already finishes when you do.
             java.time.OffsetDateTime nextStart = java.time.OffsetDateTime.parse(nextSet.fromAt());
             boolean sameStage = stage != null && stage.equals(nextSet.stage());
             java.time.OffsetDateTime doneBy =
                     sameStage ? nextStart : nextStart.minusMinutes(CHANGEOVER);
-            return to.isAfter(doneBy) ? 0 : minutes;
-        }).orElse(0);
+            if (to.isAfter(doneBy)) {
+                to = doneBy;
+            }
+            if (!to.isAfter(from)
+                    || Duration.between(from, to).toMinutes() < WORTH_CATCHING) {
+                return null;
+            }
+            return new String[]{from.toString(), to.toString(),
+                    String.valueOf(Duration.between(from, to).toMinutes())};
+        }).orElse(null);
     }
 
     /** Minutes as "6h 20m", or "45m" when there is no hour to show. */
