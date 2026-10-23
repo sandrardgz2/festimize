@@ -244,6 +244,41 @@
                 </p>
             </section>
 
+            <!-- Arrival and departure for this day alone. The profile window
+                 is one pair of times for every day of every festival, and
+                 nobody attends a weekend that way: you drive up after work on
+                 the Friday and you are there from ten on the Saturday. -->
+            <section class="panel" th:if="${dayStat != null}">
+                <h2 class="section-title">Your hours</h2>
+                <form method="post" th:action="@{/schedule/hours}" class="hours-row">
+                    <input type="hidden" name="editionId"
+                           th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                    <input type="hidden" name="onDay" th:value="${dayStat.dayOn}"/>
+                    <input type="time" name="arriveAt" th:value="${dayStat.arriveAt}"
+                           aria-label="Arrive"/>
+                    <span class="muted">to</span>
+                    <input type="time" name="leaveBy" th:value="${dayStat.leaveBy}"
+                           aria-label="Leave"/>
+                    <button type="submit" class="button-quiet">Set</button>
+                </form>
+                <p class="muted" th:if="${#strings.isEmpty(dayStat.arriveAt)
+                                          and #strings.isEmpty(dayStat.leaveBy)}">
+                    This day only. Left blank, it follows your profile.
+                </p>
+                <p class="muted" th:unless="${#strings.isEmpty(dayStat.arriveAt)
+                                              and #strings.isEmpty(dayStat.leaveBy)}">
+                    This day only.
+                    <!-- Clearing both ends is the same gesture as setting them,
+                         so it is the same endpoint with nothing in it. -->
+                    <form method="post" th:action="@{/schedule/hours}" style="display:inline">
+                        <input type="hidden" name="editionId"
+                               th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                        <input type="hidden" name="onDay" th:value="${dayStat.dayOn}"/>
+                        <button type="submit" class="link-quiet">Use my profile hours</button>
+                    </form>
+                </p>
+            </section>
+
             <section class="panel" th:if="${fitInside}" style="margin-top:16px">
                 <h2 class="section-title">Fitted to your limit</h2>
                 <p class="section-note">

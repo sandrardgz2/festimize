@@ -77,6 +77,61 @@ public interface PlanRepository extends JpaRepository<Plan, Long> {
             @org.springframework.data.repository.query.Param("userId") Long userId,
             @org.springframework.data.repository.query.Param("editionId") Long editionId);
 
+    /**
+     * When this person arrives and leaves on one day of one plan.
+     *
+     * Wall-clock times with no zone, moved as text so Postgres does the only
+     * cast — the same precaution as AppUserRepository.paceTimes, and for the
+     * same reason: Hibernate converts a bare time by the standard offset and
+     * stores something five hours from what was typed.
+     *
+     * Either end may be left blank. "I arrive at four on Friday" says nothing
+     * about when I leave, and a row that says nothing is deleted instead.
+     */
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Query(value = """
+            insert into plan_day (plan_id, day_on, arrive_at, leave_by)
+            select pl.plan_id, cast(:onDay as date),
+                   cast(nullif(:arriveAt, '') as time),
+                   cast(nullif(:leaveBy, '') as time)
+              from plan pl
+             where pl.user_id = :userId and pl.edition_id = :editionId
+            on conflict (plan_id, day_on) do update
+               set arrive_at = excluded.arrive_at,
+                   leave_by  = excluded.leave_by,
+                   chosen_at = now()
+            """, nativeQuery = true)
+    void setDayHours(@org.springframework.data.repository.query.Param("userId") Long userId,
+                     @org.springframework.data.repository.query.Param("editionId") Long editionId,
+                     @org.springframework.data.repository.query.Param("onDay") String onDay,
+                     @org.springframework.data.repository.query.Param("arriveAt") String arriveAt,
+                     @org.springframework.data.repository.query.Param("leaveBy") String leaveBy);
+
+    /** Hand that day back to the account-wide window. */
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Query(value = """
+            delete from plan_day d using plan pl
+             where d.plan_id = pl.plan_id
+               and pl.user_id = :userId and pl.edition_id = :editionId
+               and d.day_on = cast(:onDay as date)
+            """, nativeQuery = true)
+    void clearDayHours(@org.springframework.data.repository.query.Param("userId") Long userId,
+                       @org.springframework.data.repository.query.Param("editionId") Long editionId,
+                       @org.springframework.data.repository.query.Param("onDay") String onDay);
+
+    /** The days of this plan with their own hours, as "date|arrive|leave". */
+    @org.springframework.data.jpa.repository.Query(value = """
+            select d.day_on::text || '|' || coalesce(d.arrive_at::text, '')
+                                  || '|' || coalesce(d.leave_by::text, '')
+              from plan_day d join plan pl on pl.plan_id = d.plan_id
+             where pl.user_id = :userId and pl.edition_id = :editionId
+            """, nativeQuery = true)
+    java.util.List<String> dayHours(
+            @org.springframework.data.repository.query.Param("userId") Long userId,
+            @org.springframework.data.repository.query.Param("editionId") Long editionId);
+
     /** Whether the daily limit should cover the whole day, additions included. */
     @org.springframework.data.jpa.repository.Modifying
     @org.springframework.transaction.annotation.Transactional

@@ -817,3 +817,32 @@ a.avatar:hover {
     color: var(--text);
     max-width: 62ch;
 }
+
+/* ------------------------------------------------- per-day hours */
+.hours-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.hours-row input[type="time"] {
+    padding: 5px 7px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+}
+
+/* A button that reads as the sentence it sits in. */
+.link-quiet {
+    background: none;
+    border: 0;
+    padding: 0;
+    color: var(--orange);
+    cursor: pointer;
+    font: inherit;
+    text-decoration: underline;
+}

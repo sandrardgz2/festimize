@@ -94,7 +94,8 @@ class _Bill:
     """
 
     def __init__(self, by_day, pinned, cap, meal_by, max_run_minutes, joined_late=None,
-                 windows=None, meals=None, leaves_early=None, fit_inside=False):
+                 windows=None, meals=None, leaves_early=None, fit_inside=False,
+                 day_hours=None):
         self.by_day = by_day
         self.pinned = pinned
         self.cap = cap
@@ -110,9 +111,44 @@ class _Bill:
         self.leaves_early = leaves_early or {}
         # Should the limit cover the whole day, including what was asked for?
         self.fit_inside = fit_inside
+        # date -> (arrive_at, leave_by), either end possibly None. Only the
+        # days this person gave their own hours; the rest keep the
+        # account-wide window.
+        self.day_hours = day_hours or {}
 
     def offered(self) -> Dict[int, Candidate]:
         return {c.performance_id: c for day in self.by_day.values() for c in day}
+
+
+def within_hours(by_day: Dict[object, List[Candidate]], default, day_hours) -> dict:
+    """
+    Drop the sets falling outside the hours this person is on site.
+
+    Not offered at all rather than offered and then dropped: the schedule
+    should not argue with somebody about when their day starts.
+
+    `default` is the account-wide window from the profile, applied to every
+    day without one of its own. A day in `day_hours` uses its own window
+    *instead of* that, entirely — a Friday that says "from 16:00" is not also
+    held to the profile's 11:00, because the more specific answer is the one
+    the person just gave about that day. Either end of either window may be
+    None, meaning unbounded.
+
+    A window that would empty a day is ignored for that day. Someone whose
+    hours exclude every set on the Sunday has mistyped something or is
+    looking at the wrong festival; an empty day explains neither.
+    """
+    out = {}
+    for day, found in by_day.items():
+        arrive, leave = day_hours.get(day, default)
+        if not arrive and not leave:
+            out[day] = found
+            continue
+        kept = [c for c in found
+                if (not arrive or c.starts_at.time() >= arrive)
+                and (not leave or c.ends_at.time() <= leave)]
+        out[day] = kept or found
+    return out
 
 
 def _load(db: Session, user_id: int, edition_id: int, max_run_minutes: int) -> _Bill:
@@ -162,6 +198,16 @@ def _load(db: Session, user_id: int, edition_id: int, max_run_minutes: int) -> _
     meals = {r.meal_on: r.starts_at for r in db.execute(
         text("""select m.meal_on, m.starts_at from plan_meal m
                    join plan pl on pl.plan_id = m.plan_id
+                  where pl.user_id = :uid and pl.edition_id = :eid"""),
+        {"uid": user_id, "eid": edition_id}).fetchall()}
+
+    # The days this person said they arrive late or leave early on. The
+    # account-wide window is one pair of times applied to every day of every
+    # festival, which is not how anybody attends a weekend: you drive up after
+    # work on the Friday and you are there from ten on the Saturday.
+    day_hours = {r.day_on: (r.arrive_at, r.leave_by) for r in db.execute(
+        text("""select d.day_on, d.arrive_at, d.leave_by from plan_day d
+                   join plan pl on pl.plan_id = d.plan_id
                   where pl.user_id = :uid and pl.edition_id = :eid"""),
         {"uid": user_id, "eid": edition_id}).fetchall()}
 
@@ -217,20 +263,15 @@ def _load(db: Session, user_id: int, edition_id: int, max_run_minutes: int) -> _
                       bool(r.must_see))
         )
 
-    # Sets outside the hours this person will attend are not offered at all,
-    # rather than offered and then dropped: the schedule should not argue with
-    # someone about when their day starts.
-    if pace and (pace.earliest_start or pace.latest_end):
-        for day, found in list(by_day.items()):
-            kept = [c for c in found
-                    if (not pace.earliest_start or c.starts_at.time() >= pace.earliest_start)
-                    and (not pace.latest_end or c.ends_at.time() <= pace.latest_end)]
-            by_day[day] = kept or found        # never leave a day with nothing
+    by_day = within_hours(by_day,
+                          default=((pace.earliest_start if pace else None),
+                                   (pace.latest_end if pace else None)),
+                          day_hours=day_hours)
 
     return _Bill(by_day, pinned, cap, meal_by=pace.meal_by if pace else None,
                  max_run_minutes=max_run_minutes, joined_late=joined_late,
                  windows=windows, meals=meals, leaves_early=leaves_early,
-                 fit_inside=fit_inside)
+                 fit_inside=fit_inside, day_hours=day_hours)
 
 
 def _solve(bill: _Bill, discovery_quota: float, also_pin: Sequence[int] = ()) -> list:

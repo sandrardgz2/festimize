@@ -120,7 +120,11 @@ public class ScheduleController {
     public record DayStat(String label, String tab, int sets, int breaks,
                           int discoveries, String active, String breakTime,
                           int overBy, boolean worthActingOn, String dropInstead,
-                          String onSite) {}
+                          String onSite,
+                          /** ISO date, so a form can post about this day. */
+                          String dayOn,
+                          /** This day's own hours, blank where it keeps the profile's. */
+                          String arriveAt, String leaveBy) {}
 
     public record Slot(String kind, String time, String artist, Long artistId,
                        Long performanceId, Long alternativeId, String alternative,
@@ -297,6 +301,14 @@ public class ScheduleController {
         String showing = byDay.containsKey(day) ? day
                 : byDay.keySet().stream().findFirst().orElse(null);
 
+        // The days this person gave their own arrival or departure. Everything
+        // else keeps the account-wide window from the profile.
+        Map<String, String[]> hoursOf = new LinkedHashMap<>();
+        for (String row : plans.dayHours(me.getUserId(), chosen.getEditionId())) {
+            String[] bits = row.split("\\|", -1);
+            hoursOf.put(bits[0], new String[] {trimSeconds(bits[1]), trimSeconds(bits[2])});
+        }
+
         List<DayStat> dayStats = new ArrayList<>();
         for (Map.Entry<String, int[]> e : perDay.entrySet()) {
             int[] t = e.getValue();
@@ -311,7 +323,12 @@ public class ScheduleController {
                     over > OVERAGE_WORTH_ACTING_ON
                             ? blameFor(byDay.get(e.getKey()), askedFor, byArtist) : null,
                     clock((int) Duration.between(spanOf.get(e.getKey())[0],
-                                                 spanOf.get(e.getKey())[1]).toMinutes())));
+                                                 spanOf.get(e.getKey())[1]).toMinutes()),
+                    spanOf.get(e.getKey())[0].toLocalDate().toString(),
+                    hoursOf.getOrDefault(spanOf.get(e.getKey())[0].toLocalDate().toString(),
+                                         new String[] {"", ""})[0],
+                    hoursOf.getOrDefault(spanOf.get(e.getKey())[0].toLocalDate().toString(),
+                                         new String[] {"", ""})[1]));
         }
 
         // The pace panel says what this day was actually built to, rather
@@ -492,6 +509,36 @@ public class ScheduleController {
         plans.chooseMeal(me.getUserId(), editionId, startsAt);
         planning.buildPlan(me.getUserId(), editionId);
         return "redirect:/schedule?editionId=" + editionId + "&swapped";
+    }
+
+    /**
+     * The hours this person is on site for one day.
+     *
+     * The profile window is one pair of times applied to every day of every
+     * festival, and nobody attends a weekend that way. Posting both blank
+     * hands the day back to the profile rather than storing a row that says
+     * nothing.
+     */
+    @PostMapping("/schedule/hours")
+    public String hours(@RequestParam Long editionId, @RequestParam String onDay,
+                        @RequestParam(required = false) String arriveAt,
+                        @RequestParam(required = false) String leaveBy,
+                        Principal principal) {
+        AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
+        String from = arriveAt == null ? "" : arriveAt.trim();
+        String to = leaveBy == null ? "" : leaveBy.trim();
+        if (from.isEmpty() && to.isEmpty()) {
+            plans.clearDayHours(me.getUserId(), editionId, onDay);
+        } else {
+            plans.setDayHours(me.getUserId(), editionId, onDay, from, to);
+        }
+        planning.buildPlan(me.getUserId(), editionId);
+        // Back to the day that was changed, not the first one: the whole
+        // point of the control is that the days differ.
+        String label = java.time.LocalDate.parse(onDay).format(DAY);
+        return "redirect:/schedule?editionId=" + editionId
+                + "&day=" + java.net.URLEncoder.encode(label, java.nio.charset.StandardCharsets.UTF_8)
+                + "&swapped";
     }
 
     /** Hand that day's meal back to the scheduler. */
@@ -721,6 +768,11 @@ public class ScheduleController {
     }
 
     /** Minutes as "6h 20m", or "45m" when there is no hour to show. */
+    /** 16:00:00 from Postgres is 16:00 to an <input type="time">. */
+    private static String trimSeconds(String time) {
+        return time != null && time.length() >= 5 ? time.substring(0, 5) : "";
+    }
+
     private static String clock(int minutes) {
         return minutes >= 60 ? String.format("%dh %02dm", minutes / 60, minutes % 60)
                              : String.format("%dm", minutes);
