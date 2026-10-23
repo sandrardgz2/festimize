@@ -193,6 +193,24 @@ public class ScheduleController {
         return "redirect:/schedule?editionId=" + editionId + "&swapped";
     }
 
+    /**
+     * Put one set into the plan from the lineup, and build the day round it.
+     *
+     * The same pin the swap uses. Before this, a set the scheduler neither
+     * chose nor named as a runner-up could not be reached at all: nine of
+     * Sick New World's twenty-five, including Deftones at 31%. Wanting to see
+     * a band is not the same as the solver rating them highly, and the person
+     * is allowed to be right about that.
+     */
+    @PostMapping("/schedule/add")
+    public String add(@RequestParam Long editionId, @RequestParam Long performanceId,
+                      Principal principal) {
+        AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
+        declined.pin(me.getUserId(), editionId, performanceId);
+        planning.buildPlan(me.getUserId(), editionId);
+        return "redirect:/schedule?editionId=" + editionId + "&swapped";
+    }
+
     /** Put everything back, for someone who has declined their way into a corner. */
     @PostMapping("/schedule/restore")
     public String restore(@RequestParam Long editionId, Principal principal) {

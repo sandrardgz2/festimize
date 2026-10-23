@@ -42,6 +42,7 @@ public class LineupController {
     private final ScoringClient scoring;
     private final UserArtistRepository saved;
     private final ArtistMomentumRepository momentum;
+    private final com.festimize.repo.PlanRepository plans;
 
     public LineupController(FestivalEditionRepository editions,
                             PerformanceRepository performances,
@@ -50,7 +51,8 @@ public class LineupController {
                             ArtistScoreRepository scores,
                             ScoringClient scoring,
                             UserArtistRepository saved,
-                            ArtistMomentumRepository momentum) {
+                            ArtistMomentumRepository momentum,
+                            com.festimize.repo.PlanRepository plans) {
         this.editions = editions;
         this.performances = performances;
         this.tags = tags;
@@ -59,6 +61,7 @@ public class LineupController {
         this.scoring = scoring;
         this.saved = saved;
         this.momentum = momentum;
+        this.plans = plans;
     }
 
     /**
@@ -69,9 +72,10 @@ public class LineupController {
      * a measured climb gets no label, because the labels that used to fill
      * that space claimed things about artists that only held for this dataset.
      */
-    public record LineupRow(Long artistId, String artist, String tags, String day, String time,
+    public record LineupRow(Long artistId, Long performanceId, String artist, String tags,
+                            String day, String time,
                             String stage, boolean headliner, Integer matchPercent,
-                            boolean myPick, boolean rising) {}
+                            boolean myPick, boolean rising, boolean inPlan) {}
 
     @GetMapping("/lineup")
     public String lineup(@RequestParam(required = false) Long editionId, Principal principal, Model model) {
@@ -92,6 +96,15 @@ public class LineupController {
                 .orElse(all.get(0));
 
         List<Performance> sets = performances.findForEditionOrderedByStart(chosen.getEditionId());
+
+        // Which of these are already in this person's plan. A set on the bill
+        // that the scheduler did not pick, and did not name as a runner-up
+        // anywhere, was unreachable: nine of Sick New World's twenty-five,
+        // Deftones among them. The lineup is where someone would look for it.
+        java.util.Set<Long> alreadyPlanned = new java.util.HashSet<>(
+                plans.plannedPerformances(
+                        users.findByEmailIgnoreCase(principal.getName()).orElseThrow().getUserId(),
+                        chosen.getEditionId()));
 
         // Ask the analytics service to refresh this user's scores, then read the cache.
         AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
@@ -125,6 +138,7 @@ public class LineupController {
             ArtistMomentum climb = climbByArtist.get(p.getArtist().getArtistId());
             rows.add(new LineupRow(
                     p.getArtist().getArtistId(),
+                    p.getPerformanceId(),
                     p.getArtist().getName(),
                     tagsByArtist.getOrDefault(p.getArtist().getArtistId(), ""),
                     start == null ? "—" : start.format(DAY),
@@ -134,7 +148,8 @@ public class LineupController {
                     myPicks.contains(p.getArtist().getArtistId())
                             ? null : matchByArtist.get(p.getArtist().getArtistId()),
                     myPicks.contains(p.getArtist().getArtistId()),
-                    climb != null && climb.isRising()));
+                    climb != null && climb.isRising(),
+                    alreadyPlanned.contains(p.getPerformanceId())));
         }
 
         model.addAttribute("activeNav", "lineup");

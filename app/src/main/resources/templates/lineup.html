@@ -81,6 +81,18 @@
                       th:text="${row.matchPercent} + '% match'">0% match</span>
                 <span class="badge badge-rising" th:if="${row.rising}">Rising</span>
             </p>
+            <!-- A set the scheduler did not pick and did not name as a
+                 runner-up had no route into a plan at all. Wanting to see a
+                 band is not the same as the solver rating them highly. -->
+            <form method="post" th:action="@{/schedule/add}" class="slot-actions"
+                  th:if="${timed and row.performanceId != null and !row.inPlan}">
+                <input type="hidden" name="editionId"
+                       th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                <input type="hidden" name="performanceId" th:value="${row.performanceId}"/>
+                <button type="submit" class="button-quiet">Add to my schedule</button>
+            </form>
+            <p class="tags" th:if="${timed and row.inPlan}">In your schedule</p>
+
             <div class="tags" th:if="${timed or staged}">
                 <span th:if="${timed}" th:text="${row.day}">Sat</span>
                 <span th:if="${timed}">·</span>
