@@ -72,11 +72,16 @@ def test_the_pin_says_who_asked_rather_than_claiming_it_chose():
     """
     "Chosen over" would be a lie on a pinned set: nothing chose it, the person
     did. The sentence has to say so, or the page takes credit for their edit.
+
+    Nor "instead of", which claims the rival is what they gave up. All this
+    function knows is that the two collide; what the day actually lost comes
+    from re-solving without the pin, which happens elsewhere.
     """
     slots = build_day(a_day(), pinned=[RIVAL.performance_id])
     reason = slot_for(slots, 'Currents').reason
-    assert 'you asked for this, instead of' in reason
+    assert 'you asked for this, which clashes with' in reason
     assert 'chosen over' not in reason
+    assert 'instead of' not in reason
 
 
 def test_the_swap_goes_back_the_way_it_came():
@@ -102,3 +107,35 @@ def test_two_pins_do_not_cancel_each_other():
     """
     both = [HEADLINER.performance_id, RIVAL.performance_id]
     assert 'Slipknot' in sets_in(build_day(a_day(), pinned=both))
+
+
+def test_a_pin_is_not_blamed_for_what_another_pin_also_removes():
+    """
+    Adding Jesus Piece (11:45-12:20) reported "instead of Zulu", a 28% match
+    overlapping it by five minutes. Zulu was never in the day and could not
+    have been: it also runs under Drain, which was pinned too. The set
+    actually given up was Vended at 58%, elsewhere in the afternoon.
+
+    Naming the wrong one is worse than naming none — it says you traded away
+    something you never had, and says nothing about what you did lose.
+    """
+    from datetime import datetime, timedelta
+
+    def at(hour, minute, mins, name, score):
+        start = datetime(2027, 4, 24, hour, minute)
+        return Candidate(performance_id=abs(hash(name)) % 100000,
+                         artist_id=abs(hash(name)) % 100000, artist=name,
+                         stage='Main Stage', starts_at=start,
+                         ends_at=start + timedelta(minutes=mins),
+                         score=score, is_pick=False)
+
+    first = at(11, 45, 35, 'Jesus Piece', 0.43)
+    second = at(12, 30, 40, 'Drain', 0.30)
+    caught_between = at(12, 15, 35, 'Zulu', 0.28)      # clashes with both pins
+    later = at(14, 30, 40, 'Dying Wish', 0.50)
+    day = [first, second, caught_between, later]
+
+    slots = build_day(day, pinned=[first.performance_id, second.performance_id])
+    pinned_slot = slot_for(slots, 'Jesus Piece')
+    assert 'Zulu' not in pinned_slot.reason
+    assert pinned_slot.alternative_id is None

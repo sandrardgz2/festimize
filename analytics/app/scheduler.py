@@ -268,8 +268,27 @@ def build_day(candidates: Sequence[Candidate],
                         and _overlaps(keep.starts_at, keep.ends_at,
                                       c.starts_at, c.ends_at)]
             if clashing:
-                ousted[id(keep)] = max(clashing,
-                                       key=lambda c: (c.must_see, c.is_pick, c.score))
+                # Do not blame this pin for a set another pin also removes.
+                #
+                # Adding Jesus Piece (11:45-12:20) reported "instead of Zulu",
+                # a 28% match overlapping it by five minutes — which was never
+                # in the day and could not have been, because Zulu also runs
+                # under Drain, pinned. Meanwhile the set actually given up was
+                # Vended at 58%, elsewhere in the afternoon. Naming the wrong
+                # one is worse than naming none: it says you traded away
+                # something you never had, and hides what you did lose.
+                #
+                # Each pin is considered on its own here, so the only
+                # attribution this function can make honestly is to a set that
+                # nothing else was going to take off the table anyway.
+                others = [w for w in wanted if w is not keep]
+                blameable = [c for c in clashing
+                             if not any(_overlaps(o.starts_at, o.ends_at,
+                                                  c.starts_at, c.ends_at)
+                                        for o in others)]
+                if blameable:
+                    ousted[id(keep)] = max(blameable,
+                                           key=lambda c: (c.must_see, c.is_pick, c.score))
             dropped_ids = {id(c) for c in clashing}
             candidates = [c for c in candidates if id(c) not in dropped_ids]
 
@@ -730,8 +749,14 @@ def build_day(candidates: Sequence[Candidate],
             # "Chosen over" is wrong for a set the person pinned: nothing
             # chose it, they did. Saying so is also the honest way to offer
             # the way back, which is to lift the pin rather than overrule it.
+            # "Instead of" is a claim that the rival was what you gave up.
+            # For a set the solver chose that is true — it compared them. For
+            # a pin it is not: the rival is simply what the pin collides with,
+            # and what the day actually lost is worked out elsewhere, by
+            # re-solving. Saying "clashes with" claims only what is known.
             reason += " · %s %s (%s, %d min against %d)" % (
-                "you asked for this, instead of" if id(c) in asked else "chosen over",
+                "you asked for this, which clashes with" if id(c) in asked
+                else "chosen over",
                 rival.artist, rival_label, minutes, mine)
             # Between two of their own picks the numbers are identical, so the
             # only honest reason is what else the day can then hold. Not asked
