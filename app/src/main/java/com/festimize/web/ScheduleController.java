@@ -116,6 +116,9 @@ public class ScheduleController {
     /** One edit the person has made, and how to take it back. */
     public record Change(String kind, String what, Long performanceId) {}
 
+    /** A set the daily limit left out, and the way to overrule that. */
+    public record Omitted(String artist, int minutes, Long performanceId) {}
+
     /** What one day of the plan adds up to, for the summary rail. */
     public record DayStat(String label, String tab, int sets, int breaks,
                           int discoveries, String active, String breakTime,
@@ -124,7 +127,11 @@ public class ScheduleController {
                           /** ISO date, so a form can post about this day. */
                           String dayOn,
                           /** This day's own hours, blank where it keeps the profile's. */
-                          String arriveAt, String leaveBy) {}
+                          String arriveAt, String leaveBy,
+                          /** What the limit gave up on this day, biggest first. */
+                          List<Omitted> omitted,
+                          /** Those names as a phrase: "Vended", "A and B", "A, B and C". */
+                          String omittedNames) {}
 
     public record Slot(String kind, String time, String artist, Long artistId,
                        Long performanceId, Long alternativeId, String alternative,
@@ -317,6 +324,18 @@ public class ScheduleController {
             hoursOf.put(bits[0], new String[] {trimSeconds(bits[1]), trimSeconds(bits[2])});
         }
 
+        // What the limit left out, by the day it would have fallen on. The
+        // key is the same label the tabs use, so the rail shows the day on
+        // screen rather than the whole weekend's losses.
+        Map<String, List<Omitted>> cutOn = new LinkedHashMap<>();
+        for (String row : plans.omittedByLimit(me.getUserId(), chosen.getEditionId())) {
+            String[] bits = row.split("\\|", -1);
+            cutOn.computeIfAbsent(java.time.LocalDate.parse(bits[0]).format(DAY),
+                            d -> new ArrayList<>())
+                    .add(new Omitted(bits[1], Integer.parseInt(bits[2]),
+                            Long.valueOf(bits[3])));
+        }
+
         List<DayStat> dayStats = new ArrayList<>();
         for (Map.Entry<String, int[]> e : perDay.entrySet()) {
             int[] t = e.getValue();
@@ -336,7 +355,9 @@ public class ScheduleController {
                     hoursOf.getOrDefault(spanOf.get(e.getKey())[0].toLocalDate().toString(),
                                          new String[] {"", ""})[0],
                     hoursOf.getOrDefault(spanOf.get(e.getKey())[0].toLocalDate().toString(),
-                                         new String[] {"", ""})[1]));
+                                         new String[] {"", ""})[1],
+                    cutOn.getOrDefault(e.getKey(), List.of()),
+                    namesOf(cutOn.getOrDefault(e.getKey(), List.of()))));
         }
 
         // The pace panel says what this day was actually built to, rather
@@ -803,6 +824,22 @@ public class ScheduleController {
             return null;
         }
         return from.format(TIME) + " – " + to.format(TIME);
+    }
+
+    /**
+     * "Vended", "Code Orange and Vended", "A, B and C".
+     *
+     * Built here rather than looped in the template, which kept the newline
+     * between the name and its separator and printed "Code Orange , Vended".
+     */
+    private static String namesOf(List<Omitted> cut) {
+        List<String> names = new ArrayList<>();
+        cut.forEach(o -> names.add(o.artist()));
+        if (names.size() <= 1) {
+            return String.join("", names);
+        }
+        return String.join(", ", names.subList(0, names.size() - 1))
+                + " and " + names.get(names.size() - 1);
     }
 
     /** 16:00:00 from Postgres is 16:00 to an <input type="time">. */

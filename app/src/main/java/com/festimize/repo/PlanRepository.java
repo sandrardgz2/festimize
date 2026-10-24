@@ -132,6 +132,28 @@ public interface PlanRepository extends JpaRepository<Plan, Long> {
             @org.springframework.data.repository.query.Param("userId") Long userId,
             @org.springframework.data.repository.query.Param("editionId") Long editionId);
 
+    /**
+     * The sets the daily limit left out, as "date|artist|minutes|performanceId".
+     *
+     * Written by the planner alongside the day rather than in it: nobody is
+     * anywhere at that hour, so these are not slots. The schedule needs them
+     * to account for its own contents — a set the person can see on the
+     * lineup, absent from their plan, with nothing saying why.
+     */
+    @org.springframework.data.jpa.repository.Query(value = """
+            select o.day_on::text || '|' || a.name || '|' || o.minutes::text
+                                  || '|' || o.performance_id::text
+              from plan_omitted o
+              join plan pl on pl.plan_id = o.plan_id
+              join fact_performance f on f.performance_id = o.performance_id
+              join dim_artist a on a.artist_id = f.artist_id
+             where pl.user_id = :userId and pl.edition_id = :editionId
+             order by o.minutes desc
+            """, nativeQuery = true)
+    java.util.List<String> omittedByLimit(
+            @org.springframework.data.repository.query.Param("userId") Long userId,
+            @org.springframework.data.repository.query.Param("editionId") Long editionId);
+
     /** Whether the daily limit should cover the whole day, additions included. */
     @org.springframework.data.jpa.repository.Modifying
     @org.springframework.transaction.annotation.Transactional

@@ -335,8 +335,29 @@ def build_plan(
         {"uid": user_id, "eid": edition_id},
     ).scalar_one()
     db.execute(text("delete from plan_item where plan_id = :p"), {"p": plan_id})
+    db.execute(text("delete from plan_omitted where plan_id = :p"), {"p": plan_id})
+
+    # Sets the limit left out travel with the day but are not in it — nobody
+    # is anywhere at that hour — so they go to their own table rather than
+    # into the timeline everything else reads.
+    for s in slots:
+        if s.kind != "CUT":
+            continue
+        db.execute(
+            text(
+                """
+                insert into plan_omitted (plan_id, performance_id, day_on, minutes)
+                values (:p, :perf, :day, :mins)
+                on conflict (plan_id, performance_id) do nothing
+                """
+            ),
+            {"p": plan_id, "perf": s.performance_id, "day": s.starts_at.date(),
+             "mins": int((s.ends_at - s.starts_at).total_seconds() // 60)},
+        )
 
     for s in slots:
+        if s.kind == "CUT":
+            continue
         reason = s.reason
         # Say that this is part of a set rather than all of it. The solver was
         # handed a clamped candidate and has no idea the band went on earlier,
@@ -374,7 +395,8 @@ def build_plan(
         sets=sets, rests=sum(1 for s in slots if s.kind == "REST"),
         discoveries=sets - picks,
         slots=[PlanSlot(kind=s.kind, starts_at=s.starts_at, ends_at=s.ends_at,
-                        artist=s.artist, stage=s.stage, reason=s.reason) for s in slots],
+                        artist=s.artist, stage=s.stage, reason=s.reason)
+               for s in slots if s.kind != "CUT"],
     )
 
 

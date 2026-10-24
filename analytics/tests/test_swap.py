@@ -139,3 +139,38 @@ def test_a_pin_is_not_blamed_for_what_another_pin_also_removes():
     pinned_slot = slot_for(slots, 'Jesus Piece')
     assert 'Zulu' not in pinned_slot.reason
     assert pinned_slot.alternative_id is None
+
+
+def test_a_meal_never_carves_out_a_set_the_person_asked_for():
+    """
+    Pinning Code Orange on the demo plan accepted the pin, rebuilt the day,
+    and the set was gone: its 16:30-17:20 slot was the only room left for the
+    45-minute meal, and the meal's last-resort rule kept only the strongest
+    set and the last one.
+
+    That relaxation exists because somebody whose whole day is artists they
+    chose still has to eat — an argument about picks, which the scheduler
+    inferred a day from. A pin is an instruction. Where honouring it leaves
+    nowhere to eat, no meal is arranged.
+    """
+    from datetime import datetime, timedelta
+
+    def at(hour, minute, mins, name, score, pick=False):
+        start = datetime(2027, 4, 24, hour, minute)
+        return Candidate(performance_id=abs(hash(name)) % 100000,
+                         artist_id=abs(hash(name)) % 100000, artist=name,
+                         stage='Main Stage', starts_at=start,
+                         ends_at=start + timedelta(minutes=mins),
+                         score=score, is_pick=pick)
+
+    # Back to back all afternoon: no gap anywhere long enough to eat in.
+    day = [at(12, 0, 60, 'Noon', 0.9, pick=True),
+           at(13, 10, 60, 'One', 0.8, pick=True),
+           at(14, 20, 50, 'Asked For This', 0.41),
+           at(15, 20, 60, 'Three', 0.7, pick=True),
+           at(16, 30, 60, 'Four', 0.6, pick=True)]
+    asked_for = day[2]
+    slots = build_day(day, pinned=[asked_for.performance_id])
+    assert 'Asked For This' in [s.artist for s in slots if s.kind == 'SET']
+    assert not any('Asked For This' in (s.reason or '')
+                   for s in slots if s.kind == 'REST'), 'carved out for a break'

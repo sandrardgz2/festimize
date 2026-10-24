@@ -225,6 +225,24 @@
                 <div class="rail-stat">
                     <span class="k">New artists</span><span class="v" th:text="${dayStat.discoveries}">3</span>
                 </div>
+                <!-- What the limit gave up. The day simply arrived without
+                     these and nothing said so: a set visible on the lineup,
+                     absent from the plan, with no page able to account for
+                     the difference. The add button says it at the moment of
+                     the click and then it is gone. -->
+                <div class="muted hours-note" th:if="${!#lists.isEmpty(dayStat.omitted)}">
+                    <span th:text="${dayStat.omittedNames}">Vended</span>
+                    left out to keep this day inside your limit.
+                    <form method="post" th:action="@{/schedule/add}" style="display:inline"
+                          th:each="o : ${dayStat.omitted}">
+                        <input type="hidden" name="editionId"
+                               th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                        <input type="hidden" name="performanceId" th:value="${o.performanceId}"/>
+                        <button type="submit" class="link-quiet"
+                                th:text="'Add ' + ${o.artist} + ' anyway'">Add it anyway</button>
+                    </form>
+                </div>
+
                 <!-- The one place a person reads the shape of the whole day, so
                      the one place worth saying it runs longer than they asked
                      for. Inline in every gap it was a paragraph nobody needed

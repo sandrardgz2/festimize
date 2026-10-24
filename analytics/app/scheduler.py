@@ -503,9 +503,27 @@ def build_day(candidates: Sequence[Candidate],
                      and (c.ends_at - c.starts_at) >= need - timedelta(minutes=15)
                      and free(c.starts_at, c.starts_at + need)]
         if not droppable and may_drop_a_pick:
+            # Never a set the person asked for by name, even here. The
+            # relaxation above exists because somebody whose whole day is
+            # artists they chose still has to eat, and that is an argument
+            # about picks — a taste signal the scheduler inferred a day from.
+            # A pin is not that. It is an instruction to put this band in the
+            # day, and quietly deleting it to make room for a meal is the
+            # same overruling the cap was stopped from doing.
+            #
+            # Found by pinning Code Orange on the demo plan: the pin was
+            # accepted, the day rebuilt, and the set was gone — carved out
+            # for the 45-minute meal break that its 16:30-17:20 slot had been
+            # the only remaining room for.
+            #
+            # Where that leaves no victim at all, no meal is arranged. A day
+            # the person filled themselves and left no room to eat in is
+            # theirs to have; removing a band they named without saying so is
+            # not the honest way to point that out.
             keep = {id(max(sets, key=lambda c: c.score)), id(sets[-1])}
             droppable = [c for c in sets
                          if c.starts_at >= after and id(c) not in keep
+                         and id(c) not in asked
                          and (c.ends_at - c.starts_at) >= need - timedelta(minutes=15)
                          and free(c.starts_at, c.starts_at + need)]
         if droppable:
@@ -540,6 +558,7 @@ def build_day(candidates: Sequence[Candidate],
     budget = music_cap_minutes
     if fit_inside:
         budget = max(0, music_cap_minutes - int(sum(_minutes(c) for c in requested)))
+    cut_by_budget: List[Candidate] = []
     if sum(_minutes(c) for c in automatic) > budget:
         capped: List[Candidate] = []
         for c in sorted(automatic, key=lambda c: (c.must_see, c.is_pick, c.score),
@@ -552,6 +571,11 @@ def build_day(candidates: Sequence[Candidate],
             if sum(_minutes(x) for x in capped) + _minutes(c) <= budget \
                     or c.must_see or (c.is_pick and not fit_inside):
                 capped.append(c)
+        # What the limit took. The day simply arrived without these and
+        # nothing said so: a set the person could see on the lineup was not
+        # on their schedule, and no page could account for the difference.
+        kept = {id(c) for c in capped}
+        cut_by_budget = [c for c in automatic if id(c) not in kept]
         chosen = sorted(requested + capped, key=lambda c: c.starts_at)
 
     rests: List[Slot] = []
@@ -920,4 +944,13 @@ def build_day(candidates: Sequence[Candidate],
             reason += " · same stage as your next set, so you can stay put"
         merged[at] = Slot("REST", slot.starts_at, slot.ends_at, reason=reason,
                           alternative_id=other.performance_id)
+
+    # Sets the daily limit left out, carried alongside the day rather than in
+    # it. They are not slots — nobody is anywhere at that hour — but the only
+    # thing that knows about them is this function, and the page that has to
+    # account for the day is a long way downstream.
+    for c in cut_by_budget:
+        merged.append(Slot("CUT", c.starts_at, c.ends_at, c.performance_id,
+                           c.artist, c.stage,
+                           "left out to stay inside your daily limit"))
     return merged
