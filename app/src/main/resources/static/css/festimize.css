@@ -372,6 +372,20 @@ footer.site {
     border-bottom-color: var(--orange);
 }
 
+/* Band names on the schedule carry the accent. Scoped to the timeline rather
+   than applied to .artist-link everywhere: on the lineup every card is an
+   artist, so colouring all of them colours nothing, and the artist page's own
+   festival history reads as a list of years. Here the name is the one thing
+   on the row you are looking for. */
+.timeline .artist-link {
+    color: var(--green);
+    border-bottom-color: transparent;
+}
+
+.timeline .artist-link:hover {
+    border-bottom-color: var(--green);
+}
+
 /* The year down the left of an artist's festival history. */
 .year {
     display: inline-block;
@@ -819,14 +833,26 @@ a.avatar:hover {
 }
 
 /* ------------------------------------------------- per-day hours */
+
+/* The rail is a fixed 300px. Two native time controls, the word between them
+   and a button come to about 350px in Chrome, so a single flex row spilled
+   out of the panel. Three columns for the pair and the button on its own row
+   underneath. */
 .hours-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
     margin-bottom: 8px;
 }
 
 .hours-row input[type="time"] {
+    /* A native control draws its own digits and clock icon, and without
+       color-scheme it draws them for a light page — black on our dark
+       background, which is what made this card look broken. */
+    color-scheme: dark;
+    width: 100%;
+    min-width: 0;
     padding: 5px 7px;
     border: 1px solid var(--border);
     border-radius: 6px;
@@ -834,6 +860,16 @@ a.avatar:hover {
     color: var(--text);
     font: inherit;
     font-size: 14px;
+}
+
+.hours-row button {
+    grid-column: 1 / -1;
+    justify-self: start;
+}
+
+/* A <p> would be the obvious element, but it cannot hold the form. */
+.hours-note {
+    margin-top: 8px;
 }
 
 /* A button that reads as the sentence it sits in. */

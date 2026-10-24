@@ -262,12 +262,19 @@
                            aria-label="Leave"/>
                     <button type="submit" class="button-quiet">Set</button>
                 </form>
-                <p class="muted" th:if="${#strings.isEmpty(dayStat.arriveAt)
-                                          and #strings.isEmpty(dayStat.leaveBy)}">
+                <!-- Divs, not paragraphs. A <form> start tag implicitly closes
+                     an open <p>, so the form below ended up a sibling of the
+                     note rather than its child — the th:unless applied to the
+                     text and not to the button, and "Use my profile hours"
+                     showed on every day whether or not it had any. -->
+                <div class="muted hours-note"
+                     th:if="${#strings.isEmpty(dayStat.arriveAt)
+                             and #strings.isEmpty(dayStat.leaveBy)}">
                     This day only. Left blank, it follows your profile.
-                </p>
-                <p class="muted" th:unless="${#strings.isEmpty(dayStat.arriveAt)
-                                              and #strings.isEmpty(dayStat.leaveBy)}">
+                </div>
+                <div class="muted hours-note"
+                     th:unless="${#strings.isEmpty(dayStat.arriveAt)
+                                 and #strings.isEmpty(dayStat.leaveBy)}">
                     This day only.
                     <!-- Clearing both ends is the same gesture as setting them,
                          so it is the same endpoint with nothing in it. -->
@@ -277,7 +284,7 @@
                         <input type="hidden" name="onDay" th:value="${dayStat.dayOn}"/>
                         <button type="submit" class="link-quiet">Use my profile hours</button>
                     </form>
-                </p>
+                </div>
             </section>
 
             <section class="panel" th:if="${fitInside}" style="margin-top:16px">
