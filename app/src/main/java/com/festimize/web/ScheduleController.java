@@ -859,10 +859,37 @@ public class ScheduleController {
         return performances.artistNameFor(item.getAlternativeId()).orElse(null);
     }
 
+    /**
+     * Where the planner's explanation stops being a label and starts being
+     * an argument about what this slot beat.
+     *
+     * Two phrasings: the scheduler's own, and the one used for a set the
+     * person pinned, where claiming the scheduler chose it would be false.
+     * Both live here because reasonOf and tradeoffOf split the same sentence
+     * at the same point and had drifted apart — the pin wording was
+     * corrected in the planner, this list was not changed with it, and every
+     * pinned set silently dropped out of the tradeoffs panel.
+     */
+    private static final String[] BEAT_MARKERS = {
+        " \u00b7 chosen over ",
+        " \u00b7 you asked for this, which clashes with ",
+    };
+
+    /** Where the explanation begins in this reason, or -1. */
+    private static int beatsAt(String reason) {
+        for (String marker : BEAT_MARKERS) {
+            int at = reason.indexOf(marker);
+            if (at >= 0) {
+                return at;
+            }
+        }
+        return -1;
+    }
+
     /** The match or pick label, without the explanation of what it beat. */
     private static String reasonOf(PlanItem item) {
         String r = item.getReason() == null ? "" : item.getReason();
-        int at = r.indexOf(" \u00b7 chosen over ");
+        int at = beatsAt(r);
         return at < 0 ? r : r.substring(0, at);
     }
 
@@ -871,17 +898,18 @@ public class ScheduleController {
      * The sentence explaining what this slot beat, whichever way it is put.
      *
      * Two phrasings reach here: the scheduler's own "chosen over X", and
-     * "you asked for this, instead of X" for a set the person pinned, where
-     * claiming the scheduler chose it would be false.
+     * "you asked for this, which clashes with X" for a set the person
+     * pinned, where claiming the scheduler chose it would be false.
+     *
+     * Matching the planner's prose by substring is the weak point. The pin
+     * phrasing was "instead of" until it was corrected for claiming the
+     * rival was what you gave up, and this list was not changed with it, so
+     * every pinned set silently dropped out of the tradeoffs panel. Any
+     * further rewording has to be made in both places.
      */
     private static String tradeoffOf(PlanItem item) {
         String r = item.getReason() == null ? "" : item.getReason();
-        for (String marker : new String[]{" \u00b7 chosen over ", " \u00b7 you asked for this, instead of "}) {
-            int at = r.indexOf(marker);
-            if (at >= 0) {
-                return r.substring(at + 3);
-            }
-        }
-        return null;
+        int at = beatsAt(r);
+        return at < 0 ? null : r.substring(at + 3);
     }
 }
