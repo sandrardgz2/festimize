@@ -369,8 +369,9 @@
             <!-- Named, and undoable one at a time. "Put them all back" was the
                  only way out, which is a poor answer to regretting one of three
                  decisions -- and the page never said what the three were. -->
-            <section class="panel" th:if="${changes != null and !#lists.isEmpty(changes)}"
-                     style="margin-top:16px">
+            <section class="panel" style="margin-top:16px"
+                     th:if="${(changes != null and !#lists.isEmpty(changes))
+                              or (alsoChanged != null and !#lists.isEmpty(alsoChanged))}">
                 <h2 class="section-title">Your changes</h2>
                 <div class="rail-stat" th:each="c : ${changes}">
                     <span class="k" th:text="${c.what}">Dropped Slipknot</span>
@@ -382,6 +383,12 @@
                         <button type="submit" class="button-quiet"
                                 style="padding:2px 9px;font-size:12px">Undo</button>
                     </form>
+                </div>
+                <!-- Named, not given a second undo: each of these already has
+                     its own control where it was made. They are here because
+                     the button below says it puts everything back. -->
+                <div class="rail-stat" th:each="c : ${alsoChanged}">
+                    <span class="k" th:text="${c}">Meal placed by hand</span>
                 </div>
                 <form method="post" th:action="@{/schedule/restore}" style="margin-top:10px">
                     <input type="hidden" name="editionId"

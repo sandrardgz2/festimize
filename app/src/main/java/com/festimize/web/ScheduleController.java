@@ -428,6 +428,30 @@ public class ScheduleController {
                     changes.add(new Change("pinned",
                             (partial ? "Catching part of " : "Asked for ") + name, perf)));
         }
+        // The other three kinds of edit. Each already has its own control
+        // where it was made — "Let the schedule decide" on the meal, "Use my
+        // profile hours" in the hours card, the fit-inside toggle by the
+        // summary — so these are named rather than given a second undo. What
+        // was missing is that they existed at all: the panel listed pins and
+        // declines only, and the button under it claimed to put back a set
+        // of changes it was not showing.
+        List<String> alsoChanged = new ArrayList<>();
+        for (String startsAt : plans.chosenMeals(me.getUserId(), chosen.getEditionId())) {
+            alsoChanged.add("Meal placed by hand on "
+                    + java.time.OffsetDateTime.parse(startsAt.replace(" ", "T")).format(DAY));
+        }
+        for (String row : plans.dayHours(me.getUserId(), chosen.getEditionId())) {
+            String[] bits = row.split("\\|", -1);
+            String from = trimSeconds(bits[1]);
+            String to = trimSeconds(bits[2]);
+            alsoChanged.add("Hours set for " + java.time.LocalDate.parse(bits[0]).format(DAY)
+                    + " — " + (from.isEmpty() ? "any time" : "from " + from)
+                    + (to.isEmpty() ? "" : " until " + to));
+        }
+        if (Boolean.TRUE.equals(plans.fitInside(me.getUserId(), chosen.getEditionId()))) {
+            alsoChanged.add("Days fitted inside your limit");
+        }
+        model.addAttribute("alsoChanged", alsoChanged);
         model.addAttribute("changes", changes);
         model.addAttribute("fitInside",
                 Boolean.TRUE.equals(plans.fitInside(me.getUserId(), chosen.getEditionId())));
@@ -646,12 +670,23 @@ public class ScheduleController {
         return "redirect:/schedule?editionId=" + editionId + "&swapped";
     }
 
-    /** Put everything back, for someone who has declined their way into a corner. */
+    /**
+     * Put everything back, for someone who has declined their way into a corner.
+     *
+     * All five kinds of edit, not the two it used to clear. A person who had
+     * also placed a meal, set the hours for a day or asked for the day to be
+     * fitted inside the limit kept all three through a button that says it
+     * puts them all back — and none of the three appeared in the list above
+     * it either, so there was nothing to say they had survived.
+     */
     @PostMapping("/schedule/restore")
     public String restore(@RequestParam Long editionId, Principal principal) {
         AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
         declined.restoreAll(me.getUserId(), editionId);
         declined.unpinAll(me.getUserId(), editionId);
+        plans.clearAllMeals(me.getUserId(), editionId);
+        plans.clearAllDayHours(me.getUserId(), editionId);
+        plans.setFitInside(me.getUserId(), editionId, false);
         planning.buildPlan(me.getUserId(), editionId);
         return "redirect:/schedule?editionId=" + editionId + "&restored";
     }

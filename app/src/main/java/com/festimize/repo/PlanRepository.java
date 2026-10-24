@@ -121,6 +121,28 @@ public interface PlanRepository extends JpaRepository<Plan, Long> {
                        @org.springframework.data.repository.query.Param("editionId") Long editionId,
                        @org.springframework.data.repository.query.Param("onDay") String onDay);
 
+    /** Hand every day's meal back to the scheduler. */
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Query(value = """
+            delete from plan_meal m using plan pl
+             where m.plan_id = pl.plan_id
+               and pl.user_id = :userId and pl.edition_id = :editionId
+            """, nativeQuery = true)
+    void clearAllMeals(@org.springframework.data.repository.query.Param("userId") Long userId,
+                       @org.springframework.data.repository.query.Param("editionId") Long editionId);
+
+    /** Hand every day back to the account-wide window. */
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Query(value = """
+            delete from plan_day d using plan pl
+             where d.plan_id = pl.plan_id
+               and pl.user_id = :userId and pl.edition_id = :editionId
+            """, nativeQuery = true)
+    void clearAllDayHours(@org.springframework.data.repository.query.Param("userId") Long userId,
+                          @org.springframework.data.repository.query.Param("editionId") Long editionId);
+
     /** The days of this plan with their own hours, as "date|arrive|leave". */
     @org.springframework.data.jpa.repository.Query(value = """
             select d.day_on::text || '|' || coalesce(d.arrive_at::text, '')
