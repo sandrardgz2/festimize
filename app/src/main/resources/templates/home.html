@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<!--
+  Page 3 of the wireframes. A hero with the festival's vital statistics, then
+  one card for each of the three things the site does, each showing enough of
+  itself to be worth clicking.
+-->
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head('Home')}"></head>
+<body>
+<header th:replace="~{layout :: topbar}"></header>
+
+<main class="wrap">
+
+    <p class="muted" th:if="${chosen == null}">
+        No festival has set times yet, so there is nothing to summarise.
+        <a th:href="@{/lineup}">Browse the lineups</a>.
+    </p>
+
+    <div th:if="${chosen != null}">
+        <section class="hero">
+            <div>
+                <h1 class="hero-title" th:text="${festivalName}">Festival 2027</h1>
+                <p class="hero-sub">
+                    <span th:if="${where != null}" th:text="${where}">Las Vegas</span>
+                    <span th:if="${where != null and when != null}"> · </span>
+                    <span th:if="${when != null}" th:text="${when}">12–15 August</span>
+                    <span th:if="${where != null or when != null}"> · </span>
+                    <span th:text="${hasPlan} ? 'your plan is ready' : 'no plan built yet'">your plan is ready</span>
+                </p>
+            </div>
+
+            <div class="tiles">
+                <div class="tile">
+                    <div class="tile-figure" th:text="${sets}">14</div>
+                    <div class="tile-label">sets</div>
+                </div>
+                <div class="tile">
+                    <div class="tile-figure" th:text="${hours}">19h</div>
+                    <div class="tile-label">of music</div>
+                </div>
+                <div class="tile">
+                    <div class="tile-figure" th:text="${newToYou}">6</div>
+                    <div class="tile-label">new to you</div>
+                </div>
+                <div class="tile">
+                    <div class="tile-figure" th:text="${picksOnBill} + '/' + ${savedCount}">8/10</div>
+                    <div class="tile-label">your picks here</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- The schedule and the insights page both say when a day runs past
+             the limit. This one used to print the total as though it were
+             fine, which made two pages honest and one of them not. -->
+        <p class="demo-note" th:if="${overBy != null and overBy > 0}">
+            <strong th:text="${overDays == 1 ? 'One day runs long.' : overDays + ' days run long.'}">One day runs long.</strong>
+            Your longest is <span th:text="${overBy}">50</span> min past the
+            <span th:text="${ceilingHours}">7h 30m</span> you set —
+            <a th:href="@{/schedule(editionId=${chosen.editionId})}">see what to drop</a>.
+        </p>
+
+        <div class="grid grid-3">
+
+            <section class="panel">
+                <h2 class="section-title">Lineup</h2>
+                <p class="section-note">
+                    <span th:text="${billSize}">118</span> artists ranked for you
+                </p>
+                <ul class="preview">
+                    <li th:each="row : ${topMatches}">
+                        <span class="lead">
+                            <a th:href="@{'/artist/' + ${row.artistId}}" th:text="${row.what}">Artist</a>
+                        </span>
+                        <span class="trail" th:text="${row.note}">94%</span>
+                    </li>
+                    <li th:if="${#lists.isEmpty(topMatches)}" class="muted">
+                        Nothing scored yet — <a th:href="@{/setup}">name a few artists</a>.
+                    </li>
+                </ul>
+                <p><a th:href="@{/lineup(editionId=${chosen.editionId})}">See the whole lineup →</a></p>
+            </section>
+
+            <section class="panel">
+                <h2 class="section-title">Schedule</h2>
+                <p class="section-note" th:text="${hasPlan} ? 'Your optimized plan' : 'Not built yet'">
+                    Your optimized plan
+                </p>
+                <ul class="preview">
+                    <li th:each="slot : ${firstSlots}">
+                        <span class="when" th:text="${slot.when}">13:00</span>
+                        <span class="lead">
+                            <span class="star-on" th:if="${mustSee.contains(slot.artistId)}" title="Must-see">★</span>
+                            <a th:if="${slot.artistId != null}"
+                               th:href="@{'/artist/' + ${slot.artistId}}" th:text="${slot.what}">Artist</a>
+                            <span th:if="${slot.artistId == null}" class="muted" th:text="${slot.what}">rest</span>
+                        </span>
+                    </li>
+                    <li th:if="${#lists.isEmpty(firstSlots)}" class="muted">
+                        No plan yet — build one from the schedule page.
+                    </li>
+                </ul>
+                <p><a th:href="@{/schedule(editionId=${chosen.editionId})}">
+                    <span th:text="${hasPlan} ? 'See the full day →' : 'Build my schedule →'">See the full day →</span>
+                </a></p>
+            </section>
+
+            <section class="panel">
+                <h2 class="section-title">Insights</h2>
+                <p class="section-note">Discovery and pacing, measured</p>
+                <ul class="preview">
+                    <li>
+                        <span class="lead">Discovery</span>
+                        <span class="trail" th:text="${discoveryPercent} + '%'">41%</span>
+                    </li>
+                    <li>
+                        <span class="lead">Lineup coverage</span>
+                        <span class="trail" th:text="${coveragePercent} + '%'">96%</span>
+                    </li>
+                    <li>
+                        <span class="lead">New artists in your plan</span>
+                        <span class="trail" th:text="${newToYou}">6</span>
+                    </li>
+                    <li>
+                        <span class="lead">Rising, not yet yours</span>
+                        <span class="trail" th:text="${risingWaiting}">4</span>
+                    </li>
+                </ul>
+                <p><a th:href="@{/insights(editionId=${chosen.editionId})}">See the detail →</a></p>
+            </section>
+        </div>
+
+        <div class="grid grid-2" style="margin-top:16px">
+            <section class="panel">
+                <h2 class="section-title">Other festivals</h2>
+                <p class="section-note">
+                    Your artist list carries over — only the schedule is rebuilt.
+                </p>
+                <p th:if="${#lists.isEmpty(others)}" class="muted">
+                    This is the only festival with set times at the moment.
+                </p>
+                <p>
+                    <a th:each="e, it : ${others}" th:href="@{/(editionId=${e.editionId})}"
+                       class="badge" style="margin-right:8px"
+                       th:text="${e.festival.name} + ' ' + ${e.year}">Festival</a>
+                </p>
+            </section>
+
+            <section class="panel">
+                <h2 class="section-title">How it works</h2>
+                <p class="section-note">
+                    How we score, rank and schedule — with the results of testing it.
+                </p>
+                <p><a th:href="@{/how-it-works}">Read the method →</a></p>
+            </section>
+        </div>
+    </div>
+
+</main>
+<footer th:replace="~{layout :: footer}"></footer>
+</body>
+</html>

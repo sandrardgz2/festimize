@@ -34,6 +34,16 @@ public class UserArtist {
     @Column(name = "added_at", nullable = false, updatable = false)
     private OffsetDateTime addedAt;
 
+    /**
+     * The person came for this one.
+     *
+     * Saved artists all weighed the same, so a clash between two of them was
+     * settled on match score. This is the only place the difference between
+     * "I came for this band" and "I would like to catch them" is recorded.
+     */
+    @Column(name = "must_see", nullable = false)
+    private boolean mustSee;
+
     public AppUser getUser() {
         return user;
     }
@@ -48,6 +58,14 @@ public class UserArtist {
 
     public void setArtist(Artist artist) {
         this.artist = artist;
+    }
+
+    public boolean isMustSee() {
+        return mustSee;
+    }
+
+    public void setMustSee(boolean mustSee) {
+        this.mustSee = mustSee;
     }
 
     public OffsetDateTime getAddedAt() {

@@ -59,6 +59,12 @@ class AddCost(BaseModel):
     # Sets that are in the schedule now and would not be afterwards. Empty
     # means the addition is free: there is room for it.
     costs: List[str]
+    # Of those, the ones that actually overlap the set being added. The rest
+    # were dropped to stay inside the daily cap and may be playing hours
+    # away, which reads as nonsense unless the page says so: adding Scowl at
+    # 13:30 "cost" Code Orange at 16:30, because a 430-minute day plus 40
+    # minutes exceeds a 450-minute limit and something had to go.
+    clashes: List[str]
     # Sets that are not in the schedule now and would be afterwards, besides
     # the one being added. Moving one set can open a gap that fits another,
     # so an addition is not always a straight trade.
@@ -66,6 +72,11 @@ class AddCost(BaseModel):
     # False when the set falls outside the hours this person said they would
     # attend, in which case adding it would do nothing at all.
     available: bool
+    # Minutes of music on the day this set falls on, after adding it. The
+    # page needs this to say whether the addition puts the day past the
+    # hours the person set, which is a different question from what it
+    # displaces and the more important one.
+    day_minutes_after: int = 0
 
 
 class AddCostResponse(BaseModel):
@@ -82,15 +93,62 @@ class _Bill:
     have changed in between, so loading and solving are separated here.
     """
 
-    def __init__(self, by_day, pinned, cap, meal_by, max_run_minutes):
+    def __init__(self, by_day, pinned, cap, meal_by, max_run_minutes, joined_late=None,
+                 windows=None, meals=None, leaves_early=None, fit_inside=False,
+                 day_hours=None):
         self.by_day = by_day
         self.pinned = pinned
         self.cap = cap
         self.meal_by = meal_by
         self.max_run_minutes = max_run_minutes
+        # performance_id -> (minutes missed, the time it really started)
+        self.joined_late = joined_late or {}
+        # performance_ids pinned to only part of their set
+        self.windows = windows or {}
+        # date -> the moment this person wants their meal break to start
+        self.meals = meals or {}
+        # performance_id -> (minutes cut from the end, when it really finishes)
+        self.leaves_early = leaves_early or {}
+        # Should the limit cover the whole day, including what was asked for?
+        self.fit_inside = fit_inside
+        # date -> (arrive_at, leave_by), either end possibly None. Only the
+        # days this person gave their own hours; the rest keep the
+        # account-wide window.
+        self.day_hours = day_hours or {}
 
     def offered(self) -> Dict[int, Candidate]:
         return {c.performance_id: c for day in self.by_day.values() for c in day}
+
+
+def within_hours(by_day: Dict[object, List[Candidate]], default, day_hours) -> dict:
+    """
+    Drop the sets falling outside the hours this person is on site.
+
+    Not offered at all rather than offered and then dropped: the schedule
+    should not argue with somebody about when their day starts.
+
+    `default` is the account-wide window from the profile, applied to every
+    day without one of its own. A day in `day_hours` uses its own window
+    *instead of* that, entirely — a Friday that says "from 16:00" is not also
+    held to the profile's 11:00, because the more specific answer is the one
+    the person just gave about that day. Either end of either window may be
+    None, meaning unbounded.
+
+    A window that would empty a day is ignored for that day. Someone whose
+    hours exclude every set on the Sunday has mistyped something or is
+    looking at the wrong festival; an empty day explains neither.
+    """
+    out = {}
+    for day, found in by_day.items():
+        arrive, leave = day_hours.get(day, default)
+        if not arrive and not leave:
+            out[day] = found
+            continue
+        kept = [c for c in found
+                if (not arrive or c.starts_at.time() >= arrive)
+                and (not leave or c.ends_at.time() <= leave)]
+        out[day] = kept or found
+    return out
 
 
 def _load(db: Session, user_id: int, edition_id: int, max_run_minutes: int) -> _Bill:
@@ -101,7 +159,8 @@ def _load(db: Session, user_id: int, edition_id: int, max_run_minutes: int) -> _
                    coalesce(s.name, 'TBA') as stage,
                    p.starts_at, p.ends_at,
                    coalesce(sc.match_score, 0) as score,
-                   (ua.artist_id is not null) as is_pick
+                   (ua.artist_id is not null) as is_pick,
+                   coalesce(ua.must_see, false) as must_see
             from fact_performance p
             join dim_artist a on a.artist_id = p.artist_id
             left join dim_stage s on s.stage_id = p.stage_id
@@ -118,11 +177,39 @@ def _load(db: Session, user_id: int, edition_id: int, max_run_minutes: int) -> _
     # before the scheduler sees them, so the solver optimises the day that is
     # actually on offer rather than choosing a set and having it removed
     # afterwards — which would leave the hole it was filling.
-    pinned = [r.performance_id for r in db.execute(
-        text("""select p.performance_id from plan_pinned p
+    pin_rows = db.execute(
+        text("""select p.performance_id, p.from_at, p.to_at from plan_pinned p
                    join plan pl on pl.plan_id = p.plan_id
                   where pl.user_id = :uid and pl.edition_id = :eid"""),
-        {"uid": user_id, "eid": edition_id}).fetchall()]
+        {"uid": user_id, "eid": edition_id}).fetchall()
+    pinned = [r.performance_id for r in pin_rows]
+    # A pin may name only part of a set: the part that falls in a gap, when
+    # the rest of it runs under something already in the day. Clamping the
+    # candidate before the solver sees it means a set you are catching the
+    # end of is simply a shorter set that starts when you arrive, so it fits
+    # the gap and displaces nothing. The original start is kept so the page
+    # can say you are joining late rather than pretending the band went on
+    # when you did.
+    windows = {r.performance_id: (r.from_at, r.to_at)
+               for r in pin_rows if r.from_at is not None or r.to_at is not None}
+
+
+    # Where this person said they want to eat, a day at a time.
+    meals = {r.meal_on: r.starts_at for r in db.execute(
+        text("""select m.meal_on, m.starts_at from plan_meal m
+                   join plan pl on pl.plan_id = m.plan_id
+                  where pl.user_id = :uid and pl.edition_id = :eid"""),
+        {"uid": user_id, "eid": edition_id}).fetchall()}
+
+    # The days this person said they arrive late or leave early on. The
+    # account-wide window is one pair of times applied to every day of every
+    # festival, which is not how anybody attends a weekend: you drive up after
+    # work on the Friday and you are there from ten on the Saturday.
+    day_hours = {r.day_on: (r.arrive_at, r.leave_by) for r in db.execute(
+        text("""select d.day_on, d.arrive_at, d.leave_by from plan_day d
+                   join plan pl on pl.plan_id = d.plan_id
+                  where pl.user_id = :uid and pl.edition_id = :eid"""),
+        {"uid": user_id, "eid": edition_id}).fetchall()}
 
     declined = {r.performance_id for r in db.execute(
         text("""select d.performance_id from plan_declined d
@@ -135,6 +222,11 @@ def _load(db: Session, user_id: int, edition_id: int, max_run_minutes: int) -> _
     # The person's own pacing, set on the profile page. These were constants
     # in the scheduler until that page existed; the caller may still override
     # max_run_minutes, which is what the existing query parameter does.
+    fit_inside = bool(db.execute(
+        text("""select fit_inside_limit from plan
+                 where user_id = :uid and edition_id = :eid"""),
+        {"uid": user_id, "eid": edition_id}).scalar())
+
     pace = db.execute(
         text("""select stamina, max_run_minutes, meal_by, earliest_start, latest_end
                    from app_user where user_id = :uid"""),
@@ -148,24 +240,38 @@ def _load(db: Session, user_id: int, edition_id: int, max_run_minutes: int) -> _
         raise HTTPException(status_code=404, detail="No performances with set times for that edition.")
 
     by_day = {}
+    joined_late = {}
+    leaves_early = {}
     for r in rows:
-        by_day.setdefault(r.starts_at.date(), []).append(
+        starts, ends = r.starts_at, r.ends_at
+        window = windows.get(r.performance_id)
+        if window:
+            from_at, to_at = window
+            starts = max(starts, from_at) if from_at else starts
+            ends = min(ends, to_at) if to_at else ends
+            if ends <= starts:                 # a window that leaves nothing
+                starts, ends = r.starts_at, r.ends_at
+            late = int((starts - r.starts_at).total_seconds() // 60)
+            if late > 0:
+                joined_late[r.performance_id] = (late, r.starts_at)
+            early = int((r.ends_at - ends).total_seconds() // 60)
+            if early > 0:
+                leaves_early[r.performance_id] = (early, r.ends_at)
+        by_day.setdefault(starts.date(), []).append(
             Candidate(r.performance_id, r.artist_id, r.name, r.stage,
-                      r.starts_at, r.ends_at, float(r.score), bool(r.is_pick))
+                      starts, ends, float(r.score), bool(r.is_pick),
+                      bool(r.must_see))
         )
 
-    # Sets outside the hours this person will attend are not offered at all,
-    # rather than offered and then dropped: the schedule should not argue with
-    # someone about when their day starts.
-    if pace and (pace.earliest_start or pace.latest_end):
-        for day, found in list(by_day.items()):
-            kept = [c for c in found
-                    if (not pace.earliest_start or c.starts_at.time() >= pace.earliest_start)
-                    and (not pace.latest_end or c.ends_at.time() <= pace.latest_end)]
-            by_day[day] = kept or found        # never leave a day with nothing
+    by_day = within_hours(by_day,
+                          default=((pace.earliest_start if pace else None),
+                                   (pace.latest_end if pace else None)),
+                          day_hours=day_hours)
 
     return _Bill(by_day, pinned, cap, meal_by=pace.meal_by if pace else None,
-                 max_run_minutes=max_run_minutes)
+                 max_run_minutes=max_run_minutes, joined_late=joined_late,
+                 windows=windows, meals=meals, leaves_early=leaves_early,
+                 fit_inside=fit_inside, day_hours=day_hours)
 
 
 def _solve(bill: _Bill, discovery_quota: float, also_pin: Sequence[int] = ()) -> list:
@@ -194,7 +300,10 @@ def _solve(bill: _Bill, discovery_quota: float, also_pin: Sequence[int] = ()) ->
                           not_before=not_before,
                           music_cap_minutes=bill.cap,
                           meal_by=bill.meal_by,
-                          pinned=pinned)
+                          pinned=pinned,
+                          tight=list(bill.joined_late) + list(bill.windows),
+                          meal_at=bill.meals.get(day),
+                          fit_inside=bill.fit_inside)
         slots.extend(built)
         finished = max((s.ends_at for s in built if s.kind == 'SET'), default=None)
         not_before = finished + timedelta(hours=SLEEP_FLOOR_HOURS) if finished else None
@@ -226,8 +335,46 @@ def build_plan(
         {"uid": user_id, "eid": edition_id},
     ).scalar_one()
     db.execute(text("delete from plan_item where plan_id = :p"), {"p": plan_id})
+    db.execute(text("delete from plan_omitted where plan_id = :p"), {"p": plan_id})
+
+    # Sets the limit left out travel with the day but are not in it — nobody
+    # is anywhere at that hour — so they go to their own table rather than
+    # into the timeline everything else reads.
+    for s in slots:
+        if s.kind != "CUT":
+            continue
+        db.execute(
+            text(
+                """
+                insert into plan_omitted (plan_id, performance_id, day_on, minutes)
+                values (:p, :perf, :day, :mins)
+                on conflict (plan_id, performance_id) do nothing
+                """
+            ),
+            {"p": plan_id, "perf": s.performance_id, "day": s.starts_at.date(),
+             "mins": int((s.ends_at - s.starts_at).total_seconds() // 60)},
+        )
 
     for s in slots:
+        if s.kind == "CUT":
+            continue
+        reason = s.reason
+        # Say that this is part of a set rather than all of it. The solver was
+        # handed a clamped candidate and has no idea the band went on earlier,
+        # so the page would otherwise show a 40-minute set that is really the
+        # back half of a 60-minute one.
+        late = bill.joined_late.get(s.performance_id) if s.kind == "SET" else None
+        if late:
+            missed, really_started = late
+            reason += " · you join %d min in; they start at %s" % (
+                missed, really_started.strftime("%H:%M"))
+        # And say when you are leaving before the end, which a clamped window
+        # can also mean: the set the solver was given finishes when you do.
+        early = bill.leaves_early.get(s.performance_id) if s.kind == "SET" else None
+        if early:
+            left, really_ends = early
+            reason += " · you leave %d min early; they play until %s" % (
+                left, really_ends.strftime("%H:%M"))
         db.execute(
             text(
                 """
@@ -236,7 +383,7 @@ def build_plan(
                 """
             ),
             {"p": plan_id, "kind": s.kind, "perf": s.performance_id,
-             "start": s.starts_at, "end": s.ends_at, "reason": s.reason,
+             "start": s.starts_at, "end": s.ends_at, "reason": reason,
              "alt": s.alternative_id},
         )
     db.commit()
@@ -248,7 +395,8 @@ def build_plan(
         sets=sets, rests=sum(1 for s in slots if s.kind == "REST"),
         discoveries=sets - picks,
         slots=[PlanSlot(kind=s.kind, starts_at=s.starts_at, ends_at=s.ends_at,
-                        artist=s.artist, stage=s.stage, reason=s.reason) for s in slots],
+                        artist=s.artist, stage=s.stage, reason=s.reason)
+               for s in slots if s.kind != "CUT"],
     )
 
 
@@ -294,14 +442,25 @@ def add_cost(
             continue
         if r.performance_id not in offered:
             out.append(AddCost(performance_id=r.performance_id, artist=r.name,
-                               costs=[], gains=[], available=False))
+                               costs=[], clashes=[], gains=[], available=False))
             continue
-        after = {s.performance_id for s in _solve(bill, discovery_quota, also_pin=[r.performance_id])
-                 if s.kind == "SET"}
-        lost = [offered[p].artist for p in base - after if p in offered]
+        solved = _solve(bill, discovery_quota, also_pin=[r.performance_id])
+        after = {s.performance_id for s in solved if s.kind == "SET"}
+        adding = offered[r.performance_id]
+        lost_ids = [p for p in base - after if p in offered]
+        lost = [offered[p].artist for p in lost_ids]
+        clashes = [offered[p].artist for p in lost_ids
+                   if offered[p].starts_at < adding.ends_at
+                   and adding.starts_at < offered[p].ends_at]
         gained = [offered[p].artist for p in after - base
                   if p != r.performance_id and p in offered]
+        on_the_day = offered[r.performance_id].starts_at.date()
+        minutes = sum((s.ends_at - s.starts_at).total_seconds() / 60
+                      for s in solved
+                      if s.kind == "SET" and s.starts_at.date() == on_the_day)
         out.append(AddCost(performance_id=r.performance_id, artist=r.name,
-                           costs=sorted(lost), gains=sorted(gained), available=True))
+                           costs=sorted(lost), clashes=sorted(clashes),
+                           gains=sorted(gained), available=True,
+                           day_minutes_after=int(round(minutes))))
 
     return AddCostResponse(user_id=user_id, edition_id=edition_id, costs=out)

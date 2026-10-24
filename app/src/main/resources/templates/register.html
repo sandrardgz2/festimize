@@ -2,7 +2,7 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout :: head('Create account')}"></head>
 <body>
-<header class="topbar"><span class="brand">festimize</span></header>
+<header th:replace="~{layout :: topbar}"></header>
 
 <main class="wrap">
     <h1 class="page-title">Create account</h1>
@@ -25,6 +25,8 @@
         </form>
         <p class="muted" style="margin-top:14px">
             Already registered? <a th:href="@{/login}">Sign in</a>.
+            <br>
+            New here? <a th:href="@{/how-it-works}">See how this works →</a>
         </p>
     </div>
 </main>

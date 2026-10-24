@@ -1,45 +1,131 @@
 <!DOCTYPE html>
+<!--
+  Page 5 of the wireframes.
+
+  Two departures from the drawing, both for the same reason. The wireframe's
+  "ON THE WAY UP" chart drew stage promotion — taller bar = bigger stage —
+  and the corpus cannot support it: 95 bookings of 39,778 carry a billing
+  rank. The bars show festivals a year instead, which is what the Rising
+  badge is computed from. And the wireframe's "Not for me" button is not
+  here: turning down a set is a thing this site can do, but dismissing an
+  artist everywhere is a concept it does not have, and a button that looks
+  permanent and is not would be worse than none.
+-->
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout :: head(${artist.name})}"></head>
 <body>
 <header th:replace="~{layout :: topbar}"></header>
 
 <main class="wrap">
-    <h1 class="page-title" th:text="${artist.name}">Artist</h1>
-    <p class="page-sub">
-        <span th:if="${artist.disambiguation != null}"
-              th:text="${artist.disambiguation}">US rock band</span>
-        <span th:if="${artist.disambiguation != null and artist.country != null}"> · </span>
-        <span th:if="${artist.country != null}" th:text="${artist.country}">US</span>
-        <span th:if="${artist.formedYear != null}"
-              th:text="' · since ' + ${artist.formedYear}"> · since 1994</span>
-    </p>
 
-    <p class="tags" th:if="${tags != null and !#strings.isEmpty(tags)}"
-       th:text="${tags}">doom metal · sludge</p>
+    <section class="hero">
+        <div>
+            <h1 class="page-title" style="margin-bottom:4px">
+                <span class="star-on" th:if="${mustSee.contains(artist.artistId)}" title="Must-see">★</span>
+                <span th:text="${artist.name}">Artist</span>
+            </h1>
+            <p class="page-sub" style="margin-top:0">
+                <span th:if="${artist.disambiguation != null}"
+                      th:text="${artist.disambiguation}">US rock band</span>
+                <span th:if="${artist.disambiguation != null and artist.country != null}"> · </span>
+                <span th:if="${artist.country != null}" th:text="${artist.country}">US</span>
+                <span th:if="${artist.formedYear != null}"
+                      th:text="' · since ' + ${artist.formedYear}"> · since 1994</span>
+            </p>
+            <p>
+                <span class="badge badge-pick" th:if="${isMine}">Your pick</span>
+                <span class="badge badge-match" th:if="${match != null}"
+                      th:text="${match} + '% match'">94% match</span>
+                <span class="badge badge-rising" th:if="${label != null}" th:text="${label}">Rising</span>
+            </p>
+            <p class="tags" th:if="${tags != null and !#strings.isEmpty(tags)}"
+               th:text="${tags}">doom metal · sludge</p>
+        </div>
+    </section>
 
-    <!-- The badge where the measure earned one, and the counts either way.
-         Every other label this page used to carry has gone: they claimed
-         things about artists that only held for this dataset. -->
-    <section class="panel" th:if="${momentum != null}">
-        <h2 th:if="${label != null}">
-            <span th:text="${label}">Rising</span>
-        </h2>
-        <p th:if="${explains != null}" th:text="${explains}">
-            Booked at a growing share of the festivals in this dataset.
+    <div class="grid grid-2">
+
+        <section class="panel">
+            <h2 class="section-title">Why we recommended this</h2>
+            <p class="section-note" th:if="${isMine}">
+                You named this artist yourself — they are one of the profiles everything
+                else is scored against.
+            </p>
+            <div th:unless="${isMine}">
+                <p class="section-note" th:if="${!#sets.isEmpty(sharedTags)}">
+                    Shares these tags with artists you listed:
+                </p>
+                <div class="chip-row" th:if="${!#sets.isEmpty(sharedTags)}">
+                    <span class="chip" th:each="t : ${sharedTags}" th:text="${t}">doom</span>
+                </div>
+                <p class="muted" th:if="${!#strings.isEmpty(matchedAgainst)}">
+                    Matched against: <span th:text="${matchedAgainst}">Ghost, Baroness</span>
+                </p>
+                <p class="muted" th:if="${#sets.isEmpty(sharedTags)}">
+                    No tag overlap with the artists you listed. They are on the bill, but
+                    nothing here is claiming you will like them.
+                </p>
+            </div>
+        </section>
+
+        <section class="panel" th:if="${!#lists.isEmpty(climb)}">
+            <h2 class="section-title">On the way up</h2>
+            <p class="section-note">
+                Share of the circuit's bookings they held, year by year — the series the
+                Rising badge is measured on. A year with no bar is a year they were not
+                booked, and the climb out of those is usually the whole story.
+            </p>
+            <div class="climb">
+                <div class="climb-col" th:each="b : ${climb}">
+                    <div class="climb-bar" th:style="'height:' + ${b.height} + 'px'"
+                         th:title="${b.year} + ': ' + ${b.festivals} + ' festivals, ' + ${b.share} + '% of all bookings that year'"></div>
+                    <span class="climb-year" th:text="${b.year}">2025</span>
+                </div>
+            </div>
+            <p class="climb-cap" th:if="${explains != null}" th:text="${explains}">
+                Booked at a growing share of the festivals in this dataset.
+            </p>
+            <p class="climb-cap" th:if="${explains == null and momentum != null}">
+                <span th:text="${momentum.appearances}">0</span> appearances ·
+                <span th:text="${momentum.festivals}">0</span> festivals ·
+                <span th:text="${momentum.firstYear} + '–' + ${momentum.lastYear}">2015–2026</span>.
+                Not enough of a climb to call them rising.
+            </p>
+        </section>
+    </div>
+
+    <section class="panel" th:if="${!#lists.isEmpty(setTimes)}">
+        <h2 class="section-title">Set times</h2>
+        <p class="section-note">
+            Adding a set pins it, and the day is rebuilt around it.
         </p>
-        <p class="muted">
-            <span th:text="${momentum.appearances}">0</span> appearances ·
-            <span th:text="${momentum.festivals}">0</span> festivals ·
-            <span th:text="${momentum.firstYear} + '–' + ${momentum.lastYear}">2015–2026</span>
-            <span th:if="${label == null}">
-                in this dataset, which covers 36 festivals from 2015 onwards.
-            </span>
-        </p>
+        <table class="settimes">
+            <thead>
+            <tr>
+                <th>Festival</th><th>Day</th><th>Time</th><th>Stage</th><th></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="s : ${setTimes}">
+                <td th:text="${s.festival}">Sick New World 2027</td>
+                <td th:text="${s.day}">Sat</td>
+                <td class="num" th:text="${s.time}">16:30</td>
+                <td th:text="${s.stage} ?: '—'">Main Stage</td>
+                <td style="text-align:right">
+                    <span class="muted" th:if="${s.inPlan}">In your schedule</span>
+                    <form method="post" th:action="@{/schedule/add}" th:unless="${s.inPlan}">
+                        <input type="hidden" name="editionId" th:value="${s.editionId}"/>
+                        <input type="hidden" name="performanceId" th:value="${s.performanceId}"/>
+                        <button type="submit" class="button-quiet">Add to my schedule</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
     </section>
 
     <section class="panel">
-        <h2>Festival history</h2>
+        <h2 class="section-title">Festival history</h2>
         <p class="muted" th:if="${#lists.isEmpty(seasons)}">
             No festival appearances in the dataset.
         </p>
@@ -58,5 +144,6 @@
         </p>
     </section>
 </main>
+<footer th:replace="~{layout :: footer}"></footer>
 </body>
 </html>

@@ -44,9 +44,9 @@
                     <option value="light" th:selected="${me.stamina == 'light'}">
                         Light — up to 5 hours of music a day</option>
                     <option value="moderate" th:selected="${me.stamina == 'moderate'}">
-                        Moderate — up to 7.5 hours a day</option>
+                        Moderate — up to 7.5 hours of music a day</option>
                     <option value="hard" th:selected="${me.stamina == 'hard'}">
-                        Hard — up to 10 hours a day</option>
+                        Hard — up to 10 hours of music a day</option>
                 </select>
                 <span class="muted" th:text="'currently ' + ${musicCapHours} + ' hours'">7.5</span>
             </p>
@@ -59,16 +59,17 @@
 
             <p>
                 <label for="mealBy"><strong>Eat by</strong></label><br>
-                <input type="time" id="mealBy" name="mealBy" th:value="${me.mealBy}">
+                <input type="time" id="mealBy" name="mealBy" th:value="${mealBy}">
                 <span class="muted">the latest a meal break may land</span>
             </p>
 
             <p>
-                <label for="earliestStart"><strong>Earliest start / latest end</strong></label><br>
+                <label for="earliestStart"><strong>The hours you are on site</strong></label><br>
                 <input type="time" id="earliestStart" name="earliestStart"
-                       th:value="${me.earliestStart}">
-                <input type="time" id="latestEnd" name="latestEnd" th:value="${me.latestEnd}">
-                <span class="muted">leave empty for whenever the festival opens and closes</span>
+                       th:value="${earliestStart}">
+                <input type="time" id="latestEnd" name="latestEnd" th:value="${latestEnd}">
+                <span class="muted">no set starts before the first or runs past the second;
+                    leave empty for whenever the festival opens and closes</span>
             </p>
 
             <p>

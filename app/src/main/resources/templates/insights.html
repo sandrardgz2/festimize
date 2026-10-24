@@ -11,14 +11,22 @@
         No festival can be planned yet, so there is nothing to report on.
     </p>
 
-    <div th:unless="${#lists.isEmpty(editions)}">
-        <form method="get" th:action="@{/insights}" th:if="${#lists.size(editions) > 1}">
-            <select name="editionId" onchange="this.form.submit()">
-                <option th:each="e : ${editions}" th:value="${e.editionId}"
-                        th:selected="${chosen != null and e.editionId == chosen.editionId}"
-                        th:text="${e.festival.name} + ' ' + ${e.year}">Festival</option>
-            </select>
-        </form>
+    <!-- Nothing here can be computed without a taste profile, so the page
+         says so once and stops, rather than drawing empty charts. -->
+    <section class="panel" th:if="${!#lists.isEmpty(editions) and !hasPicks}">
+        <h2 class="section-title">Nothing to measure yet</h2>
+        <p class="section-note">
+            These numbers describe your plan against your taste, and you have not named
+            any artists yet. It takes a minute.
+        </p>
+        <p><a th:href="@{/setup}" class="button">Pick your artists</a></p>
+    </section>
+
+    <div th:if="${!#lists.isEmpty(editions) and hasPicks}">
+        <!-- The festival switcher is in the header now, on every page, which
+             is where the wireframes put it. The lineup page keeps its own as
+             well, because that one also reaches the 331 historical lineups
+             and the header lists only the three you can plan. -->
 
         <p class="muted" th:if="${sets == 0}">
             No schedule built for this festival yet — build one on the
@@ -35,8 +43,14 @@
             <article class="card stat">
                 <div class="stat-figure" th:text="${coveragePercent} + '%'">0%</div>
                 <div class="name">Lineup coverage</div>
+                <!-- The tail has to know which case it is in. Written as one
+                     fixed sentence it told somebody looking at 100% that "the
+                     rest cannot be scored", when all 25 of 25 carry tags and
+                     there is no rest. -->
                 <div class="tags">of the <span th:text="${onBill}">0</span> artists on this bill
-                    carry tags, so the rest cannot be scored at all</div>
+                    carry tags<span th:if="${untagged == 0}"> — every one of them can be
+                    scored</span><span th:if="${untagged > 0}"> — the other
+                    <span th:text="${untagged}">0</span> cannot be scored at all</span></div>
             </article>
         </div>
 
@@ -91,6 +105,22 @@
                     <div class="tags">
                         <span th:text="${r.slot}">Sat 14:00</span>
                         <span th:if="${!#strings.isEmpty(r.stage)}" th:text="' · ' + ${r.stage}"></span>
+                    </div>
+                    <!-- "Not yours" means not a saved artist, which is not the
+                         same as not in the schedule: the solver picks
+                         discoveries, so a rising artist may already be in the
+                         day. Offering to add that one would be an offer to do
+                         nothing. -->
+                    <div class="tags" th:if="${r.inPlan}">Already in your schedule.</div>
+                    <div class="tradeoff" th:unless="${r.inPlan}">
+                        <span class="muted" th:if="${r.addCost != null}"
+                              th:text="${r.addCost}">clashes with X</span>
+                        <form method="post" th:action="@{/schedule/add}" class="inline-action">
+                            <input type="hidden" name="editionId" th:value="${chosen.editionId}"/>
+                            <input type="hidden" name="performanceId" th:value="${r.performanceId}"/>
+                            <input type="hidden" name="back" value="insights"/>
+                            <button type="submit" class="button-quiet">Add to my schedule</button>
+                        </form>
                     </div>
                 </article>
             </div>

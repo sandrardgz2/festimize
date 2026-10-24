@@ -28,6 +28,39 @@
          into: a wall of badges and a 112KB page. A select handles any number
          of them and keeps the planning editions at the top, since those are
          the ones with set times and therefore the ones you can plan. -->
+    <!-- The one thing left to do, for somebody who has just finished setup.
+
+         The festival choice belongs here rather than in the setup flow. The
+         artist list is account-wide and works for every festival, so there is
+         nothing to choose before naming artists — but there certainly is
+         before building a day, and until now the app simply picked the
+         soonest one and never said so. Choosing switches the lineup rather
+         than arming a hidden field: you build the bill you are looking at. -->
+    <section class="panel" th:if="${hasPicks and !hasPlan and chosen != null}">
+        <h2 class="section-title">Next: build your schedule</h2>
+        <p class="section-note" th:if="${#lists.size(plannable) > 1}">
+            Which festival are you planning? These are the ones with set times — the rest
+            of the lineups are history you can browse, but not days you can walk.
+        </p>
+        <div class="chip-row" th:if="${#lists.size(plannable) > 1}">
+            <a th:each="e : ${plannable}"
+               th:href="@{/lineup(editionId=${e.editionId})}"
+               class="daytab"
+               th:classappend="${e.editionId == chosen.editionId} ? 'active'"
+               th:text="${e.festival.name} + ' ' + ${e.year}">Festival</a>
+        </div>
+        <p class="section-note">
+            Your artists are scored against
+            <strong th:text="${festivalName}">this bill</strong>. The scheduler can now work
+            out a day around them — which sets to catch, and when to eat and sit down.
+        </p>
+        <form method="post" th:action="@{/schedule/build}">
+            <input type="hidden" name="editionId" th:value="${chosen.editionId}"/>
+            <button type="submit" class="btn"
+                    th:text="'Build my ' + ${festivalName} + ' schedule'">Build my schedule</button>
+        </form>
+    </section>
+
     <section class="panel" th:if="${#lists.size(editions) > 1}">
         <h2>Festival</h2>
         <p class="muted">Your artists stay on your account — switching only rebuilds the lineup.</p>
@@ -70,6 +103,7 @@
     <div class="grid grid-2">
         <article class="card" th:each="row : ${rows}">
             <div class="name">
+                <span class="star-on" th:if="${mustSee.contains(row.artistId)}" title="Must-see">★</span>
                 <a th:href="@{/artist/{id}(id=${row.artistId})}" th:text="${row.artist}"
                    class="artist-link">Artist</a>
                 <span class="badge badge-headliner" th:if="${row.headliner}">Headliner</span>

@@ -118,6 +118,11 @@ CREATE TABLE app_user (
                     CHECK (stamina IN ('light', 'moderate', 'hard')),
     max_run_minutes smallint NOT NULL DEFAULT 180,   -- before a break is due
     meal_by         time NOT NULL DEFAULT '18:00',   -- latest a meal may land
+    -- Last change to the artists, stars or pace a schedule is built from.
+    -- Compared against plan.updated_at to decide whether "Rebuild my
+    -- schedule" would do anything; the edits made on the schedule page are
+    -- inputs to the solve and survive it, so they do not count.
+    taste_changed_at timestamptz NOT NULL DEFAULT now(),
     earliest_start  time,                            -- null = whenever it opens
     latest_end      time,                            -- null = until it closes
     created_at    timestamptz NOT NULL DEFAULT now()
@@ -128,6 +133,9 @@ CREATE TABLE user_artist (
     user_id    bigint NOT NULL REFERENCES app_user ON DELETE CASCADE,
     artist_id  bigint NOT NULL REFERENCES dim_artist,
     added_at   timestamptz NOT NULL DEFAULT now(),
+    -- The two or three they came for, as against the dozen they would like to
+    -- catch. A must-see is never dropped and wins any clash with a plain pick.
+    must_see   boolean NOT NULL DEFAULT false,
     PRIMARY KEY (user_id, artist_id)
 );
 

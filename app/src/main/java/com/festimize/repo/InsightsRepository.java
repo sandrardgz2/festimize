@@ -87,7 +87,8 @@ public interface InsightsRepository extends JpaRepository<Performance, Long> {
             select a.artist_id, a.name,
                    round(coalesce(sc.match_score, 0) * 100)::int as match,
                    p.starts_at as slot,
-                   coalesce(s.name, '') as stage
+                   coalesce(s.name, '') as stage,
+                   p.performance_id
               from fact_performance p
               join dim_artist a on a.artist_id = p.artist_id
               join artist_momentum m on m.artist_id = a.artist_id

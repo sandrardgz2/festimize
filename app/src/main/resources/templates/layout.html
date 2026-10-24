@@ -2,6 +2,13 @@
 <!--
   Shared layout fragments. Pages pull these in with th:replace.
   This file is never rendered on its own.
+
+  The header follows diagrams/Festimize - Wireframes.drawio, which puts the
+  same bar on all nine screens: brand, the sections, the festival being looked
+  at, and the person. Setup stays in the nav although the wireframe leaves it
+  out — the wireframe treats setup as a first-run flow you pass through once,
+  and until the profile page carries the artist list there has to be a way
+  back to it.
 -->
 <html xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
@@ -14,17 +21,55 @@
 <body>
 
 <header class="topbar" th:fragment="topbar">
-    <span class="brand">festimize</span>
-    <nav>
+    <a class="brand" th:href="@{/}">festimize</a>
+    <!-- Signed in, the sections in the order you actually use them: name your
+         artists, see them ranked against a bill, get a day built, read what it
+         says about you.
+
+         Signed out, only the two things that work. Showing all six to someone
+         with no account is six links, five of which bounce off the sign-in
+         page — the method page is public precisely so it can be read first,
+         and burying it among dead ends wastes that. -->
+    <nav sec:authorize="isAuthenticated()">
+        <a th:href="@{/}" th:classappend="${activeNav == 'home'} ? 'active'">Home</a>
         <a th:href="@{/setup}" th:classappend="${activeNav == 'setup'} ? 'active'">Setup</a>
         <a th:href="@{/lineup}" th:classappend="${activeNav == 'lineup'} ? 'active'">Lineup</a>
         <a th:href="@{/schedule}" th:classappend="${activeNav == 'schedule'} ? 'active'">Schedule</a>
         <a th:href="@{/insights}" th:classappend="${activeNav == 'insights'} ? 'active'">Insights</a>
-        <a th:href="@{/profile}" th:classappend="${activeNav == 'profile'} ? 'active'">Profile</a>
+        <a th:href="@{/how-it-works}" th:classappend="${activeNav == 'how'} ? 'active'">How it works</a>
     </nav>
-    <span class="session" sec:authorize="isAuthenticated()">
-        <span sec:authentication="name">someone@example.com</span>
-        &nbsp;·&nbsp;
+    <nav sec:authorize="!isAuthenticated()">
+        <a th:href="@{/how-it-works}" th:classappend="${activeNav == 'how'} ? 'active'">How it works</a>
+    </nav>
+    <span class="session" sec:authorize="!isAuthenticated()" style="margin-left:auto">
+        <a th:href="@{/login}" class="button-quiet"
+           th:unless="${currentPath == '/login'}"
+           style="padding:4px 12px;font-size:13px">Sign in</a>
+        &nbsp;
+        <a th:href="@{/register}" class="button"
+           th:unless="${currentPath == '/register'}"
+           style="padding:5px 14px;font-size:13px">Create an account</a>
+    </span>
+
+    <!-- Shown only where a festival is in scope. -->
+    <form class="switcher" method="get" th:action="${currentPath}"
+          th:if="${chosen != null and navEditions != null and #lists.size(navEditions) > 1}">
+        <select name="editionId" onchange="this.form.submit()"
+                aria-label="Which festival">
+            <option th:each="e : ${navEditions}"
+                    th:value="${e.editionId}"
+                    th:selected="${e.editionId == chosen.editionId}"
+                    th:text="${e.festival.name} + ' ' + ${e.year}">Festival</option>
+        </select>
+        <noscript><button type="submit" class="button-quiet">Go</button></noscript>
+    </form>
+
+    <span class="session" sec:authorize="isAuthenticated()"
+          th:style="${chosen == null} ? 'margin-left:auto' : ''">
+        <a class="avatar" th:href="@{/profile}"
+           th:text="${#strings.toUpperCase(#strings.substring(#authentication.name, 0, 1))}"
+           th:title="${#authentication.name}">P</a>
+        &nbsp;
         <form th:action="@{/logout}" method="post" style="display:inline">
             <button type="submit" class="button-quiet" style="padding:4px 12px;font-size:13px">Sign out</button>
         </form>
@@ -32,7 +77,7 @@
 </header>
 
 <footer class="site" th:fragment="footer">
-    Festimize — IST 440W capstone. Taste matching, scheduling and the rising-artist measure are implemented; lineups for 2027 are demonstration data.
+    Festimize — IST 440W capstone
 </footer>
 
 </body>

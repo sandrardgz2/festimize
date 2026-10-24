@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<!--
+  Page 1 of the wireframes. Public, because it is the page that says what the
+  site claims and how much of it was tested.
+-->
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head('How it works')}"></head>
+<body>
+<header th:replace="~{layout :: topbar}"></header>
+
+<main class="wrap">
+
+    <section class="hero">
+        <div>
+            <h1 class="hero-title">How Festimize works</h1>
+            <p class="lede hero-sub">
+                Every recommendation on this site is explained here.
+            </p>
+        </div>
+        <div class="tiles">
+            <div class="tile">
+                <div class="tile-figure" th:text="${#numbers.formatInteger(performances, 1, 'COMMA')}">39,778</div>
+                <div class="tile-label">bookings</div>
+            </div>
+            <div class="tile">
+                <div class="tile-figure" th:text="${festivals}">36</div>
+                <div class="tile-label">festivals</div>
+            </div>
+            <div class="tile">
+                <div class="tile-figure"
+                     th:text="${firstYear} + '–' + ${lastYear}">2015–2026</div>
+                <div class="tile-label">years</div>
+            </div>
+        </div>
+    </section>
+
+    <div class="grid grid-3">
+        <section class="panel">
+            <h2 class="section-title">1 · How we score artists</h2>
+            <p>
+                Every artist carries a handful of labels — doom, melodic, hardcore punk,
+                2000s — from MusicBrainz and Last.fm. The ten or so artists you name give
+                us yours, and <strong>43% match</strong> means an artist on the bill shares
+                that much of them.
+            </p>
+            <p class="muted">
+                An artist you named yourself is marked <strong>your pick</strong> and shows
+                no percentage, because they match themselves perfectly. Nothing is needed
+                from your listening history, so an unknown band scores as fairly as a
+                famous one. It measures overlap, not whether you will like them.
+            </p>
+        </section>
+
+        <section class="panel">
+            <h2 class="section-title">2 · How “rising” is measured</h2>
+            <p>
+                <span th:text="${#numbers.formatInteger(performances, 1, 'COMMA')}">39,778</span>
+                bookings across <span th:text="${festivals}">36</span> festivals and
+                <span th:text="${editions}">331</span> editions. We track the share of
+                festivals an artist is booked at, year on year. Climbing is rising.
+            </p>
+            <p class="muted">
+                This describes the past, not the future. The badge only appears where there
+                is enough history to measure one — three years, three festivals — which is
+                a minority of any lineup.
+            </p>
+        </section>
+
+        <section class="panel">
+            <h2 class="section-title">3 · How your schedule is built</h2>
+            <p>
+                Your day is built from three things: the artists you named, recommended
+                artists who match your taste, and breaks so you can pace yourself. The
+                scheduler fits all three into the best day available to you.
+            </p>
+            <p class="muted">
+                It allows for breaks, meals, the walk between stages and the daily limit
+                you set — and none of it is final: change any set and the day is worked
+                out again around it.
+            </p>
+            <!-- The three rules a person cannot work out from the timetable
+                 itself. Each is one sentence: the page is read once. -->
+            <p class="muted">
+                Star an artist <strong>must-see</strong> and nothing drops them, which is
+                how two of your own picks clashing gets settled. Where they clash and
+                neither is starred, the day may leave one early to catch the other, and
+                says what that cost. Your daily limit counts music, so the summary also
+                shows how long you are on site — always the longer of the two.
+            </p>
+        </section>
+    </div>
+
+    <div class="grid grid-2" style="margin-top:16px">
+        <section class="panel">
+            <h2 class="section-title">Where the data comes from</h2>
+            <ul class="preview">
+                <li><span class="lead">Wikipedia and Wikidata</span>
+                    <span class="trail">festival lineups</span></li>
+                <li><span class="lead">MusicBrainz</span>
+                    <span class="trail">artist metadata and tags</span></li>
+                <li><span class="lead">Last.fm</span>
+                    <span class="trail">tags</span></li>
+                <li><span class="lead">setlist.fm</span>
+                    <span class="trail">set times</span></li>
+            </ul>
+        </section>
+
+        <section class="panel">
+            <h2 class="section-title">What this cannot do</h2>
+            <ul class="preview">
+                <li><span class="lead">An artist with one appearance has no trajectory.</span></li>
+                <li><span class="lead">Tag quality varies a lot for very small artists.</span></li>
+                <li><span class="lead">Rest guidance is advisory, not medical.</span></li>
+                <li><span class="lead">A match percentage is tag overlap, not a prediction.</span></li>
+            </ul>
+            <p class="muted" style="margin-top:10px">
+                The 2027 lineups on this site are demonstration data, entered by hand. The
+                historical lineups they are measured against are real.
+            </p>
+        </section>
+    </div>
+
+</main>
+<footer th:replace="~{layout :: footer}"></footer>
+</body>
+</html>

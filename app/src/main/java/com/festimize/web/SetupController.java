@@ -43,6 +43,15 @@ public class SetupController {
         this.tagClient = tagClient;
     }
 
+    /**
+     * How many artists the page asks for before it stops nudging.
+     *
+     * Ten is what the wireframe suggests and what the scoring was tuned
+     * against; it is a suggestion rather than a requirement, and the page
+     * says so. Nothing enforces it.
+     */
+    private static final int SUGGESTED = 10;
+
     /** One checkbox on the setup page. */
     public record Choice(Long artistId, String name, String tags, boolean chosen) {}
 
@@ -50,8 +59,9 @@ public class SetupController {
     public String setup(@org.springframework.web.bind.annotation.RequestParam(required = false) String q,
                         Principal principal, Model model) {
         AppUser me = currentUser(principal);
+        List<Artist> savedArtists = saved.findSavedArtists(me.getUserId());
         Set<Long> mine = new HashSet<>();
-        saved.findSavedArtists(me.getUserId()).forEach(a -> mine.add(a.getArtistId()));
+        savedArtists.forEach(a -> mine.add(a.getArtistId()));
 
         // Only artists the recommender can actually score. Taste matching runs
         // on tags, so ticking an artist with none is a no-op the page would be
@@ -99,6 +109,12 @@ public class SetupController {
         model.addAttribute("activeNav", "setup");
         model.addAttribute("choices", choices);
         model.addAttribute("chosenCount", mine.size());
+        // The wireframe shows what you have already chosen as chips at the top
+        // of the page, rather than as ticks scattered down a list you have to
+        // scroll to find. The list is small and the page is about it.
+        model.addAttribute("mine", savedArtists);
+        // "mustSee" comes from NavAdvice, which supplies it to every page.
+        model.addAttribute("target", SUGGESTED);
         return "setup";
     }
 
@@ -120,16 +136,60 @@ public class SetupController {
         }
 
         // Replace the whole list: simplest correct behaviour, and the list is small.
+        // The must-see stars have to be carried across it by hand — they are
+        // the one thing on these rows the form does not post, so a plain
+        // delete-and-reinsert would silently unstar everybody on any save.
+        java.util.Set<Long> stars = new java.util.HashSet<>(saved.mustSeeArtistIds(me.getUserId()));
         saved.deleteAll(saved.findByUser_UserIdOrderByAddedAtAsc(me.getUserId()));
         for (Long id : wanted) {
             artists.findById(id).ifPresent(artist -> {
                 UserArtist ua = new UserArtist();
                 ua.setUser(me);
                 ua.setArtist(artist);
+                ua.setMustSee(stars.contains(id));
                 saved.save(ua);
             });
         }
+        users.touchTaste(me.getUserId());
         return "redirect:/lineup";
+    }
+
+    /**
+     * Drop one artist, from the chip that names them.
+     *
+     * Separate from the save above because it is a different gesture: saving
+     * replaces the whole list and has to be told everything you want kept,
+     * which is why a save from a filtered page carries hidden fields. Removing
+     * one artist should not require knowing about the other nine.
+     */
+    @PostMapping("/setup/remove")
+    @Transactional
+    public String remove(@RequestParam Long artistId, Principal principal) {
+        AppUser me = currentUser(principal);
+        saved.findByUser_UserIdOrderByAddedAtAsc(me.getUserId()).stream()
+                .filter(ua -> ua.getArtist().getArtistId().equals(artistId))
+                .findFirst()
+                .ifPresent(saved::delete);
+        users.touchTaste(me.getUserId());
+        return "redirect:/setup";
+    }
+
+    /**
+     * Star or unstar one artist.
+     *
+     * Its own gesture, like removing one: it says something about that artist
+     * and nothing about the other nine, so it does not go through the
+     * whole-list save.
+     */
+    @PostMapping("/setup/must-see")
+    @Transactional
+    public String mustSee(@RequestParam Long artistId,
+                          @RequestParam(defaultValue = "true") boolean on,
+                          Principal principal) {
+        AppUser me = currentUser(principal);
+        saved.setMustSee(me.getUserId(), artistId, on);
+        users.touchTaste(me.getUserId());
+        return "redirect:/setup";
     }
 
     private AppUser currentUser(Principal principal) {

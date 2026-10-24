@@ -112,7 +112,12 @@ def test_every_day_has_music_and_a_break(days):
 
 def test_the_timeline_has_no_holes_or_overlaps(days):
     for (festival, date), slots in days.items():
-        slots = sorted(slots, key=lambda s: s.starts_at)
+        # CUT is carried alongside the day, not in it: a set the daily limit
+        # left out, at an hour the person is somewhere else entirely. It
+        # carries the set's own times so the page can name them, which is
+        # exactly why it has to be kept out of a continuity check.
+        slots = sorted((s for s in slots if s.kind != "CUT"),
+                       key=lambda s: s.starts_at)
         for earlier, later in zip(slots, slots[1:]):
             assert earlier.ends_at <= later.starts_at, (
                 "%s %s: %s overlaps the next slot" % (festival, date, earlier.artist or earlier.reason))

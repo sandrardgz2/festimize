@@ -5,6 +5,7 @@ import com.festimize.domain.FestivalEdition;
 import com.festimize.repo.AppUserRepository;
 import com.festimize.repo.FestivalEditionRepository;
 import com.festimize.repo.InsightsRepository;
+import com.festimize.repo.UserArtistRepository;
 import java.security.Principal;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
@@ -33,36 +34,70 @@ public class InsightsController {
     private final InsightsRepository insights;
     private final FestivalEditionRepository editions;
     private final AppUserRepository users;
+    private final UserArtistRepository saved;
+    private final EditionChoice editionChoice;
+    private final com.festimize.analytics.PlanningClient planning;
+    private final com.festimize.repo.PlanRepository plans;
+    private final com.festimize.repo.PlanItemRepository items;
 
     public InsightsController(InsightsRepository insights, FestivalEditionRepository editions,
-                              AppUserRepository users) {
+                              AppUserRepository users, UserArtistRepository saved,
+                              EditionChoice editionChoice,
+                              com.festimize.analytics.PlanningClient planning,
+                              com.festimize.repo.PlanRepository plans,
+                              com.festimize.repo.PlanItemRepository items) {
         this.insights = insights;
         this.editions = editions;
         this.users = users;
+        this.saved = saved;
+        this.editionChoice = editionChoice;
+        this.planning = planning;
+        this.plans = plans;
+        this.items = items;
     }
 
     public record Tag(String name, double you, double lineup) {}
 
     public record Day(String label, int minutes, int percentOfCeiling, boolean over) {}
 
-    public record Rising(Long artistId, String name, int match, String slot, String stage) {}
+    /**
+     * One rising artist on this bill who is not in the person's list.
+     *
+     * "Not yours" means not a saved artist, which is not the same as not in
+     * the schedule — the solver picks discoveries, so a rising artist can
+     * already be in the day. Offering to add one that is already there would
+     * be an offer to do nothing, so the card says which case it is.
+     *
+     * addCost is the same counterfactual the schedule shows beside a set
+     * offered in a gap: what the day loses and gains if this one goes in.
+     * Null means it costs nothing or cannot be answered.
+     */
+    public record Rising(Long artistId, String name, int match, String slot, String stage,
+                         Long performanceId, String addCost, boolean inPlan) {}
 
     @GetMapping("/insights")
     public String insights(@RequestParam(required = false) Long editionId,
                            Principal principal, Model model) {
         AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
         List<FestivalEdition> plannable = editions.findPlannable();
+        // Nothing on this page means anything without a taste profile. The
+        // taste comparison in particular drew the lineup's bars against an
+        // empty set of the person's own and printed a legend for a colour
+        // that was not there, which reads as broken rather than as empty.
+        boolean hasPicks = !saved.findSavedArtists(me.getUserId()).isEmpty();
+        model.addAttribute("hasPicks", hasPicks);
         model.addAttribute("activeNav", "insights");
         model.addAttribute("editions", plannable);
         if (plannable.isEmpty()) {
             return "insights";
         }
-        FestivalEdition chosen = plannable.stream()
-                .filter(e -> editionId == null || e.getEditionId().equals(editionId))
-                .findFirst().orElse(plannable.get(0));
+        FestivalEdition chosen = editionChoice.choose(plannable, editionId, me.getUserId());
         model.addAttribute("chosen", chosen);
         model.addAttribute("festivalName",
                 chosen.getFestival().getName() + " " + chosen.getYear());
+        if (!hasPicks) {
+            return "insights";
+        }
 
         Object[] d = first(insights.discovery(me.getUserId(), chosen.getEditionId()));
         long sets = num(d, 0), discoveries = num(d, 1);
@@ -73,6 +108,10 @@ public class InsightsController {
         long onBill = num(c, 0), rateable = num(c, 1);
         model.addAttribute("onBill", onBill);
         model.addAttribute("coveragePercent", onBill == 0 ? 0 : Math.round(100.0 * rateable / onBill));
+        // How many cannot be scored, so the card can stop telling somebody
+        // about "the rest" when the figure above it is 100% and there is no
+        // rest. It also names the number instead of leaving them to subtract.
+        model.addAttribute("untagged", onBill - rateable);
 
         int ceiling = me.musicCapMinutes();
         List<Day> days = new ArrayList<>();
@@ -100,14 +139,37 @@ public class InsightsController {
         model.addAttribute("tags", tags);
         model.addAttribute("tagPeak", peak <= 0 ? 1 : peak);
 
+        // What the day already holds, and what each absent set would cost to
+        // add — the same question the schedule asks beside a gap, asked once
+        // here rather than per card.
+        java.util.Set<Long> inPlan = new java.util.HashSet<>();
+        java.util.Optional<com.festimize.domain.Plan> plan =
+                plans.findByUser_UserIdAndEdition_EditionId(me.getUserId(), chosen.getEditionId());
+        if (plan.isPresent()) {
+            for (com.festimize.domain.PlanItem item : items.findForPlan(plan.get().getPlanId())) {
+                if (item.getPerformance() != null) {
+                    inPlan.add(item.getPerformance().getPerformanceId());
+                }
+            }
+        }
+        java.util.Map<Long, com.festimize.analytics.PlanningClient.AddCost> addCosts =
+                plan.isPresent() ? planning.addCosts(me.getUserId(), chosen.getEditionId())
+                                 : java.util.Map.of();
+        java.util.Set<String> myPicks = new java.util.HashSet<>();
+        saved.findSavedArtists(me.getUserId()).forEach(a -> myPicks.add(a.getName()));
+
         List<Rising> rising = new ArrayList<>();
         for (Object[] row : insights.risingNotYours(me.getUserId(), chosen.getEditionId())) {
             // Formatted here, not in SQL: to_char renders a timestamptz in
             // the database session's zone, which put a Bloodstock set at
             // 07:45 when the festival opens at 10:30. Every other page reads
             // the offset stored with the row, and so does this one now.
+            Long performanceId = ((Number) row[5]).longValue();
             rising.add(new Rising(((Number) row[0]).longValue(), (String) row[1],
-                    ((Number) row[2]).intValue(), slot(row[3]), (String) row[4]));
+                    ((Number) row[2]).intValue(), slot(row[3]), (String) row[4],
+                    performanceId,
+                    ScheduleController.shortCost(addCosts.get(performanceId), ceiling, myPicks),
+                    inPlan.contains(performanceId)));
         }
         model.addAttribute("rising", rising);
         return "insights";

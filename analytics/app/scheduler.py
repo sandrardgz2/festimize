@@ -47,6 +47,7 @@ class Candidate:
     ends_at: datetime
     score: float          # 0..1 taste match
     is_pick: bool         # the user named this artist themselves
+    must_see: bool = False  # ...and said this is one they came for
 
 
 @dataclass
@@ -94,9 +95,11 @@ def choose_greedy(candidates: Sequence[Candidate],
 def choose_best(candidates: Sequence[Candidate],
                 changeover_minutes: int = 10,
                 pick_bonus: float = 10.0,
+                must_see_bonus: float = 100.0,
                 minute_value: float = 0.0005,
                 least_worth_catching: int = 25,
-                least_fraction: float = 0.6) -> List[tuple]:
+                least_fraction: float = 0.6,
+                always: Optional[Sequence[int]] = None) -> List[tuple]:
     """
     Choose the best possible set of performances, allowing late arrivals.
 
@@ -121,6 +124,7 @@ def choose_best(candidates: Sequence[Candidate],
     sets = sorted(candidates, key=lambda c: c.ends_at)
     changeover = timedelta(minutes=changeover_minutes)
     least = timedelta(minutes=least_worth_catching)
+    wanted = set(always or ())
     n = len(sets)
 
     def arrival(prev_index: int, i: int):
@@ -129,13 +133,30 @@ def choose_best(candidates: Sequence[Candidate],
         if prev_index >= 0:
             earliest = max(earliest, sets[prev_index].ends_at + changeover)
         full = sets[i].ends_at - sets[i].starts_at
-        enough = max(least, full * least_fraction)
-        return earliest if (sets[i].ends_at - earliest) >= enough else None
+        enough = (timedelta(0) if sets[i].performance_id in wanted
+                  else max(least, full * least_fraction))
+        return earliest if (sets[i].ends_at - earliest) > enough else None
 
     def value(i: int, arrive) -> float:
         minutes = (sets[i].ends_at - arrive).total_seconds() / 60
-        return (sets[i].score * (minutes / 60) + minute_value * minutes
-                + (pick_bonus if sets[i].is_pick else 0.0))
+        extra = pick_bonus if sets[i].is_pick else 0.0
+        if sets[i].must_see:
+            # A tier above an ordinary pick, and the reason the tier exists:
+            # every saved artist used to carry the same bonus, so when two of
+            # them clashed the tie was broken on match score — the software
+            # choosing which band you lose.
+            #
+            # Scaled by the share of the set actually caught, not flat. Flat,
+            # the solver would happily walk you in twenty minutes late to the
+            # band you came for in order to fit one more in beside it: the
+            # bonus was already banked, and twenty minutes of a 0.8 match
+            # costs a quarter of a point. Against a hundred, losing a third
+            # of the set costs thirty-three, so it stays whole unless the
+            # alternative is losing it altogether — which still leaves the
+            # five minutes of walking from another stage worth it.
+            full = (sets[i].ends_at - sets[i].starts_at).total_seconds() / 60
+            extra += must_see_bonus * (minutes / full if full else 1.0)
+        return (sets[i].score * (minutes / 60) + minute_value * minutes + extra)
 
     # best[i] = best achievable value considering the first i sets, and the
     # choice that produced it. O(n^2), which at festival size is nothing.
@@ -173,10 +194,15 @@ def build_day(candidates: Sequence[Candidate],
               max_run_minutes: int = 180,
               changeover_minutes: int = 10,
               swap_tolerance: float = 0.10,
+              least_before_leaving: int = 25,
+              least_worth_catching: int = 25,
               not_before: Optional[datetime] = None,
               music_cap_minutes: int = 450,
               meal_by: Optional[object] = None,
-              pinned: Optional[Sequence[int]] = None) -> List[Slot]:
+              pinned: Optional[Sequence[int]] = None,
+              tight: Optional[Sequence[int]] = None,
+              meal_at: Optional[datetime] = None,
+              fit_inside: bool = False) -> List[Slot]:
     """
     Fill a day with music, then carve breaks out of it.
 
@@ -219,20 +245,89 @@ def build_day(candidates: Sequence[Candidate],
     # been chosen over was gone from candidates by the time the schedule works
     # out what each slot beat, so the new slot named no alternative and the
     # only way back was to put everything back.
+    # The times the festival published, taken before anything below trims a
+    # candidate. Everything that reports a set to the person reads this rather
+    # than the object, which by then may describe only the part they can be
+    # there for.
+    advertised = {id(c): (c.starts_at, c.ends_at) for c in candidates}
+
     asked, ousted = set(), {}
+    tight_ids = set(tight or ())   # noqa: F841 — windows still mark these
     if pinned:
         wanted = [c for c in candidates if c.performance_id in set(pinned)]
         protected = {id(w) for w in wanted}
         asked = set(protected)
         for keep in wanted:
+            # Only what genuinely overlaps. Widening by the changeover
+            # deleted sets the solver could perfectly well have taken: Drain
+            # ends 13:10 and Vended starts 13:15, so a ten-minute margin
+            # removed Vended outright, even though left alone the solver
+            # takes both and joins Vended five minutes late — which is what
+            # it had already done before the pin. The pin was applying a
+            # stricter rule than the thing it was protecting the pin from.
+            #
+            # Walking time is still enforced, where it belongs: choose_best
+            # works out arrival for whatever it ends up choosing, and says
+            # how many minutes were missed.
             clashing = [c for c in candidates
                         if c is not keep
                         and id(c) not in protected
                         and _overlaps(keep.starts_at, keep.ends_at,
-                                      c.starts_at - timedelta(minutes=changeover_minutes),
-                                      c.ends_at + timedelta(minutes=changeover_minutes))]
+                                      c.starts_at, c.ends_at)]
+            # What survives the pin, rather than nothing at all.
+            #
+            # Deleting the whole set was throwing away most of a bill. Bad
+            # Omens runs 17:45-18:40 and Bring Me the Horizon 18:30-19:30:
+            # they collide for ten minutes, and all sixty of BMTH went —
+            # a 100% match, fifty minutes of which fall in the empty hour
+            # that pin creates. Five more sets on that one plan went the
+            # same way, each over an overlap smaller than the part lost.
+            #
+            # Joining a set late, or leaving before the end, is what this
+            # scheduler does everywhere else. The pin pass was the one place
+            # still using a blunter rule — and its own note records having
+            # been narrowed once already for the same reason.
+            #
+            # A clamped candidate no longer overlaps the pin, so it cannot
+            # compete with it, which is all the deletion was for.
+            survived = []
+            for c in clashing:
+                after = keep.ends_at + timedelta(minutes=changeover_minutes)
+                before = keep.starts_at - timedelta(minutes=changeover_minutes)
+                tail = (c.ends_at - after).total_seconds() / 60
+                head = (before - c.starts_at).total_seconds() / 60
+                if max(tail, head) < least_worth_catching:
+                    continue          # nothing left worth crossing the site for
+                if tail >= head:
+                    c.starts_at = after
+                else:
+                    c.ends_at = before
+                survived.append(c)
+            kept_ids = {id(c) for c in survived}
+            clashing = [c for c in clashing if id(c) not in kept_ids]
+
             if clashing:
-                ousted[id(keep)] = max(clashing, key=lambda c: (c.is_pick, c.score))
+                # Do not blame this pin for a set another pin also removes.
+                #
+                # Adding Jesus Piece (11:45-12:20) reported "instead of Zulu",
+                # a 28% match overlapping it by five minutes — which was never
+                # in the day and could not have been, because Zulu also runs
+                # under Drain, pinned. Meanwhile the set actually given up was
+                # Vended at 58%, elsewhere in the afternoon. Naming the wrong
+                # one is worse than naming none: it says you traded away
+                # something you never had, and hides what you did lose.
+                #
+                # Each pin is considered on its own here, so the only
+                # attribution this function can make honestly is to a set that
+                # nothing else was going to take off the table anyway.
+                others = [w for w in wanted if w is not keep]
+                blameable = [c for c in clashing
+                             if not any(_overlaps(o.starts_at, o.ends_at,
+                                                  c.starts_at, c.ends_at)
+                                        for o in others)]
+                if blameable:
+                    ousted[id(keep)] = max(blameable,
+                                           key=lambda c: (c.must_see, c.is_pick, c.score))
             dropped_ids = {id(c) for c in clashing}
             candidates = [c for c in candidates if id(c) not in dropped_ids]
 
@@ -249,12 +344,8 @@ def build_day(candidates: Sequence[Candidate],
 
     # Choose the best possible set of performances. See choose_best: greedy
     # used to do this and needed a repair pass to patch the holes it left.
-    # The advertised times, kept before the late-arrival handling below rewrites
-    # them. The counterfactual at the end of this function has to reason about
-    # the day as published, not as walked.
-    advertised = {id(c): (c.starts_at, c.ends_at) for c in candidates}
-
-    picked = choose_best(candidates, changeover_minutes=changeover_minutes)
+    picked = choose_best(candidates, changeover_minutes=changeover_minutes,
+                         always=[c.performance_id for c in candidates if id(c) in asked])
 
     # Some sets are joined late, having walked from somewhere else. Record how
     # much is missed, then treat the arrival as the start for everything that
@@ -267,6 +358,72 @@ def build_day(candidates: Sequence[Candidate],
             missed[id(cand)] = int((arrive - cand.starts_at).total_seconds() // 60)
             cand.starts_at = arrive
         chosen.append(cand)
+
+    # Leaving one set early to catch another.
+    #
+    # choose_best can join a set late but never leave one early, so two sets
+    # that overlap were always a choice between them. That is not what people
+    # do at a festival: you duck out of the first to get across the site for
+    # the second. The app already lets somebody ask for exactly that by hand,
+    # one gap at a time — the solver simply never proposed it, and would drop
+    # a band outright rather than offer half of each.
+    #
+    # Deliberately narrow, because it gives up part of something already
+    # chosen:
+    #
+    #   * Only between two artists the person named themselves. Cutting your
+    #     own pick short for a recommendation is not a trade anybody asked
+    #     for.
+    #   * Never out of a must-see. That tier exists to keep those whole.
+    #   * Never out of a set the person pinned. They said where they wanted
+    #     to be; this is not the place to shorten it.
+    #   * The second set is caught whole. Half of one and half of the other
+    #     reads well in a sentence, but the only reason to leave early is to
+    #     be somewhere, and arriving late as well means missing the middle of
+    #     both for no gain.
+    left_early = {}
+
+    def _splittable(later):
+        """Which chosen set could be left early to catch `later` whole."""
+        blocking = [c for c in chosen
+                    if _overlaps(c.starts_at, c.ends_at, later.starts_at, later.ends_at)]
+        if len(blocking) != 1:
+            return None            # nothing in the way, or too much
+        earlier = blocking[0]
+        if (earlier.must_see or not earlier.is_pick
+                or id(earlier) in asked or id(earlier) in left_early):
+            return None
+        if earlier.starts_at >= later.starts_at:
+            return None            # `later` is the one that would be cut short
+        leave_at = later.starts_at - timedelta(minutes=changeover_minutes)
+        stayed = (leave_at - earlier.starts_at).total_seconds() / 60
+        if stayed < least_before_leaving:
+            return None            # too little of the first to be worth going
+        # Never trade down. Without this, twenty-five minutes is simply the
+        # floor, so the pass would happily give up an hour of one band to
+        # catch ten minutes of another and call it a second artist — a net
+        # loss of music dressed up as variety.
+        given_up = (earlier.ends_at - leave_at).total_seconds() / 60
+        if (later.ends_at - later.starts_at).total_seconds() / 60 < given_up:
+            return None
+        # Chosen sets never overlap each other, and nothing but `earlier`
+        # overlaps `later`, so the only thing left to check is the walk out of
+        # the pair into whatever comes next.
+        after = [c.starts_at for c in chosen if c.starts_at >= later.ends_at]
+        if after and min(after) < later.ends_at + timedelta(minutes=changeover_minutes):
+            return None
+        return earlier, leave_at, int(round(stayed))
+
+    for later in [c for c in ranked
+                  if c.is_pick and c not in chosen and id(c) not in asked]:
+        found = _splittable(later)
+        if found is None:
+            continue
+        earlier, leave_at, _ = found
+        left_early[id(earlier)] = (
+            int((earlier.ends_at - leave_at).total_seconds() // 60), later.artist)
+        earlier.ends_at = leave_at
+        chosen.append(later)
 
     # Discovery quota: swap the weakest picks out for the best new artists.
     def discoveries(sets): return sum(1 for c in sets if not c.is_pick)
@@ -304,7 +461,8 @@ def build_day(candidates: Sequence[Candidate],
     def _carve(sets: List[Candidate], after: datetime, minutes: int, label: str,
                taken: Optional[List[Slot]] = None, may_drop_a_pick: bool = False,
                shortest_acceptable: Optional[int] = None, may_drop: bool = True,
-               prefer_latest_before: Optional[datetime] = None):
+               prefer_latest_before: Optional[datetime] = None,
+               prefer_latest: bool = False):
         """
         Place one break of `minutes` as soon as possible after `after`.
 
@@ -325,32 +483,51 @@ def build_day(candidates: Sequence[Candidate],
         def free(start, end):
             return not any(_overlaps(start, end, r.starts_at, r.ends_at) for r in taken)
 
+        # Every piece of free time after the window, clamped to it: a gap
+        # that straddles the window counts, and the break goes in the part
+        # that falls inside. Discarding any gap whose previous set ended
+        # before the window threw away an eighty-five minute hole at 16:20
+        # because the window landed at 16:21, and sent dinner to 20:40 — a
+        # minute's arithmetic deciding where somebody eats.
+        openings = []
         for i in range(len(sets) - 1):
-            if sets[i].ends_at < after:
-                continue
-            gap = sets[i + 1].starts_at - sets[i].ends_at
-            if gap >= need and free(sets[i].ends_at, sets[i].ends_at + need):
-                return Slot("REST", sets[i].ends_at, sets[i].ends_at + need, reason=label), None
+            opens = max(sets[i].ends_at, after)
+            closes = sets[i + 1].starts_at
+            if closes > opens and free(opens, closes):
+                openings.append((opens, closes))
 
-        # Nothing long enough: take the longest gap that is still usable before
-        # considering dropping a set for it.
-        if shortest_acceptable is not None:
-            usable = []
-            for i in range(len(sets) - 1):
-                if sets[i].ends_at < after:
-                    continue
-                gap = sets[i + 1].starts_at - sets[i].ends_at
-                if gap >= timedelta(minutes=shortest_acceptable) and free(sets[i].ends_at, sets[i + 1].starts_at):
-                    usable.append((gap, sets[i].ends_at, sets[i + 1].starts_at))
-            if usable:
-                # For a meal: the latest gap that still lands before evening.
-                # Quarter to three is early to eat at a festival, and holding
-                # out for the very last gap pushed dinner to quarter past six.
-                in_window = [u for u in usable
-                             if prefer_latest_before is None or u[1] <= prefer_latest_before]
-                gap, start, end = (max(in_window, key=lambda u: u[1]) if in_window
-                                   else min(usable, key=lambda u: u[1]))
-                return Slot("REST", start, min(end, start + need), reason=label), None
+        floor = (timedelta(minutes=shortest_acceptable)
+                 if shortest_acceptable is not None else need)
+        usable = [o for o in openings if o[1] - o[0] >= floor]
+
+        if usable:
+            if prefer_latest_before is None:
+                # A breather goes in the first place it fits.
+                pick = next((o for o in usable if o[1] - o[0] >= need), usable[0])
+            else:
+                # A meal goes in the first real opportunity after the middle
+                # of the day, and "eat by" is a deadline rather than a target.
+                #
+                # Two earlier rules were wrong. The first took the first gap
+                # long enough for a whole meal and never read the setting at
+                # all, so the profile control did nothing. The second read it
+                # and took the latest gap before it, which turns "eat by 23:00"
+                # — a person saying they are easy — into dinner at twenty past
+                # eight while a perfectly good hole sits open at half five.
+                #
+                # Earliest-after-the-window cannot be too early, because the
+                # window is already forty per cent into the day. A gap that is
+                # a little short beats a full-length one hours later: forty
+                # minutes at 17:20 is a meal, forty-five at 20:15 is a late
+                # dinner nobody asked for.
+                before = [o for o in usable if o[0] <= prefer_latest_before]
+                if before:
+                    pick = (max(before, key=lambda o: o[0]) if prefer_latest
+                            else min(before, key=lambda o: o[0]))
+                else:
+                    pick = min(usable, key=lambda o: o[0])
+            opens, closes = pick
+            return Slot("REST", opens, min(closes, opens + need), reason=label), None
 
         if not may_drop:
             return None, None
@@ -360,9 +537,27 @@ def build_day(candidates: Sequence[Candidate],
                      and (c.ends_at - c.starts_at) >= need - timedelta(minutes=15)
                      and free(c.starts_at, c.starts_at + need)]
         if not droppable and may_drop_a_pick:
+            # Never a set the person asked for by name, even here. The
+            # relaxation above exists because somebody whose whole day is
+            # artists they chose still has to eat, and that is an argument
+            # about picks — a taste signal the scheduler inferred a day from.
+            # A pin is not that. It is an instruction to put this band in the
+            # day, and quietly deleting it to make room for a meal is the
+            # same overruling the cap was stopped from doing.
+            #
+            # Found by pinning Code Orange on the demo plan: the pin was
+            # accepted, the day rebuilt, and the set was gone — carved out
+            # for the 45-minute meal break that its 16:30-17:20 slot had been
+            # the only remaining room for.
+            #
+            # Where that leaves no victim at all, no meal is arranged. A day
+            # the person filled themselves and left no room to eat in is
+            # theirs to have; removing a band they named without saying so is
+            # not the honest way to point that out.
             keep = {id(max(sets, key=lambda c: c.score)), id(sets[-1])}
             droppable = [c for c in sets
                          if c.starts_at >= after and id(c) not in keep
+                         and id(c) not in asked
                          and (c.ends_at - c.starts_at) >= need - timedelta(minutes=15)
                          and free(c.starts_at, c.starts_at + need)]
         if droppable:
@@ -371,21 +566,51 @@ def build_day(candidates: Sequence[Candidate],
                          reason="%s — %s skipped" % (label, victim.artist)), victim)
         return None, None
 
-    # The day's music cap. Cut from the weakest end, and never from the user's
-    # own picks or the sets they asked for by name: someone who came for one
-    # band gets to stand through the day for it, and being told they are tired
-    # by software is not help.
-    total = sum((c.ends_at - c.starts_at).total_seconds() / 60 for c in chosen)
-    capped: List[Candidate] = []
-    if total > music_cap_minutes:
-        for c in sorted(chosen, key=lambda c: (c.is_pick or id(c) in asked, c.score),
+    # The day's music cap, which is a budget for the choices this function
+    # makes and not a ceiling on the person's own.
+    #
+    # It used to apply to the whole day, which meant asking for one more band
+    # quietly removed another — and the one it removed could be playing hours
+    # away, since it drops the weakest set it is allowed to drop rather than
+    # anything nearby. That is the software deciding which band you lose. A
+    # person who adds a set has made a decision; the honest response is to
+    # honour it, let the day run long, and say so, which the summary now
+    # does.
+    #
+    # So the budget is measured against the sets nobody asked for. Sets the
+    # person named are kept whatever they cost, and sit on top of it.
+    def _minutes(c):
+        return (c.ends_at - c.starts_at).total_seconds() / 60
+
+    requested = [c for c in chosen if id(c) in asked]
+    automatic = [c for c in chosen if id(c) not in asked]
+    # Normally the budget covers only what this function chose, so a set the
+    # person asked for runs the day over and the page says so. When they ask
+    # for the day to be fitted inside the limit instead, the budget covers
+    # everything and what they asked for is taken off the top: they keep the
+    # band they chose, and the scheduler gives up one of its own.
+    budget = music_cap_minutes
+    if fit_inside:
+        budget = max(0, music_cap_minutes - int(sum(_minutes(c) for c in requested)))
+    cut_by_budget: List[Candidate] = []
+    if sum(_minutes(c) for c in automatic) > budget:
+        capped: List[Candidate] = []
+        for c in sorted(automatic, key=lambda c: (c.must_see, c.is_pick, c.score),
                         reverse=True):
-            minutes = (c.ends_at - c.starts_at).total_seconds() / 60
-            if sum((x.ends_at - x.starts_at).total_seconds() / 60
-                   for x in capped) + minutes <= music_cap_minutes \
-                    or c.is_pick or id(c) in asked:
+            # A must-see survives the cap unconditionally, even when the
+            # person has asked for the day to be fitted inside the limit.
+            # Those two instructions can conflict, and the one naming a band
+            # is the more specific of them: "keep my day under seven hours"
+            # is a preference about shape, "I came for this band" is not.
+            if sum(_minutes(x) for x in capped) + _minutes(c) <= budget \
+                    or c.must_see or (c.is_pick and not fit_inside):
                 capped.append(c)
-        chosen = sorted(capped, key=lambda c: c.starts_at)
+        # What the limit took. The day simply arrived without these and
+        # nothing said so: a set the person could see on the lineup was not
+        # on their schedule, and no page could account for the difference.
+        kept = {id(c) for c in capped}
+        cut_by_budget = [c for c in automatic if id(c) not in kept]
+        chosen = sorted(requested + capped, key=lambda c: c.starts_at)
 
     rests: List[Slot] = []
     day_start = chosen[0].starts_at
@@ -401,9 +626,42 @@ def build_day(candidates: Sequence[Candidate],
     if meal_by is not None:
         dinner_by = day_start.replace(hour=meal_by.hour, minute=meal_by.minute,
                                       second=0, microsecond=0)
-    meal, dropped = _carve(chosen, meal_window, meal_minutes, "meal break", rests,
-                           may_drop_a_pick=True, shortest_acceptable=30,
-                           prefer_latest_before=dinner_by)
+    # Somewhere the person chose, if they chose one and it is still free.
+    # The default placement is a reasonable guess about an afternoon that is
+    # not ours, so where there are gaps to pick between, their answer wins.
+    # A choice that no longer fits — the day was rebuilt around different
+    # artists and the gap closed — quietly falls back to the guess rather
+    # than wedging a break into the middle of a set.
+    meal = dropped = None
+    if meal_at is not None:
+        for earlier, later in zip(chosen, chosen[1:]):
+            if earlier.ends_at <= meal_at < later.starts_at:
+                room = later.starts_at - meal_at
+                if room >= timedelta(minutes=30):
+                    meal = Slot("REST", meal_at,
+                                min(later.starts_at, meal_at + timedelta(minutes=meal_minutes)),
+                                reason="meal break")
+                break
+    if meal is None:
+        meal, dropped = _carve(chosen, meal_window, meal_minutes, "meal break", rests,
+                               may_drop_a_pick=True, shortest_acceptable=30,
+                               prefer_latest_before=dinner_by)
+        # The window keeps lunch from landing at half past one. It is a
+        # preference; "eat by six" is an instruction, and the preference was
+        # overruling it. On an 11-hour day the window falls at 16:39, and
+        # where the only gap after that is at 20:55 somebody who asked to
+        # have eaten by 18:00 was being fed at nine. If nothing lands before
+        # the deadline, the window is dropped and the latest gap that does
+        # is taken instead — as late as their day allows, which is the point
+        # the window was making.
+        if meal is not None and dinner_by is not None and meal.starts_at > dinner_by:
+            earlier, dropped_earlier = _carve(chosen, day_start, meal_minutes, "meal break",
+                                              rests, may_drop_a_pick=True,
+                                              shortest_acceptable=30,
+                                              prefer_latest_before=dinner_by,
+                                              prefer_latest=True)
+            if earlier is not None and earlier.starts_at <= dinner_by:
+                meal, dropped = earlier, dropped_earlier
     if meal:
         rests.append(meal)
         if dropped:
@@ -549,8 +807,14 @@ def build_day(candidates: Sequence[Candidate],
             # "Chosen over" is wrong for a set the person pinned: nothing
             # chose it, they did. Saying so is also the honest way to offer
             # the way back, which is to lift the pin rather than overrule it.
+            # "Instead of" is a claim that the rival was what you gave up.
+            # For a set the solver chose that is true — it compared them. For
+            # a pin it is not: the rival is simply what the pin collides with,
+            # and what the day actually lost is worked out elsewhere, by
+            # re-solving. Saying "clashes with" claims only what is known.
             reason += " · %s %s (%s, %d min against %d)" % (
-                "you asked for this, instead of" if id(c) in asked else "chosen over",
+                "you asked for this, which clashes with" if id(c) in asked
+                else "chosen over",
                 rival.artist, rival_label, minutes, mine)
             # Between two of their own picks the numbers are identical, so the
             # only honest reason is what else the day can then hold. Not asked
@@ -562,6 +826,9 @@ def build_day(candidates: Sequence[Candidate],
                     reason += " — " + why
         if id(c) in missed:
             reason += " · joined %d min late, walking from the last set" % missed[id(c)]
+        if id(c) in left_early:
+            lost, catching = left_early[id(c)]
+            reason += " · left %d min early to catch %s" % (lost, catching)
         slots.append(Slot("SET", c.starts_at, c.ends_at, c.performance_id, c.artist, c.stage,
                           reason, rival.performance_id if rival is not None else None))
     slots += rests
@@ -589,21 +856,135 @@ def build_day(candidates: Sequence[Candidate],
             if minutes < 15:
                 continue
             reason = "gap — %d minutes between sets" % minutes
+            suggestion = None
             # Say what is on during a long gap. Standing around for an hour is
             # one thing; standing around while an artist you might like plays
             # is another, and the user should be the one deciding.
+            #
+            # Ranked by how much of the set actually falls inside the gap,
+            # not by score alone. Scoring alone recommended Mudvayne during a
+            # gap running 16:20 to 17:45 when Mudvayne played 15:30 to 16:30
+            # — ten minutes of a sixty-minute set, the rest of it clashing
+            # with the band you were already watching. Three of the four
+            # suggestions on the demonstration plans were that shape. A
+            # suggestion you can only act on by walking out on something else
+            # is not a suggestion, so anything under the twenty minutes the
+            # scheduler calls a break is no longer offered at all.
             if minutes >= 40:
-                playing = [o for o in candidates
-                           if o not in chosen and o.score > 0.05
-                           and _overlaps(f_start, f_end, o.starts_at, o.ends_at)]
-                if playing:
-                    best_other = max(playing, key=lambda o: o.score)
-                    reason += " · %s plays %s–%s (%d%%) if you would rather" % (
+                catchable = []
+                for o in candidates:
+                    if o in chosen or o.score <= 0.05:
+                        continue
+                    caught = (min(f_end, o.ends_at) - max(f_start, o.starts_at))
+                    caught = caught.total_seconds() / 60
+                    if caught >= 20:
+                        catchable.append((caught, o))
+                if catchable:
+                    # Where you are going next matters as much as who is on.
+                    # Something playing on the stage of your next set means
+                    # standing still instead of walking there twice, and on
+                    # these bills that option exists in twenty-five of the
+                    # twenty-nine long gaps. It is a tie-break and not an
+                    # override: a set worth half as much is not worth staying
+                    # put for, so value still leads and the stage decides only
+                    # between options that are already close.
+                    best_value = max(t[0] * t[1].score for t in catchable)
+                    handy = [t for t in catchable
+                             if later.stage and t[1].stage == later.stage
+                             and t[0] * t[1].score >= 0.75 * best_value]
+                    caught, best_other = max(handy or catchable,
+                                             key=lambda t: (t[0] * t[1].score, t[0]))
+                    whole = (best_other.ends_at - best_other.starts_at).total_seconds() / 60
+                    # No percentage on one of their own picks. A saved artist
+                    # is one of the profiles taste is scored against, so it
+                    # matches itself perfectly and prints "100%" — the same
+                    # tautology the chosen-over sentence already avoids.
+                    how = ("your pick" if best_other.is_pick
+                           else "%d%%" % round(best_other.score * 100))
+                    reason += " · %s plays %s–%s (%s) if you would rather" % (
                         best_other.artist,
                         best_other.starts_at.strftime("%H:%M"),
                         best_other.ends_at.strftime("%H:%M"),
-                        round(best_other.score * 100))
-            slots.append(Slot("REST", f_start, f_end, reason=reason))
+                        how)
+                    if caught < whole - 1:
+                        reason += " — %d of its %d minutes fall in this gap" % (
+                            round(caught), round(whole))
+                    if later.stage and best_other.stage == later.stage:
+                        reason += " · same stage as your next set, so you can stay put"
+                    suggestion = best_other.performance_id
+            # alternative_id on a gap is the set being suggested, so the page
+            # has something a form can post back. On a chosen set the same
+            # field means the set it displaced; both answer "the other thing
+            # you could be doing here", which is why they share a column.
+            slots.append(Slot("REST", f_start, f_end, reason=reason,
+                              alternative_id=suggestion))
 
     slots.sort(key=lambda s: s.starts_at)
-    return slots
+
+    # One stretch of nothing, reported once. A break is carved at a fixed
+    # length — thirty minutes for a breather, forty-five for a meal — and
+    # whatever the hole has left over was then emitted as a separate gap, so
+    # a fifty-minute hole read as "30 min breather" followed by "20 min gap".
+    # They are the same fifty minutes and the person is doing the same thing
+    # for all of them. The carved break keeps its name and takes the time.
+    merged: List[Slot] = []
+    for slot in slots:
+        last = merged[-1] if merged else None
+        if (last is not None and last.kind == "REST" and slot.kind == "REST"
+                and last.ends_at == slot.starts_at):
+            named = last if not last.reason.startswith("gap") else slot
+            merged[-1] = Slot("REST", last.starts_at, slot.ends_at,
+                              reason=named.reason,
+                              alternative_id=last.alternative_id or slot.alternative_id)
+            continue
+        merged.append(slot)
+
+    # A break the scheduler placed is as much an opportunity as a hole it
+    # left over. Suggestions were only ever attached to leftover gaps, so
+    # carving a thirty-minute breather out of a fifty-minute hole hid the
+    # band playing across it — the stretch is the same length either way,
+    # and standing in it is the same activity.
+    after_set = sorted(chosen, key=lambda c: c.starts_at)
+    for at, slot in enumerate(merged):
+        if slot.kind != "REST" or slot.alternative_id is not None:
+            continue
+        length = (slot.ends_at - slot.starts_at).total_seconds() / 60
+        if length < 40:
+            continue
+        later = next((c for c in after_set if c.starts_at >= slot.ends_at), None)
+        catchable = []
+        for o in candidates:
+            if o in chosen or o.score <= 0.05:
+                continue
+            caught = (min(slot.ends_at, o.ends_at)
+                      - max(slot.starts_at, o.starts_at)).total_seconds() / 60
+            if caught >= 20:
+                catchable.append((caught, o))
+        if not catchable:
+            continue
+        best_value = max(t[0] * t[1].score for t in catchable)
+        handy = [t for t in catchable
+                 if later is not None and later.stage and t[1].stage == later.stage
+                 and t[0] * t[1].score >= 0.75 * best_value]
+        caught, other = max(handy or catchable, key=lambda t: (t[0] * t[1].score, t[0]))
+        whole = (other.ends_at - other.starts_at).total_seconds() / 60
+        how = "your pick" if other.is_pick else "%d%%" % round(other.score * 100)
+        reason = slot.reason + " · %s plays %s–%s (%s) if you would rather" % (
+            other.artist, other.starts_at.strftime("%H:%M"),
+            other.ends_at.strftime("%H:%M"), how)
+        if caught < whole - 1:
+            reason += " — %d of its %d minutes fall here" % (round(caught), round(whole))
+        if later is not None and later.stage and other.stage == later.stage:
+            reason += " · same stage as your next set, so you can stay put"
+        merged[at] = Slot("REST", slot.starts_at, slot.ends_at, reason=reason,
+                          alternative_id=other.performance_id)
+
+    # Sets the daily limit left out, carried alongside the day rather than in
+    # it. They are not slots — nobody is anywhere at that hour — but the only
+    # thing that knows about them is this function, and the page that has to
+    # account for the day is a long way downstream.
+    for c in cut_by_budget:
+        merged.append(Slot("CUT", c.starts_at, c.ends_at, c.performance_id,
+                           c.artist, c.stage,
+                           "left out to stay inside your daily limit"))
+    return merged

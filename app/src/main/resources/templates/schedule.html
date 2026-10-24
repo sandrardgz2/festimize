@@ -1,116 +1,433 @@
 <!DOCTYPE html>
+<!--
+  Page 6 of the wireframes: the day on the left, what it adds up to on the
+  right, one day at a time.
+
+  The wireframe's rail also carries "Walking 3.1 km". There is no walking
+  distance in the corpus — stages have names, not coordinates — so it is not
+  here. Its "Lock a set" button is not here either: this page already has
+  three more specific actions that were built after the wireframe, and they
+  do the work a lock was sketched to do.
+-->
 <html xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{layout :: head('Schedule')}"></head>
 <body>
 <header th:replace="~{layout :: topbar}"></header>
 
 <main class="wrap">
-    <h1 class="page-title" th:text="${festivalName} ?: 'Your schedule'">Your schedule</h1>
-    <p class="page-sub" th:if="${hasPlan}">
-        <span th:text="${sets}">0</span> sets ·
-        <span th:text="${picks}">0</span> of your picks ·
-        <span th:text="${discoveries}">0</span> discoveries ·
-        <span th:text="${rests}">0</span> breaks ·
-        <span th:text="${hours}">0h</span> of music
-    </p>
 
-    <p class="demo-note">
+    <section class="hero">
+        <div>
+            <h1 class="hero-title" th:text="${festivalName} ?: 'Your schedule'">Your schedule</h1>
+            <p class="hero-sub">
+                <span th:if="${where != null}" th:text="${where} + ' · '">Catton Park · </span>
+                <span th:if="${hasPlan}">
+                    <span th:text="${sets}">0</span> sets ·
+                    <span th:text="${picks}">0</span> of your picks ·
+                    <span th:text="${discoveries}">0</span> discoveries ·
+                    <span th:text="${hours}">0h</span> of music
+                </span>
+                <span th:unless="${hasPlan}">no plan built yet</span>
+            </p>
+        </div>
+        <!-- Offered only when it can work, and only when it would do
+             anything. A green "Build my schedule" on an account with no saved
+             artists is a button whose whole job is to fail, sitting above the
+             sentence explaining that it will — and "Rebuild my schedule" on a
+             plan that is already current is the same button wearing a
+             different word. Pins, declines, the meal, the day's hours and the
+             fit-inside flag are inputs to the solve, not part of its output,
+             so re-solving with them produces the identical day. It appears
+             when something it reads has changed somewhere else. -->
+        <form method="post" th:action="@{/schedule/build}" th:if="${hasPicks and needsRebuild}">
+            <input type="hidden" name="editionId" th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+            <button type="submit" class="btn"
+                    th:text="${hasPlan} ? 'Rebuild my schedule' : 'Build my schedule'">Build</button>
+        </form>
+        <a th:unless="${hasPicks}" th:href="@{/setup}" class="button">Pick your artists</a>
+    </section>
+
+    <p class="demo-note" th:if="${hasPicks}">
         <strong>Demonstration data.</strong> These artists are real, but the 2027 lineup and set times are
         illustrative and were entered by hand — they are not the festival's announced lineup.
     </p>
-
-    <form method="post" th:action="@{/schedule/build}">
-        <input type="hidden" name="editionId" th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
-        <button type="submit" class="btn" th:text="${hasPlan} ? 'Update my schedule' : 'Build my schedule'">Build</button>
-        <span class="muted" th:if="${#lists.size(editions) > 1}">
-            &nbsp;
-            <a th:each="e : ${editions}" th:href="@{/schedule(editionId=${e.editionId})}"
-               th:text="${e.festival.name} + ' ' + ${e.year}" class="badge">Festival</a>
-        </span>
-    </form>
 
     <p class="notice" th:if="${param.swapped != null}">
         Set turned down and the day rebuilt around it. This changes only this plan —
         your saved artists are untouched.
     </p>
     <p class="notice" th:if="${param.restored != null}">Everything is back.</p>
-    <form method="post" th:action="@{/schedule/restore}"
-          th:if="${declinedCount != null and declinedCount > 0}">
-        <input type="hidden" name="editionId" th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
-        <p class="muted">
-            <span th:text="${declinedCount}">0</span> change(s) you have made to this plan.
-            <button type="submit" class="button-quiet">Put them all back</button>
-        </p>
-    </form>
+
 
     <p class="muted" th:if="${buildFailed}">
         The schedule could not be built — the analytics service did not respond. Start it with
         <code>cd analytics &amp;&amp; .venv/bin/python -m uvicorn app.main:app --port 8000</code> and try again.
     </p>
-    <p class="muted" th:if="${!hasPlan and !hasPicks}">
-        Pick your artists on the <a th:href="@{/setup}">setup page</a> first — the schedule is built around them.
-    </p>
-    <p class="muted" th:if="${hasPlan}">
-        Drop any set you do not want and the whole day is worked out again around it —
-        other sets may move or change too, and your saved artists are untouched.
-        Built from the artists you have saved. The schedule only changes when your picks do —
-        it is not shuffled, and pressing this again gives the same day.
-    </p>
+    <!-- Not shown when a plan exists anyway: a set can be added straight
+         from the lineup without naming anybody, and telling someone to start
+         over while their day is on screen below would be nonsense. -->
+    <section class="panel" th:if="${!hasPicks and !hasPlan}">
+        <h2 class="section-title">Name a few artists first</h2>
+        <p class="section-note">
+            The schedule is built around the artists you already love — it needs those
+            before it can plan a day. About ten is plenty.
+        </p>
+    </section>
     <p class="muted" th:if="${!hasPlan and hasPicks and !buildFailed}">
         No schedule for this festival yet. Press <strong>Build my schedule</strong> above.
     </p>
 
-    <section th:each="day : ${days}">
-        <h2 th:text="${day.key}">Day</h2>
-        <div class="timeline">
-            <div th:each="slot : ${day.value}"
-                 th:classappend="${slot.gap} ? 'slot slot-gap' : (${slot.kind == 'REST'} ? 'slot slot-rest' : 'slot slot-set')" class="slot">
-                <div class="slot-time" th:text="${slot.time}">12:00 – 13:00</div>
-                <div class="slot-body">
-                    <div class="name" th:if="${slot.kind == 'SET'}">
-                        <a th:href="@{/artist/{id}(id=${slot.artistId})}" th:text="${slot.artist}"
-                           class="artist-link">Artist</a>
-                        <span class="badge badge-rising" th:if="${slot.rising}">Rising</span>
-                    </div>
-                    <div class="name" th:if="${slot.kind == 'REST' and !slot.gap}">Break — <span th:text="${slot.minutes} + ' min'">40 min</span></div>
-                    <div class="gap-label" th:if="${slot.gap}" th:text="${slot.minutes} + ' min changeover'">30 min changeover</div>
-                    <div class="tags">
-                        <span th:if="${slot.stage}" th:text="${slot.stage} + ' · '">Stage · </span>
-                        <span th:text="${slot.reason}">reason</span>
-                    </div>
-                    <!-- The swap sits with the sentence that names the artist,
-                         because that sentence is the reason anyone would want it.
-                         Dropping is the general action and stays below. -->
-                    <div class="tradeoff" th:if="${slot.tradeoff}">
-                        <span th:text="${slot.tradeoff}">chosen over …</span>
-                        <form method="post" th:action="@{/schedule/swap}" class="inline-action"
-                              th:if="${slot.alternativeId != null}">
+    <!-- One tab per festival day. -->
+    <div class="daytabs" th:if="${hasPlan and #lists.size(dayStats) > 1}">
+        <a th:each="d : ${dayStats}"
+           th:href="@{/schedule(editionId=${chosen.editionId}, day=${d.label})}"
+           th:classappend="${d.label == showing} ? 'active'"
+           class="daytab" th:text="${d.tab}">SAT 14</a>
+    </div>
+
+    <div class="split" th:if="${hasPlan}">
+
+        <section>
+            <h2 class="section-title" th:text="${showing}">Saturday 14 August</h2>
+            <div class="timeline">
+                <div th:each="slot : ${slots}"
+                     th:classappend="${slot.gap} ? 'slot slot-gap' : (${slot.kind == 'REST'} ? 'slot slot-rest' : 'slot slot-set')" class="slot">
+                    <div class="slot-time" th:text="${slot.time}">12:00 – 13:00</div>
+                    <div class="slot-body">
+                        <div class="name" th:if="${slot.kind == 'SET'}">
+                            <span class="star-on" th:if="${mustSee.contains(slot.artistId)}" title="Must-see">★</span>
+                            <a th:href="@{/artist/{id}(id=${slot.artistId})}" th:text="${slot.artist}"
+                               class="artist-link">Artist</a>
+                            <span class="badge badge-rising" th:if="${slot.rising}">Rising</span>
+                            <!-- The row prints the part you are there for, which
+                                 on its own reads as the whole set. -->
+                            <span class="badge badge-partial" th:if="${slot.playsFrom != null}"
+                                  th:title="'Plays ' + ${slot.playsFrom}"
+                                  th:text="'Part of ' + ${slot.playsFrom}">Part of 19:30 – 20:40</span>
+                        </div>
+                        <div class="name" th:if="${slot.kind == 'REST' and !slot.gap}">Break — <span th:text="${slot.minutes} + ' min'">40 min</span></div>
+                        <div class="gap-label" th:if="${slot.gap}"
+                             th:text="${slot.minutes} + (${slot.minutes} >= 20 ? ' min break' : ' min changeover')">30 min changeover</div>
+                        <!-- A set offered inside a gap is, by construction, one the
+                             solver could not simply take: either the day is already
+                             as long as this person said they wanted it, or the set
+                             clashes with something they are keeping. Saying what it
+                             would cost says which, exactly, because the answer comes
+                             from pinning it and re-solving rather than from a rule
+                             of thumb. -->
+                        <div class="tags">
+                            <span th:if="${slot.stage}" th:text="${slot.stage} + ' · '">Stage · </span>
+                            <span th:text="${slot.reason}">reason</span>
+                        </div>
+                        <!-- The meal goes where the person says, when there is a
+                             choice to make. Thirty minutes is the shortest the
+                             scheduler will call a meal, so shorter gaps are not
+                             offered: eating in twenty minutes is a sandwich on
+                             the walk, not a break. -->
+                        <form method="post" th:action="@{/schedule/eat-here}" class="slot-actions"
+                              th:if="${slot.gap and slot.minutes >= 30}">
                             <input type="hidden" name="editionId"
                                    th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
-                            <input type="hidden" name="performanceId"
-                                   th:value="${slot.alternativeId}"/>
-                            <button type="submit" class="button-quiet"
-                                    th:text="'See ' + ${slot.alternative} + ' instead'">See X instead</button>
+                            <input type="hidden" name="startsAt" th:value="${slot.fromAt}"/>
+                            <button type="submit" class="button-quiet">Eat here instead</button>
+                        </form>
+                        <form method="post" th:action="@{/schedule/eat-anywhere}" class="slot-actions"
+                              th:if="${slot.kind == 'REST' and !slot.gap and mealChosen
+                                       and slot.reason != null and #strings.startsWith(slot.reason, 'meal')}">
+                            <input type="hidden" name="editionId"
+                                   th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                            <input type="hidden" name="onDay" th:value="${slot.fromAt}"/>
+                            <button type="submit" class="button-quiet">Let the schedule decide</button>
+                        </form>
+                        <!-- Twenty minutes is where the summary starts calling it a break, so
+                             the timeline calls it one too. Labelling a 65-minute hole
+                             "changeover" while the rail counted it as rest was the same
+                             slot described two ways. -->
+
+                        <!-- Any break with something playing across it, not just a
+                             leftover gap. Suggestions were extended to carved
+                             breaks — a thirty-minute breather is the same stretch
+                             of standing around as the hole it came out of — but
+                             this block still asked whether the reason text began
+                             "gap", so a breather named the band and offered no way
+                             to go and see them. The cost and the catch window were
+                             already worked out for it. -->
+                        <div class="tradeoff" th:if="${slot.kind == 'REST' and slot.alternativeId != null}">
+                            <span class="muted" th:if="${slot.addCost != null}"
+                                  th:text="${slot.addCost}">costs X · 25 min over your limit</span>
+                            <form method="post" th:action="@{/schedule/add}" class="inline-action">
+                                <input type="hidden" name="editionId"
+                                       th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                                <input type="hidden" name="performanceId" th:value="${slot.alternativeId}"/>
+                                <button type="submit" class="button-quiet"
+                                        th:text="'Add ' + ${slot.alternative}">Add X</button>
+                            </form>
+                            <!-- Only where the part inside the gap ends clear of the
+                                 next set. The window posted is the gap's own; the
+                                 planner clamps the set to it, so what goes in the day
+                                 is the piece you can actually be there for. -->
+                            <form method="post" th:action="@{/schedule/squeeze}" class="inline-action"
+                                  th:if="${slot.catchMinutes > 0}">
+                                <input type="hidden" name="editionId"
+                                       th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                                <input type="hidden" name="performanceId" th:value="${slot.alternativeId}"/>
+                                <input type="hidden" name="from" th:value="${slot.catchFrom}"/>
+                                <input type="hidden" name="to" th:value="${slot.catchTo}"/>
+                                <button type="submit" class="button-quiet"
+                                        th:text="'Catch ' + ${slot.catchMinutes} + ' min of it, keeping the rest'">Catch the end</button>
+                            </form>
+                        </div>
+
+                        <!-- The swap sits with the sentence that names the artist,
+                             because that sentence is the reason anyone would want it.
+                             Dropping is the general action and stays below. -->
+                        <div class="tradeoff" th:if="${slot.tradeoff}">
+                            <span th:text="${slot.tradeoff}">chosen over …</span>
+                            <!-- What the swap would actually cost. A displaced
+                                 set can lie across more than the one it was
+                                 named against, and then the trade is not the
+                                 one-for-one the sentence above describes. -->
+                            <span class="muted" th:if="${slot.kind == 'SET' and slot.addCost != null}"
+                                  th:text="'— ' + ${slot.addCost}">— also drops X</span>
+                            <form method="post" th:action="@{/schedule/swap}" class="inline-action"
+                                  th:if="${slot.alternativeId != null}">
+                                <input type="hidden" name="editionId"
+                                       th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                                <input type="hidden" name="performanceId"
+                                       th:value="${slot.alternativeId}"/>
+                                <button type="submit" class="button-quiet"
+                                        th:text="'See ' + ${slot.alternative} + ' instead'">See X instead</button>
+                            </form>
+                        </div>
+                        <!-- One label for every slot, and deliberately not "swap for
+                             X". The whole day is solved again rather than patched, so
+                             the set that takes the freed slot is often not the one
+                             this slot beat: dropping Dying Wish at 14:30 brought in
+                             Sevendust there AND moved Knocked Loose aside for
+                             Spiritbox an hour later. Naming an alternative would
+                             promise something the solver does not guarantee. -->
+                        <form method="post" th:action="@{/schedule/decline}" class="slot-actions"
+                              th:if="${slot.kind == 'SET' and slot.performanceId != null}">
+                            <input type="hidden" name="editionId"
+                                   th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                            <input type="hidden" name="performanceId" th:value="${slot.performanceId}"/>
+                            <button type="submit" class="button-quiet">Drop this set</button>
                         </form>
                     </div>
-                    <!-- One label for every slot, and deliberately not "swap for
-                         X". The whole day is solved again rather than patched, so
-                         the set that takes the freed slot is often not the one
-                         this slot beat: dropping Dying Wish at 14:30 brought in
-                         Sevendust there AND moved Knocked Loose aside for
-                         Spiritbox an hour later. Naming an alternative would
-                         promise something the solver does not guarantee. -->
-                    <form method="post" th:action="@{/schedule/decline}" class="slot-actions"
-                          th:if="${slot.kind == 'SET' and slot.performanceId != null}">
-                        <input type="hidden" name="editionId"
-                               th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
-                        <input type="hidden" name="performanceId" th:value="${slot.performanceId}"/>
-                        <button type="submit" class="button-quiet">Drop this set</button>
-                    </form>
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
+
+        <aside>
+            <section class="panel" th:if="${dayStat != null}">
+                <h2 class="section-title">Summary</h2>
+                <div class="rail-stat">
+                    <span class="k">Sets</span><span class="v" th:text="${dayStat.sets}">5</span>
+                </div>
+                <div class="rail-stat">
+                    <span class="k">Music</span><span class="v" th:text="${dayStat.active}">6h 20m</span>
+                </div>
+                <!-- The limit counts music. The day is longer than that, and
+                     saying only the first of the two understates what the
+                     plan is actually asking of somebody. -->
+                <div class="rail-stat">
+                    <span class="k">On site</span><span class="v" th:text="${dayStat.onSite}">9h 45m</span>
+                </div>
+                <div class="rail-stat">
+                    <span class="k">Breaks</span>
+                    <span class="v">
+                        <span th:text="${dayStat.breaks}">2</span>
+                        <span class="muted" style="font-weight:400"
+                              th:if="${dayStat.breaks > 0}"
+                              th:text="'· ' + ${dayStat.breakTime}">· 1h 30m</span>
+                    </span>
+                </div>
+                <div class="rail-stat">
+                    <span class="k">New artists</span><span class="v" th:text="${dayStat.discoveries}">3</span>
+                </div>
+                <!-- What the limit gave up. The day simply arrived without
+                     these and nothing said so: a set visible on the lineup,
+                     absent from the plan, with no page able to account for
+                     the difference. The add button says it at the moment of
+                     the click and then it is gone. -->
+                <div class="muted hours-note" th:if="${!#lists.isEmpty(dayStat.omitted)}">
+                    <span th:text="${dayStat.omittedNames}">Vended</span>
+                    left out to keep this day inside your limit.
+                    <form method="post" th:action="@{/schedule/add}" style="display:inline"
+                          th:each="o : ${dayStat.omitted}">
+                        <input type="hidden" name="editionId"
+                               th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                        <input type="hidden" name="performanceId" th:value="${o.performanceId}"/>
+                        <button type="submit" class="link-quiet"
+                                th:text="'Add ' + ${o.artist} + ' anyway'">Add it anyway</button>
+                    </form>
+                </div>
+
+                <!-- The one place a person reads the shape of the whole day, so
+                     the one place worth saying it runs longer than they asked
+                     for. Inline in every gap it was a paragraph nobody needed
+                     three times. -->
+                <p class="demo-note" th:if="${dayStat.overBy > 0}" style="margin-top:12px">
+                    <strong th:text="${dayStat.overBy} + ' min over your limit.'">25 min over.</strong>
+                    <span th:if="${dayStat.worthActingOn and dayStat.dropInstead != null
+                                   and #strings.endsWith(dayStat.dropInstead, '|added')}"
+                          th:text="${#strings.replace(dayStat.dropInstead, '|added', '')}
+                                   + ' is what you added. Keep it, and the scheduler can give up one of its own instead.'">You added it.</span>
+                    <span th:if="${dayStat.worthActingOn and dayStat.dropInstead != null
+                                   and !#strings.endsWith(dayStat.dropInstead, '|added')}"
+                          th:text="'Your own picks alone run past it — ' + ${dayStat.dropInstead}
+                                   + ' is the slightest of them.'">Drop a set.</span>
+                    <span th:if="${dayStat.worthActingOn and dayStat.dropInstead == null}">Every set here is one of your own picks.</span>
+                    <form method="post" th:action="@{/schedule/fit}" style="margin-top:8px"
+                          th:if="${dayStat.worthActingOn and !fitInside}">
+                        <input type="hidden" name="editionId"
+                               th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                        <input type="hidden" name="on" value="true"/>
+                        <button type="submit" class="button-quiet">Fit my day inside the limit</button>
+                    </form>
+                </p>
+            </section>
+
+            <!-- Arrival and departure for this day alone. The profile window
+                 is one pair of times for every day of every festival, and
+                 nobody attends a weekend that way: you drive up after work on
+                 the Friday and you are there from ten on the Saturday. -->
+            <section class="panel" th:if="${dayStat != null}">
+                <h2 class="section-title">Your hours</h2>
+                <form method="post" th:action="@{/schedule/hours}" class="hours-row">
+                    <input type="hidden" name="editionId"
+                           th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                    <input type="hidden" name="onDay" th:value="${dayStat.dayOn}"/>
+                    <label class="hours-label">Arrive
+                        <input type="time" name="arriveAt" th:value="${dayStat.arriveAt}"/>
+                    </label>
+                    <span class="muted hours-to">to</span>
+                    <label class="hours-label">Leave
+                        <input type="time" name="leaveBy" th:value="${dayStat.leaveBy}"/>
+                    </label>
+                    <button type="submit" class="button-quiet">Set</button>
+                </form>
+                <!-- Divs, not paragraphs. A <form> start tag implicitly closes
+                     an open <p>, so the form below ended up a sibling of the
+                     note rather than its child — the th:unless applied to the
+                     text and not to the button, and "Use my profile hours"
+                     showed on every day whether or not it had any. -->
+                <!-- What the two boxes actually gate, said once, because it is
+                     true in both states. Put inside the branches it reached
+                     only the day that had no hours of its own. -->
+                <div class="muted hours-note">
+                    Nothing starts before you arrive or runs past when you leave.
+                </div>
+                <div class="muted hours-note"
+                     th:if="${#strings.isEmpty(dayStat.arriveAt)
+                             and #strings.isEmpty(dayStat.leaveBy)}">
+                    This day only; blank follows your profile.
+                </div>
+                <div class="muted hours-note"
+                     th:unless="${#strings.isEmpty(dayStat.arriveAt)
+                                 and #strings.isEmpty(dayStat.leaveBy)}">
+                    This day only.
+                    <!-- Clearing both ends is the same gesture as setting them,
+                         so it is the same endpoint with nothing in it. -->
+                    <form method="post" th:action="@{/schedule/hours}" style="display:inline">
+                        <input type="hidden" name="editionId"
+                               th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                        <input type="hidden" name="onDay" th:value="${dayStat.dayOn}"/>
+                        <button type="submit" class="link-quiet">Use my profile hours</button>
+                    </form>
+                </div>
+            </section>
+
+            <section class="panel" th:if="${fitInside}" style="margin-top:16px">
+                <h2 class="section-title">Fitted to your limit</h2>
+                <p class="section-note">
+                    The scheduler is giving up its own choices to make room for the sets
+                    you asked for, rather than running your day long.
+                </p>
+                <form method="post" th:action="@{/schedule/fit}">
+                    <input type="hidden" name="editionId"
+                           th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                    <input type="hidden" name="on" value="false"/>
+                    <button type="submit" class="button-quiet">Let the day run long instead</button>
+                </form>
+            </section>
+
+            <section class="panel" th:if="${!#lists.isEmpty(tradeoffs)}" style="margin-top:16px">
+                <h2 class="section-title">Tradeoffs</h2>
+                <p class="section-note">What this day cost, set by set.</p>
+                <ul class="preview">
+                    <!-- Short here on purpose: the full sentence is already
+                         beside the set it belongs to, and repeating it word
+                         for word made the rail longer than the day. -->
+                    <li th:each="t : ${tradeoffs}" th:if="${t.alternative != null}">
+                        <span class="lead" th:text="${t.artist}">Artist</span>
+                        <span class="trail" th:text="'over ' + ${t.alternative}">over Zulu</span>
+                    </li>
+                </ul>
+            </section>
+
+            <!-- Named, and undoable one at a time. "Put them all back" was the
+                 only way out, which is a poor answer to regretting one of three
+                 decisions -- and the page never said what the three were. -->
+            <section class="panel" style="margin-top:16px"
+                     th:if="${(changes != null and !#lists.isEmpty(changes))
+                              or (alsoChanged != null and !#lists.isEmpty(alsoChanged))}">
+                <h2 class="section-title">Your changes</h2>
+                <div class="rail-stat" th:each="c : ${changes}">
+                    <span class="k" th:text="${c.what}">Dropped Slipknot</span>
+                    <form method="post" th:action="@{/schedule/undo}" style="display:inline">
+                        <input type="hidden" name="editionId"
+                               th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                        <input type="hidden" name="performanceId" th:value="${c.performanceId}"/>
+                        <input type="hidden" name="kind" th:value="${c.kind}"/>
+                        <button type="submit" class="button-quiet"
+                                style="padding:2px 9px;font-size:12px">Undo</button>
+                    </form>
+                </div>
+                <!-- Named, not given a second undo: each of these already has
+                     its own control where it was made. They are here because
+                     the button below says it puts everything back. -->
+                <div class="rail-stat" th:each="c : ${alsoChanged}">
+                    <span class="k" th:text="${c}">Meal placed by hand</span>
+                </div>
+                <form method="post" th:action="@{/schedule/restore}" style="margin-top:10px">
+                    <input type="hidden" name="editionId"
+                           th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
+                    <button type="submit" class="button-quiet">Put them all back</button>
+                </form>
+            </section>
+
+            <section class="panel" style="margin-top:16px">
+                <h2 class="section-title">Built to your pace</h2>
+                <div class="rail-stat">
+                    <span class="k">Most music a day</span>
+                    <span class="v" th:text="${paceCap} + ' h'">7.5 h</span>
+                </div>
+                <div class="rail-stat" th:if="${paceRun != null}">
+                    <span class="k">Longest stretch</span>
+                    <span class="v" th:text="${paceRun} + ' h'">3.0 h</span>
+                </div>
+                <div class="rail-stat" th:if="${paceMeal != null}">
+                    <span class="k">Eat by</span>
+                    <span class="v" th:text="${paceMeal}">13:00</span>
+                </div>
+                <!-- "Not before" and "Not after" read as though they might be
+                     about the meal, which is the row directly above them. They
+                     are about sets, and the two ends are not symmetrical: one
+                     tests when a set starts, the other when it finishes. -->
+                <div class="rail-stat" th:if="${paceEarliest != null}">
+                    <span class="k">No set starts before</span>
+                    <span class="v" th:text="${paceEarliest}">12:00</span>
+                </div>
+                <div class="rail-stat" th:if="${paceLatest != null}">
+                    <span class="k">No set runs past</span>
+                    <span class="v" th:text="${paceLatest}">23:30</span>
+                </div>
+                <p style="margin-top:12px"><a th:href="@{/profile}">Change these →</a></p>
+            </section>
+        </aside>
+    </div>
 </main>
+<footer th:replace="~{layout :: footer}"></footer>
 </body>
 </html>
