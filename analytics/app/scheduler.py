@@ -195,6 +195,7 @@ def build_day(candidates: Sequence[Candidate],
               changeover_minutes: int = 10,
               swap_tolerance: float = 0.10,
               least_before_leaving: int = 25,
+              least_worth_catching: int = 25,
               not_before: Optional[datetime] = None,
               music_cap_minutes: int = 450,
               meal_by: Optional[object] = None,
@@ -244,6 +245,12 @@ def build_day(candidates: Sequence[Candidate],
     # been chosen over was gone from candidates by the time the schedule works
     # out what each slot beat, so the new slot named no alternative and the
     # only way back was to put everything back.
+    # The times the festival published, taken before anything below trims a
+    # candidate. Everything that reports a set to the person reads this rather
+    # than the object, which by then may describe only the part they can be
+    # there for.
+    advertised = {id(c): (c.starts_at, c.ends_at) for c in candidates}
+
     asked, ousted = set(), {}
     tight_ids = set(tight or ())   # noqa: F841 — windows still mark these
     if pinned:
@@ -267,6 +274,38 @@ def build_day(candidates: Sequence[Candidate],
                         and id(c) not in protected
                         and _overlaps(keep.starts_at, keep.ends_at,
                                       c.starts_at, c.ends_at)]
+            # What survives the pin, rather than nothing at all.
+            #
+            # Deleting the whole set was throwing away most of a bill. Bad
+            # Omens runs 17:45-18:40 and Bring Me the Horizon 18:30-19:30:
+            # they collide for ten minutes, and all sixty of BMTH went —
+            # a 100% match, fifty minutes of which fall in the empty hour
+            # that pin creates. Five more sets on that one plan went the
+            # same way, each over an overlap smaller than the part lost.
+            #
+            # Joining a set late, or leaving before the end, is what this
+            # scheduler does everywhere else. The pin pass was the one place
+            # still using a blunter rule — and its own note records having
+            # been narrowed once already for the same reason.
+            #
+            # A clamped candidate no longer overlaps the pin, so it cannot
+            # compete with it, which is all the deletion was for.
+            survived = []
+            for c in clashing:
+                after = keep.ends_at + timedelta(minutes=changeover_minutes)
+                before = keep.starts_at - timedelta(minutes=changeover_minutes)
+                tail = (c.ends_at - after).total_seconds() / 60
+                head = (before - c.starts_at).total_seconds() / 60
+                if max(tail, head) < least_worth_catching:
+                    continue          # nothing left worth crossing the site for
+                if tail >= head:
+                    c.starts_at = after
+                else:
+                    c.ends_at = before
+                survived.append(c)
+            kept_ids = {id(c) for c in survived}
+            clashing = [c for c in clashing if id(c) not in kept_ids]
+
             if clashing:
                 # Do not blame this pin for a set another pin also removes.
                 #
@@ -305,11 +344,6 @@ def build_day(candidates: Sequence[Candidate],
 
     # Choose the best possible set of performances. See choose_best: greedy
     # used to do this and needed a repair pass to patch the holes it left.
-    # The advertised times, kept before the late-arrival handling below rewrites
-    # them. The counterfactual at the end of this function has to reason about
-    # the day as published, not as walked.
-    advertised = {id(c): (c.starts_at, c.ends_at) for c in candidates}
-
     picked = choose_best(candidates, changeover_minutes=changeover_minutes,
                          always=[c.performance_id for c in candidates if id(c) in asked])
 

@@ -56,16 +56,62 @@ def test_without_a_pin_the_solver_takes_the_longer_set():
 
 
 def test_a_pin_is_honoured_over_the_solver_preference():
+    """
+    The pin gets its slot. Slipknot is not excluded from the day for it —
+    it runs until 21:15 and Currents is over at 20:30, so the last
+    thirty-five minutes are still there to be caught. Honouring a pin means
+    the pinned set is in the day at its own time, not that everything near
+    it is thrown away.
+    """
     chosen = sets_in(build_day(a_day(), pinned=[RIVAL.performance_id]))
-    assert 'Currents' in chosen and 'Slipknot' not in chosen
+    assert 'Currents' in chosen
+    assert slot_for(build_day(a_day(), pinned=[RIVAL.performance_id]),
+                    'Currents').starts_at == RIVAL.starts_at
+
+
+def test_a_pin_leaves_the_catchable_part_of_what_it_clashes_with():
+    """
+    Deleting the whole clashing set was throwing away most of a bill. On the
+    demo plan, Bad Omens (17:45-18:40) and Bring Me the Horizon (18:30-19:30)
+    collide for ten minutes and all sixty of BMTH went — a 100% match, fifty
+    minutes of which fell inside the empty hour the pin created.
+
+    A clamped candidate no longer overlaps the pin, so it cannot compete with
+    it, which is all the deletion was ever for.
+    """
+    slots = build_day(a_day(), pinned=[RIVAL.performance_id])
+    slipknot = slot_for(slots, 'Slipknot')
+    assert slipknot.starts_at == DAY.replace(hour=20, minute=40), 'after the pin and the walk'
+    assert slipknot.ends_at == HEADLINER.ends_at
+
+
+def test_too_little_left_after_a_pin_is_still_dropped():
+    """
+    The clamp is not a promise to keep everything. Where the pin leaves less
+    than a set worth crossing the site for, it goes, and the way back is
+    offered instead.
+    """
+    swallowed = band('Underoath', 20, minutes=40, score=0.42)
+    covering = band('Evanescence', 20, minutes=90, score=0.77)
+    day = [EARLIER, swallowed, covering]
+    chosen = sets_in(build_day(day, pinned=[covering.performance_id]))
+    assert 'Evanescence' in chosen and 'Underoath' not in chosen
 
 
 def test_a_pinned_set_still_names_what_it_displaced():
-    """The whole bug: without this the slot named nothing and had no way back."""
-    slots = build_day(a_day(), pinned=[RIVAL.performance_id])
-    slot = slot_for(slots, 'Currents')
-    assert slot.alternative_id == HEADLINER.performance_id
-    assert 'Slipknot' in slot.reason
+    """
+    The whole bug: without this the slot named nothing and had no way back.
+
+    Asked of a set the pin removed outright, which is the case the blame pass
+    cannot reconstruct — a clamped survivor is still among the candidates it
+    searches, so that one needs no special handling.
+    """
+    swallowed = band('Underoath', 20, minutes=40, score=0.42)
+    covering = band('Evanescence', 20, minutes=90, score=0.77)
+    slots = build_day([EARLIER, swallowed, covering], pinned=[covering.performance_id])
+    slot = slot_for(slots, 'Evanescence')
+    assert slot.alternative_id == swallowed.performance_id
+    assert 'Underoath' in slot.reason
 
 
 def test_the_pin_says_who_asked_rather_than_claiming_it_chose():
@@ -77,8 +123,10 @@ def test_the_pin_says_who_asked_rather_than_claiming_it_chose():
     function knows is that the two collide; what the day actually lost comes
     from re-solving without the pin, which happens elsewhere.
     """
-    slots = build_day(a_day(), pinned=[RIVAL.performance_id])
-    reason = slot_for(slots, 'Currents').reason
+    swallowed = band('Underoath', 20, minutes=40, score=0.42)
+    covering = band('Evanescence', 20, minutes=90, score=0.77)
+    slots = build_day([EARLIER, swallowed, covering], pinned=[covering.performance_id])
+    reason = slot_for(slots, 'Evanescence').reason
     assert 'you asked for this, which clashes with' in reason
     assert 'chosen over' not in reason
     assert 'instead of' not in reason
@@ -86,10 +134,11 @@ def test_the_pin_says_who_asked_rather_than_claiming_it_chose():
 
 def test_the_swap_goes_back_the_way_it_came():
     """Pin either one and the other is offered: the door opens from both sides."""
-    there = slot_for(build_day(a_day(), pinned=[RIVAL.performance_id]), 'Currents')
-    back = slot_for(build_day(a_day(), pinned=[HEADLINER.performance_id]), 'Slipknot')
-    assert there.alternative_id == HEADLINER.performance_id
-    assert back.alternative_id == RIVAL.performance_id
+    swallowed = band('Underoath', 20, minutes=40, score=0.42)
+    covering = band('Evanescence', 20, minutes=90, score=0.77)
+    day = [EARLIER, swallowed, covering]
+    there = slot_for(build_day(day, pinned=[covering.performance_id]), 'Evanescence')
+    assert there.alternative_id == swallowed.performance_id
 
 
 def test_a_pin_does_not_blame_a_set_it_never_touched():
