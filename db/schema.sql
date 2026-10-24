@@ -145,6 +145,11 @@ CREATE TABLE plan (
     edition_id  bigint NOT NULL REFERENCES dim_festival_edition ON DELETE CASCADE,
     created_at  timestamptz NOT NULL DEFAULT now(),
     updated_at  timestamptz NOT NULL DEFAULT now(),
+    -- Should the daily limit cover the whole day, including the sets the
+    -- person asked for by name? Off by default: a pin is an instruction, and
+    -- the honest answer to one that runs the day long is to say so rather
+    -- than to quietly drop something else.
+    fit_inside_limit boolean NOT NULL DEFAULT false,
     UNIQUE (user_id, edition_id)                     -- one plan per person per festival edition
 );
 
@@ -179,6 +184,13 @@ CREATE TABLE plan_pinned (
     plan_id        bigint NOT NULL REFERENCES plan ON DELETE CASCADE,
     performance_id bigint NOT NULL REFERENCES fact_performance ON DELETE CASCADE,
     pinned_at      timestamptz NOT NULL DEFAULT now(),
+    -- A pin may name only part of a set: the piece that fits in a gap, when
+    -- the rest of it runs under something already in the day. Null at either
+    -- end means the whole set from that side. Clamping the candidate before
+    -- the solver sees it makes a set you are catching the end of simply a
+    -- shorter set, so it displaces nothing.
+    from_at        timestamptz,
+    to_at          timestamptz,
     PRIMARY KEY (plan_id, performance_id)
 );
 
@@ -186,6 +198,50 @@ CREATE TABLE plan_declined (
     plan_id        bigint NOT NULL REFERENCES plan ON DELETE CASCADE,
     performance_id bigint NOT NULL REFERENCES fact_performance ON DELETE CASCADE,
     declined_at    timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (plan_id, performance_id)
+);
+
+-- Where this person wants to eat, one day at a time. The scheduler places a
+-- meal in the first real opportunity after the middle of the day, which is a
+-- reasonable guess about an afternoon that is not ours; where there are gaps
+-- to choose between, their answer wins. No row means the scheduler decides.
+CREATE TABLE plan_meal (
+    plan_id    bigint      NOT NULL REFERENCES plan ON DELETE CASCADE,
+    meal_on    date        NOT NULL,
+    starts_at  timestamptz NOT NULL,
+    chosen_at  timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (plan_id, meal_on)
+);
+
+-- Arrival and departure for one day of one festival. app_user.earliest_start
+-- and latest_end are a single window applied to every day of every festival,
+-- and nobody attends a weekend that way: people drive up after work on the
+-- Friday and are on site from ten on the Saturday. Both columns are nullable
+-- because "I arrive at four on Friday" says nothing about when I leave.
+--
+-- Wall-clock times at the festival, with no zone, which must not be
+-- converted — see AppUserRepository.paceTimes for the five-hour bug that
+-- taught us so. Java moves them as text and lets Postgres do the only cast.
+CREATE TABLE plan_day (
+    plan_id    bigint NOT NULL REFERENCES plan ON DELETE CASCADE,
+    day_on     date   NOT NULL,
+    arrive_at  time,
+    leave_by   time,
+    chosen_at  timestamptz NOT NULL DEFAULT now(),
+    PRIMARY KEY (plan_id, day_on),
+    CONSTRAINT plan_day_says_something CHECK (arrive_at IS NOT NULL OR leave_by IS NOT NULL)
+);
+
+-- Sets the daily limit left out. The cap is a budget for the scheduler's own
+-- choices, so a day over the line gives up the weakest set it is allowed to
+-- give up; that is right, and it used to happen in silence. Rewritten with
+-- the plan, like plan_item: a property of the solve, not a decision the
+-- person made.
+CREATE TABLE plan_omitted (
+    plan_id        bigint NOT NULL REFERENCES plan ON DELETE CASCADE,
+    performance_id bigint NOT NULL REFERENCES fact_performance ON DELETE CASCADE,
+    day_on         date   NOT NULL,
+    minutes        int    NOT NULL,
     PRIMARY KEY (plan_id, performance_id)
 );
 
