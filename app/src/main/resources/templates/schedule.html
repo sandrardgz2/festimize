@@ -138,7 +138,15 @@
                              "changeover" while the rail counted it as rest was the same
                              slot described two ways. -->
 
-                        <div class="tradeoff" th:if="${slot.gap and slot.alternativeId != null}">
+                        <!-- Any break with something playing across it, not just a
+                             leftover gap. Suggestions were extended to carved
+                             breaks — a thirty-minute breather is the same stretch
+                             of standing around as the hole it came out of — but
+                             this block still asked whether the reason text began
+                             "gap", so a breather named the band and offered no way
+                             to go and see them. The cost and the catch window were
+                             already worked out for it. -->
+                        <div class="tradeoff" th:if="${slot.kind == 'REST' and slot.alternativeId != null}">
                             <span class="muted" th:if="${slot.addCost != null}"
                                   th:text="${slot.addCost}">costs X · 25 min over your limit</span>
                             <form method="post" th:action="@{/schedule/add}" class="inline-action">
@@ -169,6 +177,12 @@
                              Dropping is the general action and stays below. -->
                         <div class="tradeoff" th:if="${slot.tradeoff}">
                             <span th:text="${slot.tradeoff}">chosen over …</span>
+                            <!-- What the swap would actually cost. A displaced
+                                 set can lie across more than the one it was
+                                 named against, and then the trade is not the
+                                 one-for-one the sentence above describes. -->
+                            <span class="muted" th:if="${slot.kind == 'SET' and slot.addCost != null}"
+                                  th:text="'— ' + ${slot.addCost}">— also drops X</span>
                             <form method="post" th:action="@{/schedule/swap}" class="inline-action"
                                   th:if="${slot.alternativeId != null}">
                                 <input type="hidden" name="editionId"

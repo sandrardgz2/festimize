@@ -278,6 +278,28 @@ public class ScheduleController {
             List<Slot> ofDay = oneDay.getValue();
             for (int at = 0; at < ofDay.size(); at++) {
                 Slot slot = ofDay.get(at);
+                // A chosen set offering the one it beat. "See X instead" was
+                // the only action on this page that never said what it would
+                // cost, while the button beside a gap has shown exactly that
+                // all along — and the figure is already loaded for every
+                // absent set, which the displaced one is.
+                //
+                // It matters most where it was missing: Slipknot runs
+                // 20:00-21:15 and lies across both Deftones and Currents, so
+                // swapping to it is not the one-for-one trade the sentence
+                // above it describes. The second loss was a 100% match and
+                // nothing warned about it.
+                if ("SET".equals(slot.kind()) && slot.alternativeId() != null) {
+                    rewritten.add(new Slot(slot.kind(), slot.time(), slot.artist(),
+                            slot.artistId(), slot.performanceId(), slot.alternativeId(),
+                            slot.alternative(), slot.stage(), slot.reason(), slot.tradeoff(),
+                            slot.minutes(), slot.rising(),
+                            shortCost(addCosts.get(slot.alternativeId()), ceiling, myPicks,
+                                      slot.artist()),
+                            slot.fromAt(), slot.toAt(), slot.catchMinutes(),
+                            slot.catchFrom(), slot.catchTo(), slot.playsFrom()));
+                    continue;
+                }
                 if (!"REST".equals(slot.kind()) || slot.alternativeId() == null) {
                     rewritten.add(slot);
                     continue;
@@ -653,6 +675,22 @@ public class ScheduleController {
     /** Package-private: the insights page offers the same trade and says it the same way. */
     static String shortCost(com.festimize.analytics.PlanningClient.AddCost cost,
                             int ceiling, java.util.Set<String> myPicks) {
+        return shortCost(cost, ceiling, myPicks, null);
+    }
+
+    /**
+     * `besides` is a set whose loss is already understood and should not be
+     * listed again.
+     *
+     * Beside a swap, that is the set being swapped away: the sentence above
+     * the button already says "chosen over Zulu", so adding "clashes with
+     * Drain" on the Drain row states the trade back at somebody who just
+     * read it. What they do not know is the rest of it — that Zulu also
+     * lies across Jesus Piece — and that is the part a long clause buries.
+     */
+    static String shortCost(com.festimize.analytics.PlanningClient.AddCost cost,
+                            int ceiling, java.util.Set<String> myPicks,
+                            String besides) {
         if (cost == null || !cost.available()) {
             return null;
         }
@@ -670,6 +708,9 @@ public class ScheduleController {
         List<String> clash = new ArrayList<>();
         List<String> dropped = new ArrayList<>();
         for (String name : cost.costs()) {
+            if (name.equals(besides)) {
+                continue;
+            }
             String shown = myPicks.contains(name) ? name + " (your pick)" : name;
             (cost.clashes().contains(name) ? clash : dropped).add(shown);
         }
