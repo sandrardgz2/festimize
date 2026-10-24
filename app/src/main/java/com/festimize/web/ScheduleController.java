@@ -468,13 +468,18 @@ public class ScheduleController {
      */
     @PostMapping("/schedule/add")
     public String add(@RequestParam Long editionId, @RequestParam Long performanceId,
+                      @RequestParam(required = false) String back,
                       Principal principal) {
         AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
         declined.undecline(me.getUserId(), editionId, performanceId);
         declined.unpinClashing(me.getUserId(), editionId, performanceId);
         declined.pin(me.getUserId(), editionId, performanceId);
         planning.buildPlan(me.getUserId(), editionId);
-        return "redirect:/schedule?editionId=" + editionId + "&swapped";
+        // Back where the offer was made. Insights names a rising artist and
+        // offers the same trade; landing on the schedule afterwards loses the
+        // list somebody was working through.
+        String page = "insights".equals(back) ? "/insights" : "/schedule";
+        return "redirect:" + page + "?editionId=" + editionId + "&swapped";
     }
 
     /**
@@ -624,8 +629,9 @@ public class ScheduleController {
      * drops what no longer fits, so adding Korn to a 445-minute day leaves it
      * at 450 rather than the 475 that adding its catchable half would suggest.
      */
-    private static String shortCost(com.festimize.analytics.PlanningClient.AddCost cost,
-                                    int ceiling, java.util.Set<String> myPicks) {
+    /** Package-private: the insights page offers the same trade and says it the same way. */
+    static String shortCost(com.festimize.analytics.PlanningClient.AddCost cost,
+                            int ceiling, java.util.Set<String> myPicks) {
         if (cost == null || !cost.available()) {
             return null;
         }

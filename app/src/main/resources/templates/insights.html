@@ -106,6 +106,22 @@
                         <span th:text="${r.slot}">Sat 14:00</span>
                         <span th:if="${!#strings.isEmpty(r.stage)}" th:text="' · ' + ${r.stage}"></span>
                     </div>
+                    <!-- "Not yours" means not a saved artist, which is not the
+                         same as not in the schedule: the solver picks
+                         discoveries, so a rising artist may already be in the
+                         day. Offering to add that one would be an offer to do
+                         nothing. -->
+                    <div class="tags" th:if="${r.inPlan}">Already in your schedule.</div>
+                    <div class="tradeoff" th:unless="${r.inPlan}">
+                        <span class="muted" th:if="${r.addCost != null}"
+                              th:text="${r.addCost}">clashes with X</span>
+                        <form method="post" th:action="@{/schedule/add}" class="inline-action">
+                            <input type="hidden" name="editionId" th:value="${chosen.editionId}"/>
+                            <input type="hidden" name="performanceId" th:value="${r.performanceId}"/>
+                            <input type="hidden" name="back" value="insights"/>
+                            <button type="submit" class="button-quiet">Add to my schedule</button>
+                        </form>
+                    </div>
                 </article>
             </div>
         </section>
