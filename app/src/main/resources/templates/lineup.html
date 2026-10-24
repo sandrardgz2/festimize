@@ -103,6 +103,7 @@
     <div class="grid grid-2">
         <article class="card" th:each="row : ${rows}">
             <div class="name">
+                <span class="star-on" th:if="${mustSee.contains(row.artistId)}" title="Must-see">★</span>
                 <a th:href="@{/artist/{id}(id=${row.artistId})}" th:text="${row.artist}"
                    class="artist-link">Artist</a>
                 <span class="badge badge-headliner" th:if="${row.headliner}">Headliner</span>

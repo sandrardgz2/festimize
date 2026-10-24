@@ -89,6 +89,7 @@
                     <div class="slot-time" th:text="${slot.time}">12:00 – 13:00</div>
                     <div class="slot-body">
                         <div class="name" th:if="${slot.kind == 'SET'}">
+                            <span class="star-on" th:if="${mustSee.contains(slot.artistId)}" title="Must-see">★</span>
                             <a th:href="@{/artist/{id}(id=${slot.artistId})}" th:text="${slot.artist}"
                                class="artist-link">Artist</a>
                             <span class="badge badge-rising" th:if="${slot.rising}">Rising</span>

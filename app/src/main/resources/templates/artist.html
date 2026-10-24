@@ -20,7 +20,10 @@
 
     <section class="hero">
         <div>
-            <h1 class="page-title" style="margin-bottom:4px" th:text="${artist.name}">Artist</h1>
+            <h1 class="page-title" style="margin-bottom:4px">
+                <span class="star-on" th:if="${mustSee.contains(artist.artistId)}" title="Must-see">★</span>
+                <span th:text="${artist.name}">Artist</span>
+            </h1>
             <p class="page-sub" style="margin-top:0">
                 <span th:if="${artist.disambiguation != null}"
                       th:text="${artist.disambiguation}">US rock band</span>

@@ -846,3 +846,13 @@ a.avatar:hover {
     font: inherit;
     text-decoration: underline;
 }
+
+/* The must-see star, wherever an artist is named. An indicator only — it is
+   set and unset on the setup page, which is the one place the list is edited.
+   Sized down from the text it sits beside so a row of names still scans as a
+   row of names. */
+.star-on {
+    color: var(--orange);
+    font-size: 0.8em;
+    vertical-align: 1px;
+}

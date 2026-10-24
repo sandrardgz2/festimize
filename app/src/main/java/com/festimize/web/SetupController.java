@@ -113,7 +113,7 @@ public class SetupController {
         // of the page, rather than as ticks scattered down a list you have to
         // scroll to find. The list is small and the page is about it.
         model.addAttribute("mine", savedArtists);
-        model.addAttribute("mustSee", new java.util.HashSet<>(saved.mustSeeArtistIds(me.getUserId())));
+        // "mustSee" comes from NavAdvice, which supplies it to every page.
         model.addAttribute("target", SUGGESTED);
         return "setup";
     }

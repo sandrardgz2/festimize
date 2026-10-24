@@ -89,6 +89,7 @@
                     <li th:each="slot : ${firstSlots}">
                         <span class="when" th:text="${slot.when}">13:00</span>
                         <span class="lead">
+                            <span class="star-on" th:if="${mustSee.contains(slot.artistId)}" title="Must-see">★</span>
                             <a th:if="${slot.artistId != null}"
                                th:href="@{'/artist/' + ${slot.artistId}}" th:text="${slot.what}">Artist</a>
                             <span th:if="${slot.artistId == null}" class="muted" th:text="${slot.what}">rest</span>
