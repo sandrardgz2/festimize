@@ -204,6 +204,13 @@ a:hover {
     border: 1px solid var(--orange);
 }
 
+/* Catching part of a set. Quieter than "Rising", which is a recommendation —
+   this is a statement about the row it sits on. */
+.badge-partial {
+    color: var(--muted);
+    border: 1px solid var(--border);
+}
+
 /* ------------------------------------------------------------------ timeline */
 .timeline {
     list-style: none;

@@ -131,7 +131,13 @@ public class ScheduleController {
                        String stage,
                        String reason, String tradeoff, int minutes, boolean rising,
                        String addCost, String fromAt, String toAt, int catchMinutes,
-                       String catchFrom, String catchTo) {
+                       String catchFrom, String catchTo,
+                       /**
+                        * When this set is only partly attended, the hours it
+                        * actually runs. The row shows the part you are there
+                        * for, which on its own looks like the whole set.
+                        */
+                       String playsFrom) {
         /** A plain changeover, as opposed to a break the scheduler chose. */
         public boolean gap() { return reason != null && reason.startsWith("gap"); }
     }
@@ -232,7 +238,8 @@ public class ScheduleController {
                         reasonOf(item), tradeoffOf(item), mins,
                         who != null && climbing.contains(who),
                         null,            // filled in by the pass below
-                        item.getStartsAt().toString(), item.getEndsAt().toString(), 0, null, null));
+                        item.getStartsAt().toString(), item.getEndsAt().toString(), 0, null, null,
+                        playsFrom(item)));
             }
         }
 
@@ -290,7 +297,8 @@ public class ScheduleController {
                         slot.rising(), note, slot.fromAt(), slot.toAt(),
                         window == null ? 0 : Integer.parseInt(window[2]),
                         window == null ? null : window[0],
-                        window == null ? null : window[1]));
+                        window == null ? null : window[1],
+                        slot.playsFrom()));
             }
             oneDay.setValue(rewritten);
         }
@@ -768,6 +776,29 @@ public class ScheduleController {
     }
 
     /** Minutes as "6h 20m", or "45m" when there is no hour to show. */
+    /**
+     * The advertised hours of a set the person is only catching part of.
+     *
+     * The timeline prints the part they are there for, which on its own reads
+     * as the whole set: Deftones shows 19:40-20:15 and nothing says the band
+     * plays until 20:40. The reason line did say so, at the end of a long
+     * grey sentence nobody reads to the end of.
+     *
+     * Null when the whole set is attended, which is the usual case.
+     */
+    private static String playsFrom(PlanItem item) {
+        if (!"SET".equals(item.getItemType()) || item.getPerformance() == null) {
+            return null;
+        }
+        java.time.OffsetDateTime from = item.getPerformance().getStartsAt();
+        java.time.OffsetDateTime to = item.getPerformance().getEndsAt();
+        if (from == null || to == null
+                || (!item.getStartsAt().isAfter(from) && !item.getEndsAt().isBefore(to))) {
+            return null;
+        }
+        return from.format(TIME) + " – " + to.format(TIME);
+    }
+
     /** 16:00:00 from Postgres is 16:00 to an <input type="time">. */
     private static String trimSeconds(String time) {
         return time != null && time.length() >= 5 ? time.substring(0, 5) : "";

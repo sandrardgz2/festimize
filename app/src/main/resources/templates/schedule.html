@@ -93,6 +93,11 @@
                             <a th:href="@{/artist/{id}(id=${slot.artistId})}" th:text="${slot.artist}"
                                class="artist-link">Artist</a>
                             <span class="badge badge-rising" th:if="${slot.rising}">Rising</span>
+                            <!-- The row prints the part you are there for, which
+                                 on its own reads as the whole set. -->
+                            <span class="badge badge-partial" th:if="${slot.playsFrom != null}"
+                                  th:title="'Plays ' + ${slot.playsFrom}"
+                                  th:text="'Part of ' + ${slot.playsFrom}">Part of 19:30 – 20:40</span>
                         </div>
                         <div class="name" th:if="${slot.kind == 'REST' and !slot.gap}">Break — <span th:text="${slot.minutes} + ' min'">40 min</span></div>
                         <div class="gap-label" th:if="${slot.gap}"
