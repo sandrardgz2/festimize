@@ -64,11 +64,12 @@
             </p>
 
             <p>
-                <label for="earliestStart"><strong>Earliest start / latest end</strong></label><br>
+                <label for="earliestStart"><strong>The hours you are on site</strong></label><br>
                 <input type="time" id="earliestStart" name="earliestStart"
                        th:value="${earliestStart}">
                 <input type="time" id="latestEnd" name="latestEnd" th:value="${latestEnd}">
-                <span class="muted">leave empty for whenever the festival opens and closes</span>
+                <span class="muted">no set starts before the first or runs past the second;
+                    leave empty for whenever the festival opens and closes</span>
             </p>
 
             <p>

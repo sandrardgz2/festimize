@@ -841,9 +841,21 @@ a.avatar:hover {
 .hours-row {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
-    align-items: center;
+    /* Bottom-aligned, because the two boxes carry a caption above them and
+       the word between them does not. */
+    align-items: end;
     gap: 6px;
     margin-bottom: 8px;
+}
+
+.hours-label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.hours-to {
+    padding-bottom: 7px;
 }
 
 .hours-row input[type="time"] {

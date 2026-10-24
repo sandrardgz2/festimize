@@ -86,6 +86,10 @@ public class InsightsController {
         long onBill = num(c, 0), rateable = num(c, 1);
         model.addAttribute("onBill", onBill);
         model.addAttribute("coveragePercent", onBill == 0 ? 0 : Math.round(100.0 * rateable / onBill));
+        // How many cannot be scored, so the card can stop telling somebody
+        // about "the rest" when the figure above it is 100% and there is no
+        // rest. It also names the number instead of leaving them to subtract.
+        model.addAttribute("untagged", onBill - rateable);
 
         int ceiling = me.musicCapMinutes();
         List<Day> days = new ArrayList<>();

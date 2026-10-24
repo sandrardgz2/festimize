@@ -43,8 +43,14 @@
             <article class="card stat">
                 <div class="stat-figure" th:text="${coveragePercent} + '%'">0%</div>
                 <div class="name">Lineup coverage</div>
+                <!-- The tail has to know which case it is in. Written as one
+                     fixed sentence it told somebody looking at 100% that "the
+                     rest cannot be scored", when all 25 of 25 carry tags and
+                     there is no rest. -->
                 <div class="tags">of the <span th:text="${onBill}">0</span> artists on this bill
-                    carry tags, so the rest cannot be scored at all</div>
+                    carry tags<span th:if="${untagged == 0}"> — every one of them can be
+                    scored</span><span th:if="${untagged > 0}"> — the other
+                    <span th:text="${untagged}">0</span> cannot be scored at all</span></div>
             </article>
         </div>
 

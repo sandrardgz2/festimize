@@ -255,11 +255,13 @@
                     <input type="hidden" name="editionId"
                            th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
                     <input type="hidden" name="onDay" th:value="${dayStat.dayOn}"/>
-                    <input type="time" name="arriveAt" th:value="${dayStat.arriveAt}"
-                           aria-label="Arrive"/>
-                    <span class="muted">to</span>
-                    <input type="time" name="leaveBy" th:value="${dayStat.leaveBy}"
-                           aria-label="Leave"/>
+                    <label class="hours-label">Arrive
+                        <input type="time" name="arriveAt" th:value="${dayStat.arriveAt}"/>
+                    </label>
+                    <span class="muted hours-to">to</span>
+                    <label class="hours-label">Leave
+                        <input type="time" name="leaveBy" th:value="${dayStat.leaveBy}"/>
+                    </label>
                     <button type="submit" class="button-quiet">Set</button>
                 </form>
                 <!-- Divs, not paragraphs. A <form> start tag implicitly closes
@@ -267,10 +269,16 @@
                      note rather than its child — the th:unless applied to the
                      text and not to the button, and "Use my profile hours"
                      showed on every day whether or not it had any. -->
+                <!-- What the two boxes actually gate, said once, because it is
+                     true in both states. Put inside the branches it reached
+                     only the day that had no hours of its own. -->
+                <div class="muted hours-note">
+                    Nothing starts before you arrive or runs past when you leave.
+                </div>
                 <div class="muted hours-note"
                      th:if="${#strings.isEmpty(dayStat.arriveAt)
                              and #strings.isEmpty(dayStat.leaveBy)}">
-                    This day only. Left blank, it follows your profile.
+                    This day only; blank follows your profile.
                 </div>
                 <div class="muted hours-note"
                      th:unless="${#strings.isEmpty(dayStat.arriveAt)
@@ -353,12 +361,16 @@
                     <span class="k">Eat by</span>
                     <span class="v" th:text="${paceMeal}">13:00</span>
                 </div>
+                <!-- "Not before" and "Not after" read as though they might be
+                     about the meal, which is the row directly above them. They
+                     are about sets, and the two ends are not symmetrical: one
+                     tests when a set starts, the other when it finishes. -->
                 <div class="rail-stat" th:if="${paceEarliest != null}">
-                    <span class="k">Not before</span>
+                    <span class="k">No set starts before</span>
                     <span class="v" th:text="${paceEarliest}">12:00</span>
                 </div>
                 <div class="rail-stat" th:if="${paceLatest != null}">
-                    <span class="k">Not after</span>
+                    <span class="k">No set runs past</span>
                     <span class="v" th:text="${paceLatest}">23:30</span>
                 </div>
                 <p style="margin-top:12px"><a th:href="@{/profile}">Change these →</a></p>
