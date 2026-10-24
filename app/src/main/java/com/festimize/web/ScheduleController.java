@@ -437,6 +437,14 @@ public class ScheduleController {
                 + declined.pinnedFor(me.getUserId(), chosen.getEditionId()));
         model.addAttribute("hours", String.format("%dh %02dm", minutes / 60, minutes % 60));
         model.addAttribute("hasPlan", !byDay.isEmpty());
+        // Offer the rebuild only when it would do something. Everything a
+        // person does on this page rebuilds for itself, and their edits are
+        // inputs to the solve rather than part of it, so pressing it after
+        // one of those re-derives the identical day. What it is for is a
+        // change made elsewhere — artists, stars, pace — which is what
+        // taste_changed_at records.
+        Boolean behind = users.planIsBehind(me.getUserId(), chosen.getEditionId());
+        model.addAttribute("needsRebuild", byDay.isEmpty() || Boolean.TRUE.equals(behind));
         model.addAttribute("hasPicks", !saved.findSavedArtists(me.getUserId()).isEmpty());
         model.addAttribute("buildFailed", error != null);
         return "schedule";

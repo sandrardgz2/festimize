@@ -150,6 +150,7 @@ public class SetupController {
                 saved.save(ua);
             });
         }
+        users.touchTaste(me.getUserId());
         return "redirect:/lineup";
     }
 
@@ -169,6 +170,7 @@ public class SetupController {
                 .filter(ua -> ua.getArtist().getArtistId().equals(artistId))
                 .findFirst()
                 .ifPresent(saved::delete);
+        users.touchTaste(me.getUserId());
         return "redirect:/setup";
     }
 
@@ -186,6 +188,7 @@ public class SetupController {
                           Principal principal) {
         AppUser me = currentUser(principal);
         saved.setMustSee(me.getUserId(), artistId, on);
+        users.touchTaste(me.getUserId());
         return "redirect:/setup";
     }
 

@@ -46,4 +46,30 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
                        @org.springframework.data.repository.query.Param("mealBy") String mealBy,
                        @org.springframework.data.repository.query.Param("earliest") String earliest,
                        @org.springframework.data.repository.query.Param("latest") String latest);
+
+    /**
+     * Mark that something a schedule is built from has changed.
+     *
+     * Called wherever the artists, the must-see stars or the pace are
+     * edited. "Rebuild my schedule" is offered only when this is newer than
+     * the plan, because that is the only time rebuilding does anything — the
+     * edits made on the schedule page itself are inputs to the solve and
+     * survive it, so re-solving with them reproduces the same day.
+     */
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Query(value = """
+            update app_user set taste_changed_at = now() where user_id = :userId
+            """, nativeQuery = true)
+    void touchTaste(@org.springframework.data.repository.query.Param("userId") Long userId);
+
+    /** True when the plan for this edition predates the last such change. */
+    @org.springframework.data.jpa.repository.Query(value = """
+            select u.taste_changed_at > p.updated_at
+              from app_user u
+              join plan p on p.user_id = u.user_id and p.edition_id = :editionId
+             where u.user_id = :userId
+            """, nativeQuery = true)
+    Boolean planIsBehind(@org.springframework.data.repository.query.Param("userId") Long userId,
+                         @org.springframework.data.repository.query.Param("editionId") Long editionId);
 }

@@ -90,6 +90,7 @@ public class ProfileController {
                 valid(mealBy) ? mealBy : was[0],
                 valid(earliestStart) ? earliestStart : "",
                 valid(latestEnd) ? latestEnd : "");
+        users.touchTaste(me.getUserId());
         return "redirect:/profile?saved";
     }
 

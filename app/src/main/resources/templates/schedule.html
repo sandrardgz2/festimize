@@ -30,10 +30,16 @@
                 <span th:unless="${hasPlan}">no plan built yet</span>
             </p>
         </div>
-        <!-- Offered only when it can work. A green "Build my schedule" on an
-             account with no saved artists is a button whose whole job is to
-             fail, sitting above the sentence explaining that it will. -->
-        <form method="post" th:action="@{/schedule/build}" th:if="${hasPicks}">
+        <!-- Offered only when it can work, and only when it would do
+             anything. A green "Build my schedule" on an account with no saved
+             artists is a button whose whole job is to fail, sitting above the
+             sentence explaining that it will — and "Rebuild my schedule" on a
+             plan that is already current is the same button wearing a
+             different word. Pins, declines, the meal, the day's hours and the
+             fit-inside flag are inputs to the solve, not part of its output,
+             so re-solving with them produces the identical day. It appears
+             when something it reads has changed somewhere else. -->
+        <form method="post" th:action="@{/schedule/build}" th:if="${hasPicks and needsRebuild}">
             <input type="hidden" name="editionId" th:value="${chosen != null} ? ${chosen.editionId} : 0"/>
             <button type="submit" class="btn"
                     th:text="${hasPlan} ? 'Rebuild my schedule' : 'Build my schedule'">Build</button>
