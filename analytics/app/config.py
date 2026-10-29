@@ -21,6 +21,13 @@ class Settings(BaseSettings):
     # Surfaced on /health and useful in logs; not load-bearing yet.
     environment: str = "development"
 
+    # Shared secret the web app must present to reach the planning routes.
+    # Blank means no check — acceptable only when the service is bound to
+    # localhost, which is how it runs in local development. In the Docker
+    # deployment both services are given the same value so the API is not
+    # open to anything that can reach the port.
+    api_key: str = ""
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

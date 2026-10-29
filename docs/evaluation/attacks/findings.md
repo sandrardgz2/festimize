@@ -304,3 +304,93 @@ the heart of the product — held every invariant under every hostile input.
 validation; 9b — fast-fail on DB outage), 2 Low (5, 7 — input feedback).
 Everything else is a mitigation already in place, documented here as evidence it
 works.
+
+---
+
+## Fixes applied, and the re-attacks that confirm them
+
+Each fix was re-attacked with the exact command that first broke it.
+
+### Case 1 — analytics API authentication · fixed
+
+A shared secret now gates every planning route (`app/auth.py`, keyed on the
+`API_KEY` env var); `/health` stays open. The web app presents it as
+`X-Analytics-Key` (`PlanningClient`). In `docker-compose.yml` the analytics
+port is also bound to `127.0.0.1` only.
+
+```
+POST /plan/2  no key          -> 401   (was 200)
+GET  /plan/2/cost  no key     -> 401   (was 200)
+POST /plan/2  wrong key       -> 401
+POST /plan/2  correct key     -> 200
+the web app (which now sends the key) still builds plans -> 302, 11 sets
+```
+
+### Case 2 — Postgres network exposure · fixed
+
+`docker-compose.yml` now binds `127.0.0.1:5432:5432` (loopback only) and reads
+the password from a git-ignored `.env` (`.env.example` committed as the
+template). Proven on a throwaway container:
+
+```
+old binding: 0.0.0.0:5432->5432/tcp   (every interface — LAN reachable)
+new binding: 127.0.0.1:5434           (loopback only — not reachable off-box)
+```
+
+### Case 6 — invalid times · fixed
+
+`/schedule/hours` and `/schedule/eat-here` now validate the time before the
+cast (shared `goodTime` / `goodStamp` helpers), the way the profile form
+already did, and show a notice.
+
+```
+/schedule/hours arriveAt=25:00 | 99:99 | ab:cd   -> 302   (was 500)
+/schedule/eat-here startsAt=garbage              -> 302   (was 500)
+/schedule/hours arriveAt=16:00 (valid)           -> 302   (still works)
+page shows: "That time was not valid, so nothing was changed."
+```
+
+### Case 9b — database outage · improved
+
+`spring.datasource.hikari.connection-timeout` lowered to 4 s.
+
+```
+GET /schedule with the database stopped -> HTTP 500 in 8 s   (was a 20 s+ hang)
+recovers automatically when the database returns
+```
+
+A definite error in a few seconds rather than a hung tab. (8 s, not 4 s,
+because the security filter and the page each wait once; acceptable, and far
+better than indefinite.)
+
+### Cases 5 and 7 (Low) · accepted, documented
+
+`editionId=-1` falls to the default festival and `EditionChoice` never yields a
+negative edition, so it is harmless; an impossible time window is never allowed
+to empty the day. Both are left as-is — neither breaks anything — and recorded
+here so the decision is explicit rather than an oversight.
+
+---
+
+## A pre-existing issue the testing surfaced (not caused by these fixes)
+
+Running the DB-backed quality tests against the **full local corpus** (rather
+than the pre-corpus Neon database `analytics/.env` points at) fails two
+invariant tests:
+
+```
+test_no_break_runs_longer_than_an_hour  -> Sick New World: 84 minutes of rest in a row
+test_the_scheduler_adds_at_most_one_long_break
+```
+
+The 84-minute block is a meal break that absorbed a genuine ~100-minute hole in
+the Sick New World lineup (16:05–17:45), where only Code Orange plays and it is
+not one of this user's stronger picks. It is visible in the app's own demo
+(the `16:07–17:45 meal break`), so it is real behaviour, not a test artifact.
+
+This is **pre-existing** — confirmed by stashing all of this week's changes and
+re-running: the two tests fail identically, because nothing here touches the
+scheduler. It is recorded because the testing is what exposed it: the suite
+passes against one database and fails against another, which is the same
+"two databases, one stale" hazard noted during deployment prep. A fix (cap the
+meal break, or fill the hole) belongs with the scheduler work, not this pass.

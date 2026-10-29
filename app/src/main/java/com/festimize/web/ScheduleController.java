@@ -594,6 +594,13 @@ public class ScheduleController {
     public String eatHere(@RequestParam Long editionId, @RequestParam String startsAt,
                           Principal principal) {
         AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
+        // Reject a bad timestamp before it reaches the Postgres cast, which
+        // would otherwise throw and return a 500. The value is a hidden-field
+        // timestamp the page generated, so a bad one means a tampered or
+        // malformed request; send it back rather than crashing.
+        if (!goodStamp(startsAt)) {
+            return "redirect:/schedule?editionId=" + editionId + "&error=time";
+        }
         plans.chooseMeal(me.getUserId(), editionId, startsAt);
         planning.buildPlan(me.getUserId(), editionId);
         return "redirect:/schedule?editionId=" + editionId + "&swapped";
@@ -615,6 +622,13 @@ public class ScheduleController {
         AppUser me = users.findByEmailIgnoreCase(principal.getName()).orElseThrow();
         String from = arriveAt == null ? "" : arriveAt.trim();
         String to = leaveBy == null ? "" : leaveBy.trim();
+        // A time typed into the box, or sent directly, that will not parse is
+        // rejected here rather than at the cast in setDayHours — the profile
+        // form already does this, and these inputs were the one place that
+        // did not, so an impossible time returned a 500.
+        if ((!from.isEmpty() && !goodTime(from)) || (!to.isEmpty() && !goodTime(to))) {
+            return "redirect:/schedule?editionId=" + editionId + "&error=time";
+        }
         if (from.isEmpty() && to.isEmpty()) {
             plans.clearDayHours(me.getUserId(), editionId, onDay);
         } else {
@@ -924,6 +938,29 @@ public class ScheduleController {
         }
         return String.join(", ", names.subList(0, names.size() - 1))
                 + " and " + names.get(names.size() - 1);
+    }
+
+    /** A wall-clock time the database can store, or blank; anything else is rejected. */
+    private static boolean goodTime(String value) {
+        try {
+            java.time.LocalTime.parse(value);
+            return true;
+        } catch (RuntimeException bad) {
+            return false;
+        }
+    }
+
+    /** A timestamp the database can store; the meal slot is one the page generated. */
+    private static boolean goodStamp(String value) {
+        if (value == null || value.isBlank()) {
+            return false;
+        }
+        try {
+            java.time.OffsetDateTime.parse(value.replace(" ", "T"));
+            return true;
+        } catch (RuntimeException bad) {
+            return false;
+        }
     }
 
     /** 16:00:00 from Postgres is 16:00 to an <input type="time">. */

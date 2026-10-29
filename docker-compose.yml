@@ -5,15 +5,21 @@
 #
 # Postgres loads db/schema.sql and the seed files on first start, so the app
 # comes up with three demonstration festivals and every artist already in place.
+#
+# Credentials and the analytics key come from a .env file (see .env.example);
+# the defaults below keep `docker compose up` working out of the box for a
+# demo, but a real deployment overrides them. The database and analytics
+# ports are bound to localhost only, so neither is reachable from the network.
 services:
   db:
     image: postgres:17
     environment:
-      POSTGRES_USER: festimize
-      POSTGRES_PASSWORD: festimize
-      POSTGRES_DB: festimize
+      POSTGRES_USER: ${POSTGRES_USER:-festimize}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-festimize}
+      POSTGRES_DB: ${POSTGRES_DB:-festimize}
     ports:
-      - "5432:5432"
+      # Localhost only: reachable for local psql, not from the network.
+      - "127.0.0.1:5432:5432"
     volumes:
       # Run in filename order: schema, then the seeds. Artists must be loaded
       # before the lineup that references them, so Sick New World's artists
@@ -33,9 +39,12 @@ services:
   analytics:
     build: ./analytics
     environment:
-      DATABASE_URL: postgresql+psycopg://festimize:festimize@db:5432/festimize
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-festimize}:${POSTGRES_PASSWORD:-festimize}@db:5432/${POSTGRES_DB:-festimize}
+      API_KEY: ${ANALYTICS_KEY:-local-demo-key}
     ports:
-      - "8000:8000"
+      # Localhost only. The web container reaches it over the internal
+      # network as http://analytics:8000, which does not use this publish.
+      - "127.0.0.1:8000:8000"
     depends_on:
       db:
         condition: service_healthy
@@ -43,10 +52,11 @@ services:
   web:
     build: ./app
     environment:
-      DATABASE_URL: jdbc:postgresql://db:5432/festimize
-      DB_USER: festimize
-      DB_PASSWORD: festimize
+      DATABASE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-festimize}
+      DB_USER: ${POSTGRES_USER:-festimize}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-festimize}
       FESTIMIZE_ANALYTICS_BASE-URL: http://analytics:8000
+      FESTIMIZE_ANALYTICS_KEY: ${ANALYTICS_KEY:-local-demo-key}
     ports:
       - "8080:8080"
     depends_on:

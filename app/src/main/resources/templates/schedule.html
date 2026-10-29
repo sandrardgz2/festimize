@@ -57,6 +57,9 @@
         your saved artists are untouched.
     </p>
     <p class="notice" th:if="${param.restored != null}">Everything is back.</p>
+    <p class="notice" th:if="${param.error != null and param.error[0] == 'time'}">
+        That time was not valid, so nothing was changed. Use the HH:MM boxes.
+    </p>
 
 
     <p class="muted" th:if="${buildFailed}">

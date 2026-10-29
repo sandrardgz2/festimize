@@ -8,6 +8,12 @@ spring:
     username: ${DB_USER:festimize}
     password: ${DB_PASSWORD:festimize}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      # Fail a request within a few seconds when the database is unreachable,
+      # rather than letting it hang for the 30-second default. An outage then
+      # shows an error promptly instead of a tab that spins.
+      connection-timeout: 4000
+      initialization-fail-timeout: -1
 
   jpa:
     # db/schema.sql owns the schema. Hibernate only checks that the mapping

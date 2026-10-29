@@ -24,9 +24,18 @@ public class PlanningClient {
     private final String baseUrl;
 
     public PlanningClient(RestTemplateBuilder builder,
-                          @Value("${festimize.analytics.base-url:http://localhost:8000}") String baseUrl) {
+                          @Value("${festimize.analytics.base-url:http://localhost:8000}") String baseUrl,
+                          @Value("${festimize.analytics.key:}") String apiKey) {
         this.baseUrl = baseUrl;
-        this.http = builder.connectTimeout(Duration.ofSeconds(2)).readTimeout(Duration.ofSeconds(30)).build();
+        RestTemplateBuilder b = builder.connectTimeout(Duration.ofSeconds(2))
+                .readTimeout(Duration.ofSeconds(30));
+        // Present the shared secret the analytics service expects. Blank in
+        // local development, where the service is bound to localhost; set in
+        // the Docker deployment, where the two containers share a key.
+        if (apiKey != null && !apiKey.isBlank()) {
+            b = b.defaultHeader("X-Analytics-Key", apiKey);
+        }
+        this.http = b.build();
     }
 
     /** What one absent set would cost if it were added, and what it would gain. */

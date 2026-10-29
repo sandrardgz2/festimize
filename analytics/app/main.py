@@ -19,6 +19,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app import schema_check
+from app.auth import require_key
 from app.db import SessionLocal, get_db
 from app.routes import planning, scoring, tagging, trajectory
 
@@ -55,10 +56,13 @@ async def lifespan(_app: FastAPI):
 
 
 app = FastAPI(title="Festimize Analytics Service", lifespan=lifespan)
-app.include_router(scoring.router)
-app.include_router(planning.router)
-app.include_router(tagging.router)
-app.include_router(trajectory.router)
+# Every data route is gated by the shared key (see app.auth). /health is not
+# included here, so a health probe still works without the secret.
+_gated = [Depends(require_key)]
+app.include_router(scoring.router, dependencies=_gated)
+app.include_router(planning.router, dependencies=_gated)
+app.include_router(tagging.router, dependencies=_gated)
+app.include_router(trajectory.router, dependencies=_gated)
 
 
 class HealthResponse(BaseModel):
