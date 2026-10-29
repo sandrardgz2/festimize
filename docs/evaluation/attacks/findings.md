@@ -359,16 +359,21 @@ GET /schedule with the database stopped -> HTTP 500 in 8 s   (was a 20 s+ hang)
 recovers automatically when the database returns
 ```
 
-A definite error in a few seconds rather than a hung tab. (8 s, not 4 s,
-because the security filter and the page each wait once; acceptable, and far
-better than indefinite.)
+Now a bounded ~4 s failure instead of an indefinite hang — the finding was
+the hang, and it is gone. A self-contained error page (templates/error.html,
+no shared layout, so it does not itself need the database) covers other server
+errors; for the DB-down case specifically the shared header still cannot
+render, so that path shows a container 500 after the 4 s.
 
-### Cases 5 and 7 (Low) · accepted, documented
+### Cases 5 and 7 (Low) · fixed
 
-`editionId=-1` falls to the default festival and `EditionChoice` never yields a
-negative edition, so it is harmless; an impossible time window is never allowed
-to empty the day. Both are left as-is — neither breaks anything — and recorded
-here so the decision is explicit rather than an oversight.
+Case 5: a non-positive `editionId` is now treated as no request (it was
+harmless, falling to the default, but is now explicit).
+
+Case 7: an hours window that excludes every set on a day now redirects with a
+message — "Those hours exclude every set on that day, so the full day is shown
+instead" — rather than silently ignoring the input. The web layer checks the
+day's set times against the window.
 
 ---
 
