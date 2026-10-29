@@ -393,9 +393,16 @@ the Sick New World lineup (16:05–17:45), where only Code Orange plays and it i
 not one of this user's stronger picks. It is visible in the app's own demo
 (the `16:07–17:45 meal break`), so it is real behaviour, not a test artifact.
 
-This is **pre-existing** — confirmed by stashing all of this week's changes and
-re-running: the two tests fail identically, because nothing here touches the
-scheduler. It is recorded because the testing is what exposed it: the suite
-passes against one database and fails against another, which is the same
-"two databases, one stale" hazard noted during deployment prep. A fix (cap the
-meal break, or fill the hole) belongs with the scheduler work, not this pass.
+This was **pre-existing** — confirmed by stashing all of this week's changes
+and re-running: the two tests failed identically, because nothing in the attack
+work touches the scheduler.
+
+**Resolved.** The rule settled on: fill a long hole in the lineup with the best
+set that fits when there is room under the daily music limit, and leave it as a
+break once the day is at the limit. The scheduler already behaves this way —
+Sick New World for this user is at exactly 450/450 minutes, so the hole stays a
+break (correct); given headroom the scheduler fills it and the longest rest
+drops to 50 minutes. The two tests were asserting no long break unconditionally,
+which is wrong for an at-cap day; they now honour the rule, and a new test
+proves both directions. The suite is green against the full corpus (55 pass) and
+against the pre-corpus database (54 pass, 1 skip — the scenario is absent there).
