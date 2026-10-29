@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<!--
+  Shown for any unhandled server error. Deliberately self-contained: no shared
+  layout fragments and no model data, because the error this most needs to
+  handle is the database being unreachable, and the shared header queries the
+  database. A page that needs the database to say "the database is down" is no
+  page at all, which is exactly what adversarial testing found the first
+  version to be.
+-->
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Something went wrong — Festimize</title>
+    <style>
+        body { margin: 0; background: #14161a; color: #e8ebef;
+               font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; }
+        .box { max-width: 34rem; margin: 5rem auto; padding: 0 1.5rem; text-align: center; }
+        h1 { color: #35d07f; font-size: 1.6rem; margin-bottom: .6rem; }
+        p { color: #94a0ac; line-height: 1.6; }
+        a { display: inline-block; margin-top: 1.6rem; padding: .6rem 1.2rem; border-radius: 8px;
+            background: #35d07f; color: #14161a; text-decoration: none; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1>Something went wrong</h1>
+        <p>The page could not be loaded. This is usually temporary — the database or a
+           service may be restarting. Wait a moment and try again.</p>
+        <a href="/">Back to the start</a>
+    </div>
+</body>
+</html>

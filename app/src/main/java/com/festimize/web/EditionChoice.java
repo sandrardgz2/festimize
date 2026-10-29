@@ -61,7 +61,10 @@ public class EditionChoice {
         if (plannable.isEmpty()) {
             return null;
         }
-        if (requested != null) {
+        // A non-positive id is never a real edition (ids start at 1); treat it
+        // as no request rather than letting it fall silently to the default,
+        // so a garbage value is handled explicitly.
+        if (requested != null && requested > 0) {
             for (FestivalEdition e : plannable) {
                 if (e.getEditionId().equals(requested)) {
                     request.getSession().setAttribute(REMEMBERED, e.getEditionId());

@@ -635,6 +635,12 @@ public class ScheduleController {
             plans.setDayHours(me.getUserId(), editionId, onDay, from, to);
         }
         planning.buildPlan(me.getUserId(), editionId);
+        // Case 7: a window that excludes every set on the day is honoured by
+        // the planner as "show the full day" (it never empties a day), but the
+        // person was given no sign their hours did nothing. Say so.
+        if (excludesWholeDay(editionId, onDay, from, to)) {
+            return "redirect:/schedule?editionId=" + editionId + "&error=hours";
+        }
         // Back to the day that was changed, not the first one: the whole
         // point of the control is that the days differ.
         String label = java.time.LocalDate.parse(onDay).format(DAY);
@@ -938,6 +944,33 @@ public class ScheduleController {
         }
         return String.join(", ", names.subList(0, names.size() - 1))
                 + " and " + names.get(names.size() - 1);
+    }
+
+    /**
+     * True when the given hours would leave no set on that day — the case the
+     * planner quietly falls back on, which the page now reports.
+     */
+    private boolean excludesWholeDay(Long editionId, String onDay, String from, String to) {
+        java.time.LocalTime arrive = from.isEmpty() ? null : java.time.LocalTime.parse(from);
+        java.time.LocalTime leave = to.isEmpty() ? null : java.time.LocalTime.parse(to);
+        if (arrive == null && leave == null) {
+            return false;
+        }
+        java.time.LocalDate day = java.time.LocalDate.parse(onDay);
+        boolean sawOne = false;
+        for (com.festimize.domain.Performance p
+                : performances.findForEditionOrderedByStart(editionId)) {
+            if (p.getStartsAt() == null || !p.getStartsAt().toLocalDate().equals(day)) {
+                continue;
+            }
+            sawOne = true;
+            boolean afterArrive = arrive == null || !p.getStartsAt().toLocalTime().isBefore(arrive);
+            boolean beforeLeave = leave == null || !p.getEndsAt().toLocalTime().isAfter(leave);
+            if (afterArrive && beforeLeave) {
+                return false;      // at least one set fits the window
+            }
+        }
+        return sawOne;             // sets exist, none fit -> window excludes the day
     }
 
     /** A wall-clock time the database can store, or blank; anything else is rejected. */
