@@ -13,19 +13,25 @@ IST 440W capstone, Penn State.
 
 You need Docker. Nothing else — no Java, no Python, no database.
 
+If Docker is not already installed, get **Docker Desktop** (macOS, Windows, or Linux) from
+<https://www.docker.com/products/docker-desktop/> and start it before running the commands
+below. Confirm it is running with `docker info` (it should print server details, not an error).
+
 ```bash
 git clone https://github.com/sandrardgz2/festimize.git
 cd festimize
 docker compose up --build
 ```
 
-The first build takes a few minutes (it compiles the Java application and installs the Python
-dependencies inside the images). When it finishes, open **http://localhost:8080**.
+The first build takes a few minutes (it compiles the Java application, installs the Python
+dependencies inside the images, and loads the full dataset into PostgreSQL on first start).
+When it finishes, open **http://localhost:8080**.
 
 Then:
 
 1. **Register** an account — any email, nothing is sent anywhere.
-2. **Setup** — tick artists you like. Ten is plenty; 139 are loaded.
+2. **Setup** — tick artists you like. Ten is plenty. The page lists the artists the
+   recommender can actually score (the ones that carry tags), not all 15,799 in the corpus.
 3. **Lineup** — every artist at the festival, scored against your taste, best match first.
    Artists you chose yourself are marked "Your pick" rather than given a percentage.
 4. **Schedule** — press *Build my schedule* for a day-by-day plan with breaks.
@@ -45,19 +51,45 @@ It needs only the Python standard library. Every line should read `ok`.
 
 ### What gets created
 
-The database loads itself on first start from `db/`: the schema, three demonstration festival
-editions with set times, and 139 real artists with tags verified against MusicBrainz.
+The database loads itself on first start from `db/`: the schema (`schema.sql`), then the full
+corpus (`seed_corpus.sql`). That is the entire dataset the report describes — **15,799 artists
+and 39,778 performances across 36 festivals and 334 editions**, bounded to 2015–2026, assembled
+from Wikipedia/Wikidata, MusicBrainz, Last.fm, and setlist.fm, and validated against
+MusicBrainz — together with the artist tags and the precomputed rising-artist measure. (The
+corpus is the 36 festivals listed in `corpus/festivals.txt`. The database also holds two
+demonstration festivals that are not part of the corpus — Bloodstock Open Air's fabricated 2027
+bill and the fictional Ravenstone — so a plain `count(*)` of the festival table returns 38.)
 
-The three editions are deliberately different in character — a classic British metal bill, a
-small fictional one, and a nu-metal and alternative-metal bill — so the recommender can be
-seen working, and failing, against different tastes.
+Most of those 334 editions are historical and can only be browsed. **Three** of them are
+demonstration editions that carry hand-entered set times, so they are the ones the scheduler
+can actually plan: Bloodstock Open Air 2027, Sick New World 2027, and a fictional Ravenstone
+Festival 2027. They are deliberately different in character — a classic British metal bill, a
+nu-metal and alternative-metal bill, and a small fictional one — so the recommender can be seen
+working, and failing, against different tastes.
 
 **The 2027 lineups are fabricated.** The artists are real and their tags come from MusicBrainz,
-but the festival lineups and set times were written by hand for demonstration. Bloodstock Open
-Air and Sick New World are real festivals; these are not their announced lineups, and no
-festival has published a 2027 bill. Set times are not machine-readable anywhere — see
-`data/lineup-audit/summary.md`, which surveys twenty festivals and what their data actually
-looks like.
+but these three festivals' lineups and set times were written by hand for demonstration.
+Bloodstock Open Air and Sick New World are real festivals; these are not their announced
+lineups, and no festival has published a 2027 bill. Set times are not machine-readable anywhere
+— see `data/lineup-audit/summary.md`, which surveys twenty festivals and what their data
+actually looks like.
+
+### Reproducing the results in the report
+
+Everything the report states can be shown from this running stack:
+
+| Claim in the report | How to show it |
+|---|---|
+| Corpus scale: 15,799 artists, 39,778 performances, 36 festivals, 334 editions | `docker compose exec db psql -U festimize -d festimize -c "select (select count(*) from dim_artist) artists, (select count(*) from fact_performance) performances, (select count(*) from dim_festival) festivals, (select count(*) from dim_festival_edition) editions;"` — artists/performances/editions match the report; the festival count reads **38** because it includes the two demonstration festivals on top of the 36-festival corpus |
+| Taste scoring, best match first, discoveries you did not name | the **Lineup** page, after setup |
+| The rising-artist measure (15,737 artists measured) | the **Rising** badges on the lineup, and an artist's page; `select count(*) from artist_momentum;` |
+| A conflict-free, paced, three-day schedule | the **Schedule** page, *Build my schedule* |
+| Every behaviour the schedule tests guard | from the repo root: `docker compose run --rm --no-deps -v "$(pwd)/analytics:/srv" analytics python -m pytest tests/ -q` (54 pass, 1 skip — needs only Docker) |
+| The measured design choices (clustering, exact vs. greedy) | `docs/evaluation/` — `profile-clustering.md`, `scheduler-comparison.md` |
+
+The whole happy path can also be checked in one command (see **Checking it works** above):
+`python3 smoke_test.py` registers an account, scores every demo lineup, and builds a schedule
+for each, printing `ok` on every line.
 
 ---
 
@@ -85,13 +117,15 @@ to three taste profiles. Each artist keeps its best score across those profiles 
 averaged profile misrepresents anyone whose taste spans styles. Measured in
 `docs/evaluation/profile-clustering.md`.
 
-**Scheduling** (`analytics/app/scheduler.py`): greedy selection of non-overlapping sets, where
-your own picks outrank any recommendation, one set in three is reserved for artists you did not
-name, and the day is filled with music before breaks are carved out of it: one 45-minute meal
-break and up to two 30-minute breathers, taken from existing gaps where possible and from the
-weakest set in the window where not. Greedy
-rather than optimal on purpose: when someone asks why an artist was left out, the answer is
-always "something better overlapped it" or "a rule blocked it".
+**Scheduling** (`analytics/app/scheduler.py`): the best set of non-overlapping sets, solved
+exactly as weighted interval scheduling by dynamic programming — every set is worth its match
+score and the day is worth the sum of the sets in it, so the chosen day is provably the
+highest-scoring one possible. Your own picks outrank any recommendation, one set in three is
+reserved for artists you did not name, and the day is filled with music before breaks are
+carved out of it: one 45-minute meal break and up to two 30-minute breathers, taken from
+existing gaps where possible and from the weakest set in the window where not. An earlier
+version selected greedily and needed a repair pass to patch the holes that left; the two are
+measured against each other in `docs/evaluation/scheduler-comparison.md`.
 
 ---
 
@@ -101,10 +135,10 @@ For development. You need JDK 21+, Python 3.9+, and a PostgreSQL database (a fre
 [Neon](https://neon.com) project works).
 
 ```bash
-# 1. Create the tables and load the data
+# 1. Create the tables and load the full corpus
 psql "$DATABASE_URL" -f db/schema.sql
-psql "$DATABASE_URL" -f db/seed_demo.sql
-psql "$DATABASE_URL" -f db/seed_artists_us.sql
+psql "$DATABASE_URL" -f db/seed_corpus.sql
+# (Or, for just the 139-artist demo subset: db/seed_demo.sql + db/seed_artists_*.sql.)
 
 # 2. Analytics service
 cd analytics
@@ -118,4 +152,5 @@ DATABASE_URL='jdbc:postgresql://HOST/DBNAME?sslmode=require' \
 DB_USER=... DB_PASSWORD=... ./mvnw spring-boot:run
 ```
 
-`SETUP.md` has the same steps with more hand-holding.
+Run without Docker and the analytics service starts keyless (it is bound to `127.0.0.1`); under
+Docker the two containers share an `X-Analytics-Key`. Both are handled automatically.

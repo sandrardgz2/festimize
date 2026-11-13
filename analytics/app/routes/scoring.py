@@ -1,17 +1,14 @@
 """
-Scoring and momentum endpoints.
+Scoring endpoint.
 
 /score/{user_id} is implemented: it builds a taste profile from the artists a
 user saved, scores every artist against it (see app/recommender.py), and
 caches the result in artist_score so page loads are a read.
 
-/artists/{artist_id}/momentum is still a placeholder: the rising-artist
-measure needs the historical lineup data, which arrives in the next phase.
-
 Targets Python 3.9 syntax.
 """
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -92,37 +89,4 @@ def score_user(
             ArtistScore(user_id=user_id, artist_id=aid, match_score=s, computed_at=now)
             for aid, s in sorted(scores.items(), key=lambda kv: kv[1], reverse=True)
         ],
-    )
-
-
-# ------------------------------------------------------------- /momentum
-class MomentumResponse(BaseModel):
-    artist_id: int
-    momentum_score: float
-    appearances: int
-    first_year: Optional[int] = None
-    last_year: Optional[int] = None
-    computed_at: datetime
-
-
-@router.get("/artists/{artist_id}/momentum", response_model=MomentumResponse)
-def get_artist_momentum(
-    artist_id: int,
-    db: Session = Depends(get_db),
-) -> MomentumResponse:
-    """
-    Return the cached rising-artist measure for one artist from
-    artist_momentum.
-
-    Not implemented: the momentum measure itself (how billing_rank/
-    size_rank trends across editions turn into a 0..1 score) is the
-    developer's own deliverable.
-    """
-    raise HTTPException(
-        status_code=501,
-        detail=(
-            "Momentum is not implemented yet. This endpoint is a "
-            "placeholder for the rising-artist measure, to be written into "
-            "and read from artist_momentum."
-        ),
     )

@@ -28,9 +28,14 @@ public class TagClient {
     private final String baseUrl;
 
     public TagClient(RestTemplateBuilder builder,
-                     @Value("${festimize.analytics.base-url:http://localhost:8000}") String baseUrl) {
-        this.http = builder.build();
+                     @Value("${festimize.analytics.base-url:http://localhost:8000}") String baseUrl,
+                     @Value("${festimize.analytics.key:}") String apiKey) {
         this.baseUrl = baseUrl;
+        // Present the shared secret the analytics service expects, like the
+        // other analytics clients. Blank in local dev; set under Docker.
+        this.http = (apiKey != null && !apiKey.isBlank())
+                ? builder.defaultHeader("X-Analytics-Key", apiKey).build()
+                : builder.build();
     }
 
     /** True if tags were written. False means the artist is saved but unscored. */

@@ -32,12 +32,19 @@ public class TrajectoryClient {
     private final String baseUrl;
 
     public TrajectoryClient(RestTemplateBuilder builder,
-                            @Value("${festimize.analytics.base-url:http://localhost:8000}") String baseUrl) {
+                            @Value("${festimize.analytics.base-url:http://localhost:8000}") String baseUrl,
+                            @Value("${festimize.analytics.key:}") String apiKey) {
         this.baseUrl = baseUrl;
-        this.http = builder
+        RestTemplateBuilder b = builder
                 .connectTimeout(Duration.ofSeconds(2))
-                .readTimeout(Duration.ofSeconds(10))
-                .build();
+                .readTimeout(Duration.ofSeconds(10));
+        // Present the shared secret the analytics service expects. Blank in
+        // local development; set in the Docker deployment, where the two
+        // containers share a key.
+        if (apiKey != null && !apiKey.isBlank()) {
+            b = b.defaultHeader("X-Analytics-Key", apiKey);
+        }
+        this.http = b.build();
     }
 
     public record Point(int year, double share, int festivals) {}

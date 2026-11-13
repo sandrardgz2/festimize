@@ -2,9 +2,10 @@
 
 Spring Boot 3.5 / Java 21 / Thymeleaf / Spring Data JPA / PostgreSQL.
 
-This is a **skeleton**. It has the build, the database mapping, security and empty pages.
-There is no scoring, no ranking and no scheduling — every page renders static placeholder
-content and says so on screen.
+This is the web module. It renders the user-facing pages (home, setup, lineup, schedule,
+artist, insights, profile, how-it-works), calls the Python analytics service for taste
+scoring, the rising-artist measure and schedule building, and reads the results back from
+PostgreSQL to display them. It also owns the build, the JPA database mapping and security.
 
 ## Before you run it: apply the schema
 
@@ -60,14 +61,15 @@ src/main/java/com/festimize/
   domain/     JPA entities, one per table in db/schema.sql
   repo/       Spring Data repositories
   security/   form login, BCrypt, UserDetailsService over app_user
-  web/        controllers (skeletons)
+  web/        controllers
 src/main/resources/
   application.yml
   templates/  layout.html fragment + setup / lineup / schedule / login / register
   static/css/festimize.css
 ```
 
-Pages: `/setup`, `/lineup`, `/schedule` (all require sign-in); `/login` and `/register` are open.
+Pages: `/`, `/setup`, `/lineup`, `/schedule`, `/artist`, `/insights`, `/profile`,
+`/how-it-works` (the user-facing pages require sign-in); `/login` and `/register` are open.
 
 ## Notes on the mapping
 

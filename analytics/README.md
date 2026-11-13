@@ -45,7 +45,9 @@ pytest
 
 ## What belongs here / what doesn't
 
-This service is FastAPI plumbing, database access, and the eventual
-recommender + momentum jobs; it is deliberately **not** where scoring or
-momentum logic lives yet — `app/routes/scoring.py` is a placeholder (HTTP 501)
-until the developer's own data-science work replaces it.
+This service is FastAPI plumbing, database access, and the recommender +
+momentum jobs. Taste scoring lives in `app/recommender.py` and is served by
+`app/routes/scoring.py` (`/score/{user_id}`). The rising-artist / momentum
+measure is implemented in `app/momentum.py` and served by the
+`/artists/{artist_id}/trajectory` endpoint (`app/routes/trajectory.py`), with
+its precomputed results cached in the `artist_momentum` table.
