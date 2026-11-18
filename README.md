@@ -84,7 +84,6 @@ Everything the report states can be shown from this running stack:
 | Taste scoring, best match first, discoveries you did not name | the **Lineup** page, after setup |
 | The rising-artist measure (15,737 artists measured) | the **Rising** badges on the lineup, and an artist's page; `select count(*) from artist_momentum;` |
 | A conflict-free, paced, three-day schedule | the **Schedule** page, *Build my schedule* |
-| Every behaviour the schedule tests guard | from the repo root: `docker compose run --rm --no-deps -v "$(pwd)/analytics:/srv" analytics python -m pytest tests/ -q` (54 pass, 1 skip — needs only Docker) |
 | The measured design choices (clustering, exact vs. greedy) | `docs/evaluation/` — `profile-clustering.md`, `scheduler-comparison.md` |
 
 The whole happy path can also be checked in one command (see **Checking it works** above):
